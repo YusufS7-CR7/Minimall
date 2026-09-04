@@ -21,9 +21,9 @@ export default function ProductPage() {
 
   // SEO — always call hooks before any conditional return
   const category = product ? getCategoryByKey(product.category) : undefined;
-  const name = product ? (lang === "ru" ? product.name : product.nameUz) : "";
-  const desc = product ? (lang === "ru" ? product.descRu : product.descUz) : "";
-  const categoryLabel = category ? (lang === "ru" ? category.labelRu : category.labelUz) : "";
+  const name = product ? (lang === "uz" ? (product.nameUz || product.name) : product.name) : "";
+  const desc = product ? (lang === "uz" ? (product.descUz || product.descRu) : product.descRu) : "";
+  const categoryLabel = category ? (lang === "uz" ? (category.labelUz || category.labelRu) : category.labelRu) : "";
 
   useDocumentMeta({
     title: product

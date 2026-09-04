@@ -4,9 +4,11 @@ import {
   useState,
   useRef,
   useCallback,
+  useEffect,
   type ReactNode,
 } from "react";
 import type { Lang, Product, CartItem } from "@/data/types";
+import { setGoogleTranslateLanguage } from "@/utils/googleTranslate";
 
 // ─── Context Shape ────────────────────────────────────────────────────────────
 
@@ -29,11 +31,32 @@ const AppContext = createContext<AppContextValue | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>("ru");
+  const [lang, setLangState] = useState<Lang>(() => {
+    try {
+      const saved = localStorage.getItem("mm_lang");
+      if (saved === "ru" || saved === "uz") return saved;
+    } catch {}
+    return "uz"; // Default immediately to Uzbek as requested
+  });
   const [cart, setCart] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<number[]>([8]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setLang = useCallback((newLang: Lang) => {
+    setLangState(newLang);
+    try {
+      localStorage.setItem("mm_lang", newLang);
+    } catch {}
+    document.documentElement.lang = newLang;
+    setGoogleTranslateLanguage(newLang);
+  }, []);
+
+  // Sync Google Translate on mount and when lang changes
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    setGoogleTranslateLanguage(lang);
+  }, [lang]);
 
   const showToast = useCallback((msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);

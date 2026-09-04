@@ -1,23 +1,39 @@
 <!doctype html>
-<html lang="ru">
+<html lang="uz">
   <head>
     <!-- figma:head-start -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minimall — интернет-магазин инструментов в Ташкенте | minimall.uz</title>
+    <title>Minimall — Toshkentdagi asboblar internet-do'koni | minimall.uz</title>
     <meta
       name="description"
-      content="Купить профессиональный строительный инструмент в Ташкенте. Официальный дилер Bosch, Makita, DeWalt, Milwaukee. Доставка по всему Узбекистану — Minimall.uz"
+      content="Toshkentda professional qurilish asboblarini sotib olish. Bosch, Makita, DeWalt, Milwaukee rasmiy dileri. O'zbekiston bo'ylab yetkazib berish — Minimall.uz"
     />
     <meta name="robots" content="index, follow" />
     <link rel="icon" type="image/jpeg" href="/logo.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://translate.google.com" />
+    <link rel="preconnect" href="https://translate.googleapis.com" />
     <!-- figma:head-end -->
   </head>
   <body>
     <!-- figma:body-start -->
+    <div id="google_translate_element" style="display:none"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'ru',
+            includedLanguages: 'ru,uz',
+            autoDisplay: false,
+            layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE
+          }, 'google_translate_element');
+        }
+      }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <!-- figma:body-end -->

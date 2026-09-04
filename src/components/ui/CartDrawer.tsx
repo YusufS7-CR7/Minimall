@@ -51,14 +51,14 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
               <div key={item.product.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <img
                   src={item.product.image}
-                  alt={lang === "ru" ? item.product.name : item.product.nameUz}
+                  alt={lang === "uz" ? (item.product.nameUz || item.product.name) : item.product.name}
                   className="w-16 h-16 object-cover rounded-lg bg-white shrink-0"
                   width={64}
                   height={64}
                 />
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-bold text-gray-800 line-clamp-2">
-                    {lang === "ru" ? item.product.name : item.product.nameUz}
+                    {lang === "uz" ? (item.product.nameUz || item.product.name) : item.product.name}
                   </h4>
                   <div className="text-xs text-red-600 font-extrabold mt-1">
                     {formatPrice(item.product.price)}

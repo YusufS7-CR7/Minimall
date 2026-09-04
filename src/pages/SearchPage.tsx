@@ -25,7 +25,7 @@ export default function SearchPage() {
     if (!q.trim()) return [];
     const query = q.toLowerCase();
     return products.filter((p) => {
-      const name = (lang === "ru" ? p.name : p.nameUz).toLowerCase();
+      const name = (lang === "uz" ? (p.nameUz || p.name) : p.name).toLowerCase();
       return (
         name.includes(query) ||
         p.brand.toLowerCase().includes(query) ||

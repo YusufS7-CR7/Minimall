@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Product } from "@/data/types";
 import { CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/context/ProductsContext";
 import { slugify } from "@/data/products";
+import { translateText } from "@/utils/googleTranslate";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -70,6 +71,8 @@ export default function ProductFormModal({
   ]);
 
   const [error, setError] = useState<string | null>(null);
+  const [translatingName, setTranslatingName] = useState(false);
+  const [translatingDesc, setTranslatingDesc] = useState(false);
 
   // Initialize form when opening or changing productToEdit
   useEffect(() => {
@@ -127,6 +130,24 @@ export default function ProductFormModal({
       setSlug(slugify(val));
     }
   };
+
+  // Auto-translate name RU→UZ
+  const handleTranslateName = useCallback(async () => {
+    if (!name.trim()) return;
+    setTranslatingName(true);
+    const result = await translateText(name);
+    setTranslatingName(false);
+    if (result) setNameUz(result);
+  }, [name]);
+
+  // Auto-translate description RU→UZ
+  const handleTranslateDesc = useCallback(async () => {
+    if (!descRu.trim()) return;
+    setTranslatingDesc(true);
+    const result = await translateText(descRu);
+    setTranslatingDesc(false);
+    if (result) setDescUz(result);
+  }, [descRu]);
 
   const handleAddSpec = () => {
     setSpecsList([...specsList, { key: "", value: "" }]);
@@ -328,9 +349,29 @@ export default function ProductFormModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Название товара (UZ)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Название товара (UZ)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleTranslateName}
+                    disabled={translatingName || !name.trim()}
+                    title="Автоматически перевести с RU на UZ через Google Translate"
+                    className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {translatingName ? (
+                      <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+                      </svg>
+                    )}
+                    {translatingName ? "Переводим..." : "Google Перевод"}
+                  </button>
+                </div>
                 <input
                   type="text"
                   placeholder="masalan: Makita HP1630 zarbli burg'u"
@@ -538,9 +579,29 @@ export default function ProductFormModal({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Описание на узбекском языке (UZ)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Описание на узбекском языке (UZ)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleTranslateDesc}
+                    disabled={translatingDesc || !descRu.trim()}
+                    title="Автоматически перевести описание с RU на UZ через Google Translate"
+                    className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {translatingDesc ? (
+                      <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+                      </svg>
+                    )}
+                    {translatingDesc ? "Переводим..." : "Google Перевод"}
+                  </button>
+                </div>
                 <textarea
                   rows={3}
                   placeholder="Asbobning maqsadi, to'plami va afzalliklari haqida batafsil tavsif..."

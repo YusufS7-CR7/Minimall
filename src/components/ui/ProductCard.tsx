@@ -15,7 +15,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, lang }: ProductCardProps) {
   const t = T[lang];
   const { addToCart, toggleFavorite, favorites } = useApp();
-  const name = lang === "ru" ? product.name : product.nameUz;
+  const name = lang === "uz" ? (product.nameUz || product.name) : product.name;
   const isFav = favorites.includes(product.id);
 
   return (
