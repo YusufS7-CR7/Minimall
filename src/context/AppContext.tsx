@@ -20,6 +20,9 @@ interface AppContextValue {
   toastMessage: string | null;
   totalCartCount: number;
   totalCartPrice: number;
+  theme: "light" | "dark";
+  setTheme: (t: "light" | "dark") => void;
+  toggleTheme: () => void;
   addToCart: (product: Product) => void;
   updateCartCount: (productId: number, delta: number) => void;
   clearCart: () => void;
@@ -40,10 +43,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
     return "uz"; // Default immediately to Uzbek as requested
   });
+  const [theme, setThemeState] = useState<"light" | "dark">(() => {
+    try {
+      const saved = localStorage.getItem("mm_theme");
+      if (saved === "dark" || saved === "light") return saved;
+    } catch {}
+    return "light"; // default light
+  });
   const [cart, setCart] = useState<CartItem[]>([]);
   const [favorites, setFavorites] = useState<number[]>([8]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setTheme = useCallback((newTheme: "light" | "dark") => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem("mm_theme", newTheme);
+    } catch {}
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("mm_theme", next);
+      } catch {}
+      if (next === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      return next;
+    });
+  }, []);
+
+  // Sync theme class on mount
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang);
@@ -146,6 +192,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toastMessage,
         totalCartCount,
         totalCartPrice,
+        theme,
+        setTheme,
+        toggleTheme,
         addToCart,
         updateCartCount,
         clearCart,

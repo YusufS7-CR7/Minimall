@@ -7,6 +7,7 @@ import type { Lang } from "@/data/types";
 import CartDrawer from "@/components/ui/CartDrawer";
 import CatalogModal from "@/components/ui/CatalogModal";
 import FavoritesModal from "@/components/ui/FavoritesModal";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 interface HeaderProps {
   lang: Lang;
@@ -118,6 +119,11 @@ export default function Header({ lang }: HeaderProps) {
                 </svg>
               </button>
             </form>
+
+            {/* Theme Toggle (Desktop & Tablet) */}
+            <div className="hidden sm:flex items-center px-1">
+              <ThemeToggle showIcon={true} />
+            </div>
 
             {/* Favorites */}
             <button
@@ -235,6 +241,11 @@ export default function Header({ lang }: HeaderProps) {
               </div>
               <span className="text-[10px] font-medium">{lang === "ru" ? "Админка" : "Admin"}</span>
             </Link>
+
+            {/* Theme Toggle (Mobile) */}
+            <div className="flex sm:hidden items-center">
+              <ThemeToggle showIcon={false} />
+            </div>
 
             {/* Mobile Admin Link */}
             <Link
