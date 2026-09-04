@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { ProductsProvider } from "@/context/ProductsContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 
 // Layout components
 import TopBar from "@/components/layout/TopBar";
@@ -24,6 +25,8 @@ import NotFoundPage from "@/pages/NotFoundPage";
 // Admin Pages
 import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
+import AdminUsersPage from "@/pages/admin/AdminUsersPage";
+import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 
 /**
  * Automatically scrolls the browser window to top on page navigation.
@@ -41,15 +44,28 @@ function ScrollToTop() {
 function AppLayout() {
   const { lang } = useApp();
   const { pathname } = useLocation();
+  const { isAuthenticated } = useAdminAuth();
   const isAdminRoute = pathname.startsWith("/admin");
 
   if (isAdminRoute) {
+    if (!isAuthenticated) {
+      return (
+        <>
+          <ScrollToTop />
+          <AdminLoginPage />
+          <Toast />
+        </>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-red-500 selection:text-white">
         <ScrollToTop />
         <AdminLayout>
           <Routes>
             <Route path="/admin" element={<AdminProductsPage />} />
+            <Route path="/admin/products" element={<AdminProductsPage />} />
+            <Route path="/admin/admins" element={<AdminUsersPage />} />
             <Route path="/admin/*" element={<AdminProductsPage />} />
           </Routes>
         </AdminLayout>
@@ -90,7 +106,9 @@ export default function App() {
     <AppProvider>
       <ProductsProvider>
         <AuthProvider>
-          <AppLayout />
+          <AdminAuthProvider>
+            <AppLayout />
+          </AdminAuthProvider>
         </AuthProvider>
       </ProductsProvider>
     </AppProvider>

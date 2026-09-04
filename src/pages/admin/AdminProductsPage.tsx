@@ -4,6 +4,7 @@ import type { Product } from "@/data/types";
 import { CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
 
@@ -13,6 +14,12 @@ const formatPrice = (p: number) =>
 export default function AdminProductsPage() {
   const { products, deleteProduct, updateProduct, addProduct, brands } = useProducts();
   const { showToast } = useApp();
+  const { isSuperAdmin, hasPermission } = useAdminAuth();
+
+  const canView = isSuperAdmin || hasPermission("products_view");
+  const canCreate = isSuperAdmin || hasPermission("products_create");
+  const canEdit = isSuperAdmin || hasPermission("products_edit");
+  const canDelete = isSuperAdmin || hasPermission("products_delete");
 
   useDocumentMeta({
     title: "Панель управления товарами | Minimall Admin",
@@ -109,6 +116,18 @@ export default function AdminProductsPage() {
     showToast(`Создана копия товара: "${duplicated.name}"`);
   };
 
+  if (!canView) {
+    return (
+      <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xs text-center space-y-3">
+        <div className="text-4xl">🔒</div>
+        <h2 className="text-lg font-bold text-gray-900">Доступ ограничен</h2>
+        <p className="text-xs text-gray-500 max-w-md mx-auto">
+          У вашей учетной записи нет разрешения на просмотр каталога товаров. Обратитесь к Главному Администратору для получения прав.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Top Banner & Action */}
@@ -124,13 +143,15 @@ export default function AdminProductsPage() {
             Добавляйте новые товары, редактируйте цены, параметры и управляйте складскими остатками
           </p>
         </div>
-        <button
-          onClick={handleOpenCreate}
-          className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-        >
-          <span className="text-base font-black">+</span>
-          <span>Добавить товар</span>
-        </button>
+        {canCreate && (
+          <button
+            onClick={handleOpenCreate}
+            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <span className="text-base font-black">+</span>
+            <span>Добавить товар</span>
+          </button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -343,13 +364,16 @@ export default function AdminProductsPage() {
                       {/* Stock toggle */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <button
-                          onClick={() => handleToggleStock(p)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
+                          disabled={!canEdit}
+                          onClick={() => canEdit && handleToggleStock(p)}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                            canEdit ? "cursor-pointer" : "cursor-default opacity-80"
+                          } ${
                             p.inStock
                               ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
                               : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
                           }`}
-                          title="Нажмите, чтобы переключить статус наличия"
+                          title={canEdit ? "Нажмите, чтобы переключить статус наличия" : "Статус наличия"}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
@@ -375,31 +399,37 @@ export default function AdminProductsPage() {
                           </Link>
 
                           {/* Edit */}
-                          <button
-                            onClick={() => handleOpenEdit(p)}
-                            className="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-xs transition-colors"
-                            title="Редактировать товар"
-                          >
-                            ✏️
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleOpenEdit(p)}
+                              className="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                              title="Редактировать товар"
+                            >
+                              ✏️
+                            </button>
+                          )}
 
                           {/* Duplicate */}
-                          <button
-                            onClick={() => handleDuplicate(p)}
-                            className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors"
-                            title="Сделать копию товара"
-                          >
-                            📄
-                          </button>
+                          {canEdit && (
+                            <button
+                              onClick={() => handleDuplicate(p)}
+                              className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                              title="Сделать копию товара"
+                            >
+                              📄
+                            </button>
+                          )}
 
                           {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(p.id, p.name)}
-                            className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center text-xs transition-colors"
-                            title="Удалить товар"
-                          >
-                            🗑️
-                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(p.id, p.name)}
+                              className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                              title="Удалить товар"
+                            >
+                              🗑️
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
