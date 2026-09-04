@@ -8,8 +8,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 export default function AdminProductsPage() {
   const { products, deleteProduct, updateProduct, addProduct, brands } = useProducts();

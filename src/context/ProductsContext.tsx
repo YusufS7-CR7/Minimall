@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   useMemo,
   type ReactNode,
 } from "react";
@@ -11,6 +12,7 @@ import type { Product } from "@/data/types";
 import { PRODUCTS as INITIAL_PRODUCTS, slugify, BRANDS as INITIAL_BRANDS } from "@/data/products";
 
 const STORAGE_KEY = "minimall_products_v1";
+const SAVE_DEBOUNCE_MS = 400;
 
 interface ProductsContextValue {
   products: Product[];
@@ -43,13 +45,21 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     return INITIAL_PRODUCTS;
   });
 
-  // Save to localStorage on any change
+  // Debounced save to localStorage — avoids blocking the UI on every keystroke
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    } catch (e) {
-      console.error("Failed to save products to localStorage", e);
-    }
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+      } catch (e) {
+        console.error("Failed to save products to localStorage", e);
+      }
+    }, SAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [products]);
 
   const brands = useMemo(() => {
@@ -63,47 +73,48 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   }, [products]);
 
   const getProductBySlug = useCallback(
-    (slug: string) => {
-      return products.find((p) => p.slug === slug);
-    },
+    (slug: string) => products.find((p) => p.slug === slug),
     [products]
   );
 
   const getProductById = useCallback(
-    (id: number) => {
-      return products.find((p) => p.id === id);
-    },
+    (id: number) => products.find((p) => p.id === id),
     [products]
   );
 
+  // Fixed: use functional setProducts so addProduct has NO dependency on `products`
   const addProduct = useCallback(
-    (data: Omit<Product, "id"> & { id?: number }) => {
-      const maxId = products.reduce((max, p) => (p.id > max ? p.id : max), 0);
-      const nextId = data.id && data.id > 0 ? data.id : maxId + 1;
+    (data: Omit<Product, "id"> & { id?: number }): Product => {
+      let newProduct!: Product;
 
-      let targetSlug = data.slug?.trim() ? slugify(data.slug) : slugify(data.name);
-      if (!targetSlug) targetSlug = `product-${nextId}`;
+      setProducts((prev) => {
+        const maxId = prev.reduce((max, p) => (p.id > max ? p.id : max), 0);
+        const nextId = data.id && data.id > 0 ? data.id : maxId + 1;
 
-      // Ensure uniqueness of slug
-      let uniqueSlug = targetSlug;
-      let counter = 1;
-      while (products.some((p) => p.slug === uniqueSlug)) {
-        uniqueSlug = `${targetSlug}-${counter}`;
-        counter++;
-      }
+        let targetSlug = data.slug?.trim() ? slugify(data.slug) : slugify(data.name);
+        if (!targetSlug) targetSlug = `product-${nextId}`;
 
-      const newProduct: Product = {
-        ...data,
-        id: nextId,
-        slug: uniqueSlug,
-        inStock: data.inStock ?? true,
-        specs: data.specs || {},
-      };
+        let uniqueSlug = targetSlug;
+        let counter = 1;
+        while (prev.some((p) => p.slug === uniqueSlug)) {
+          uniqueSlug = `${targetSlug}-${counter}`;
+          counter++;
+        }
 
-      setProducts((prev) => [newProduct, ...prev]);
+        newProduct = {
+          ...data,
+          id: nextId,
+          slug: uniqueSlug,
+          inStock: data.inStock ?? true,
+          specs: data.specs || {},
+        };
+
+        return [newProduct, ...prev];
+      });
+
       return newProduct;
     },
-    [products]
+    [] // No deps needed — uses functional update pattern
   );
 
   const updateProduct = useCallback(
@@ -115,9 +126,6 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           let nextSlug = p.slug;
           if (patch.slug && patch.slug !== p.slug) {
             nextSlug = slugify(patch.slug);
-          } else if (patch.name && patch.name !== p.name && !patch.slug) {
-            // keep existing slug unless requested
-            nextSlug = p.slug;
           }
 
           return {
@@ -141,19 +149,22 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const exportCatalog = useCallback(() => {
-    const dataStr =
-      "data:text/json;charset=utf-8," +
-      encodeURIComponent(JSON.stringify(products, null, 2));
-    const downloadAnchor = document.createElement("a");
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute(
-      "download",
-      `minimall-catalog-${new Date().toISOString().slice(0, 10)}.json`
-    );
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  }, [products]);
+    setProducts((prev) => {
+      const dataStr =
+        "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(prev, null, 2));
+      const a = document.createElement("a");
+      a.setAttribute("href", dataStr);
+      a.setAttribute(
+        "download",
+        `minimall-catalog-${new Date().toISOString().slice(0, 10)}.json`
+      );
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return prev; // no change
+    });
+  }, []);
 
   const importCatalog = useCallback((jsonString: string) => {
     try {

@@ -4,8 +4,7 @@ import { T } from "@/data/translations";
 import type { Lang } from "@/data/types";
 import CheckoutModal from "./CheckoutModal";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 interface CartDrawerProps {
   lang: Lang;

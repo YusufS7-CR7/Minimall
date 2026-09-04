@@ -2,8 +2,7 @@ import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useProducts } from "@/context/ProductsContext";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 interface FavoritesModalProps {
   isOpen: boolean;

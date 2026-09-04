@@ -5,8 +5,7 @@ import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import type { OrderStatus } from "@/data/orderTypes";
 import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 export default function AdminOrdersPage() {
   const { orders, updateOrderStatus, deleteOrder } = useOrders();

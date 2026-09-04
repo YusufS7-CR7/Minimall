@@ -1,28 +1,39 @@
+import { memo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { T } from "@/data/translations";
 import type { Product, Lang } from "@/data/types";
 import StarRating from "./StarRating";
-
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 interface ProductCardProps {
   product: Product;
   lang: Lang;
 }
 
-export default function ProductCard({ product, lang }: ProductCardProps) {
+/**
+ * Memoized product card — only re-renders when `product` or `lang` actually changes.
+ * This prevents the entire product grid from re-rendering on every cart/favorites update.
+ */
+const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProps) {
   const t = T[lang];
   const { addToCart, toggleFavorite, favorites } = useApp();
   const name = lang === "uz" ? (product.nameUz || product.name) : product.name;
   const isFav = favorites.includes(product.id);
 
+  const handleFavorite = useCallback(() => {
+    toggleFavorite(product.id);
+  }, [toggleFavorite, product.id]);
+
+  const handleAddToCart = useCallback(() => {
+    addToCart(product);
+  }, [addToCart, product]);
+
   return (
     <article className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 hover:-translate-y-1 relative">
       {/* Favorite button */}
       <button
-        onClick={() => toggleFavorite(product.id)}
+        onClick={handleFavorite}
         aria-label={isFav ? "Убрать из избранного" : "Добавить в избранное"}
         aria-pressed={isFav}
         className={`absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all backdrop-blur-md shadow-sm ${
@@ -104,7 +115,7 @@ export default function ProductCard({ product, lang }: ProductCardProps) {
             )}
           </div>
           <button
-            onClick={() => addToCart(product)}
+            onClick={handleAddToCart}
             disabled={!product.inStock}
             aria-label={`${t.addToCart}: ${name}`}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
@@ -122,4 +133,6 @@ export default function ProductCard({ product, lang }: ProductCardProps) {
       </div>
     </article>
   );
-}
+});
+
+export default ProductCard;

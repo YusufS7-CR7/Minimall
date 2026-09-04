@@ -8,8 +8,7 @@ import { T } from "@/data/translations";
 import StarRating from "@/components/ui/StarRating";
 import ProductCard from "@/components/ui/ProductCard";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();

@@ -17,16 +17,17 @@ html, body, #root {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Manrope', sans-serif;
   background: #ffffff;
   color: #0A0A0A;
 }
 
-* {
-  scroll-behavior: smooth;
-}
-
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -46,12 +47,13 @@ body {
   scrollbar-width: none;
 }
 
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
 @keyframes authSlideIn {
   from { opacity: 0; transform: scale(0.94) translateY(10px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* Google Translate clean integration: hide default banner, prevent body shift */
+/* ─── Google Translate: hide banner, prevent body shift ──────────────────────── */
 .goog-te-banner-frame.skiptranslate,
 .goog-te-banner-frame,
 iframe.goog-te-banner-frame {
@@ -88,93 +90,105 @@ font {
   box-shadow: none !important;
 }
 
-/* ─── Seamless Dark Mode Transitions & Theme Styles ─── */
-body, header, nav, main, footer, section, aside, div, input, select, textarea {
+/* ─── Theme Transitions (narrow — only specific elements) ────────────────────── */
+/*
+  Intentionally scoped to structural elements only.
+  Applying transitions to every <div> causes expensive repaints on scroll.
+*/
+body,
+header,
+nav,
+footer,
+input,
+select,
+textarea,
+button {
   transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
+/* ─── Dark Mode ──────────────────────────────────────────────────────────────── */
+/*
+  Using CSS custom properties scoped to html.dark for maintainability.
+  Tailwind utility classes like bg-white / text-gray-900 still work in light mode;
+  the variables below selectively override colours in dark mode without !important spam.
+*/
 html.dark {
   color-scheme: dark;
+
+  /* Surface colours */
+  --dm-bg: #0b1120;
+  --dm-surface: #162032;
+  --dm-surface-elevated: #1a2840;
+  --dm-surface-header: #0f172a;
+  --dm-border: #1e293b;
+  --dm-border-subtle: #283548;
+
+  /* Text colours */
+  --dm-text-primary: #f8fafc;
+  --dm-text-secondary: #f1f5f9;
+  --dm-text-tertiary: #cbd5e1;
+  --dm-text-muted: #94a3b8;
+  --dm-text-faint: #64748b;
+
+  /* Input */
+  --dm-input-bg: #121c2d;
 }
 
 html.dark body {
-  background-color: #0b1120 !important;
-  color: #f1f5f9 !important;
+  background-color: var(--dm-bg) !important;
+  color: var(--dm-text-primary) !important;
 }
 
 html.dark header.bg-white,
 html.dark nav.bg-white,
 html.dark footer.bg-white {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
+  background-color: var(--dm-surface-header) !important;
+  border-color: var(--dm-border) !important;
 }
 
 html.dark .bg-white {
-  background-color: #162032 !important;
+  background-color: var(--dm-surface) !important;
 }
 
-/* Ensure the white toggle knob and logo remain crisp white */
-html.dark .bg-white.rounded-full.shadow-md,
+/* Ensure the white toggle knob stays white */
 html.dark .ThemeToggle-knob,
 html.dark [role="switch"] > span {
   background-color: #ffffff !important;
 }
 
 html.dark .bg-gray-50 {
-  background-color: #0b1120 !important;
+  background-color: var(--dm-bg) !important;
 }
 
 html.dark .bg-gray-100 {
-  background-color: #1e293b !important;
+  background-color: var(--dm-border) !important;
 }
 
 html.dark .bg-gray-200 {
   background-color: #334155 !important;
 }
 
-html.dark .text-gray-900 {
-  color: #f8fafc !important;
-}
+html.dark .text-gray-900 { color: var(--dm-text-primary) !important; }
+html.dark .text-gray-800 { color: var(--dm-text-secondary) !important; }
+html.dark .text-gray-700 { color: var(--dm-text-tertiary) !important; }
+html.dark .text-gray-600 { color: var(--dm-text-muted) !important; }
+html.dark .text-gray-500 { color: var(--dm-text-faint) !important; }
 
-html.dark .text-gray-800 {
-  color: #f1f5f9 !important;
-}
-
-html.dark .text-gray-700 {
-  color: #cbd5e1 !important;
-}
-
-html.dark .text-gray-600 {
-  color: #94a3b8 !important;
-}
-
-html.dark .text-gray-500 {
-  color: #64748b !important;
-}
-
-html.dark .border-gray-100 {
-  border-color: #1e293b !important;
-}
-
-html.dark .border-gray-200 {
-  border-color: #283548 !important;
-}
-
-html.dark .border-gray-300 {
-  border-color: #374761 !important;
-}
+html.dark .border-gray-100 { border-color: var(--dm-border) !important; }
+html.dark .border-gray-200 { border-color: var(--dm-border-subtle) !important; }
+html.dark .border-gray-300 { border-color: #374761 !important; }
 
 html.dark input,
 html.dark select,
 html.dark textarea {
-  background-color: #121c2d !important;
-  color: #f8fafc !important;
-  border-color: #283548 !important;
+  background-color: var(--dm-input-bg) !important;
+  color: var(--dm-text-primary) !important;
+  border-color: var(--dm-border-subtle) !important;
 }
 
 html.dark input::placeholder,
 html.dark textarea::placeholder {
-  color: #64748b !important;
+  color: var(--dm-text-faint) !important;
 }
 
 html.dark .shadow-xs,

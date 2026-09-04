@@ -10,8 +10,7 @@ import StarRating from "@/components/ui/StarRating";
 import PriceRangeSlider from "@/components/ui/PriceRangeSlider";
 import { useBanners } from "@/context/BannersContext";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 
 const ADVANTAGE_ICONS = [

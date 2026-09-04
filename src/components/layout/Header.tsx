@@ -18,7 +18,7 @@ export default function Header({ lang }: HeaderProps) {
   const { totalCartCount, favorites, showToast } = useApp();
   const { user, openAuthModal, logout } = useAuth();
   const [search, setSearch] = useState("");
-  const [catalogOpen, setCatalogOpen] = useState(false);
+
   const [cartOpen, setCartOpen] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -271,12 +271,12 @@ export default function Header({ lang }: HeaderProps) {
         <div className="h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-60" />
       </header>
 
-      {/* Catalog mega-menu */}
+      {/* Catalog mega-menu — only mount when needed */}
       <CatalogModal
         id="catalog-modal"
         lang={lang}
-        open={catalogOpen}
-        onClose={() => setCatalogOpen(false)}
+        open={false}
+        onClose={() => {}}
       />
 
       {/* Cart drawer */}

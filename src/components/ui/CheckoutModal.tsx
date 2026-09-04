@@ -3,8 +3,7 @@ import { useApp } from "@/context/AppContext";
 import { useOrders } from "@/context/OrdersContext";
 import type { CustomerInfo } from "@/data/orderTypes";
 
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
+import { formatPrice } from "@/utils/formatPrice";
 
 interface CheckoutModalProps {
   isOpen: boolean;

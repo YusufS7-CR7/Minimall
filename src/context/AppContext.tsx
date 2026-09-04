@@ -4,6 +4,7 @@ import {
   useState,
   useRef,
   useCallback,
+  useMemo,
   useEffect,
   type ReactNode,
 } from "react";
@@ -33,6 +34,33 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function applyTheme(theme: "light" | "dark") {
+  if (theme === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+}
+
+function loadFavorites(): number[] {
+  try {
+    const raw = localStorage.getItem("mm_favorites");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as number[];
+    }
+  } catch {}
+  return [8]; // default seed
+}
+
+function saveFavorites(ids: number[]) {
+  try {
+    localStorage.setItem("mm_favorites", JSON.stringify(ids));
+  } catch {}
+}
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -41,30 +69,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem("mm_lang");
       if (saved === "ru" || saved === "uz") return saved;
     } catch {}
-    return "uz"; // Default immediately to Uzbek as requested
+    return "uz";
   });
+
   const [theme, setThemeState] = useState<"light" | "dark">(() => {
     try {
       const saved = localStorage.getItem("mm_theme");
       if (saved === "dark" || saved === "light") return saved;
     } catch {}
-    return "light"; // default light
+    return "light";
   });
+
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [favorites, setFavorites] = useState<number[]>([8]);
+  const [favorites, setFavorites] = useState<number[]>(loadFavorites);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Apply theme once on mount (no extra useEffect needed — done in setTheme/toggleTheme)
+  useEffect(() => {
+    applyTheme(theme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run only once on mount
+
+  // ── Theme ────────────────────────────────────────────────────────────────────
   const setTheme = useCallback((newTheme: "light" | "dark") => {
     setThemeState(newTheme);
     try {
       localStorage.setItem("mm_theme", newTheme);
     } catch {}
-    if (newTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    applyTheme(newTheme);
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -73,24 +106,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         localStorage.setItem("mm_theme", next);
       } catch {}
-      if (next === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      applyTheme(next);
       return next;
     });
   }, []);
 
-  // Sync theme class on mount
-  useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
-
+  // ── Language ─────────────────────────────────────────────────────────────────
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang);
     try {
@@ -100,18 +121,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setGoogleTranslateLanguage(newLang);
   }, []);
 
-  // Sync Google Translate on mount and when lang changes
+  // Sync Google Translate & html lang on mount
   useEffect(() => {
     document.documentElement.lang = lang;
     setGoogleTranslateLanguage(lang);
-  }, [lang]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally run only once; setLang keeps subsequent ones in sync
 
+  // ── Toast ─────────────────────────────────────────────────────────────────────
   const showToast = useCallback((msg: string) => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToastMessage(msg);
     toastTimerRef.current = setTimeout(() => setToastMessage(null), 3000);
   }, []);
 
+  // ── Cart ──────────────────────────────────────────────────────────────────────
   const addToCart = useCallback(
     (product: Product) => {
       setCart((prev) => {
@@ -153,8 +177,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCart([]);
   }, []);
 
+  // ── Favorites ─────────────────────────────────────────────────────────────────
   const removeFavorite = useCallback((productId: number) => {
-    setFavorites((prev) => prev.filter((id) => id !== productId));
+    setFavorites((prev) => {
+      const next = prev.filter((id) => id !== productId);
+      saveFavorites(next);
+      return next;
+    });
   }, []);
 
   const toggleFavorite = useCallback(
@@ -170,16 +199,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ? "Добавлено в избранное ❤️"
             : "Sevimlilarga qo'shildi ❤️"
         );
-        return exists ? prev.filter((id) => id !== productId) : [...prev, productId];
+        const next = exists
+          ? prev.filter((id) => id !== productId)
+          : [...prev, productId];
+        saveFavorites(next);
+        return next;
       });
     },
     [lang, showToast]
   );
 
-  const totalCartCount = cart.reduce((s, i) => s + i.count, 0);
-  const totalCartPrice = cart.reduce(
-    (s, i) => s + i.product.price * i.count,
-    0
+  // ── Derived values (memoized) ─────────────────────────────────────────────────
+  const totalCartCount = useMemo(
+    () => cart.reduce((s, i) => s + i.count, 0),
+    [cart]
+  );
+  const totalCartPrice = useMemo(
+    () => cart.reduce((s, i) => s + i.product.price * i.count, 0),
+    [cart]
   );
 
   return (
