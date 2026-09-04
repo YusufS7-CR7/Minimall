@@ -1,0 +1,12 @@
+{
+  "title": "Minimall — интернет-магазин инструментов в Ташкенте | minimall.uz",
+  "description": "Купить профессиональный строительный инструмент в Ташкенте. Официальный дилер Bosch, Makita, DeWalt, Milwaukee. Доставка по всему Узбекистану — Minimall.uz",
+  "language": "ru",
+  "robots": {
+    "index": true
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

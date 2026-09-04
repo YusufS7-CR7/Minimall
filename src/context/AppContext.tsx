@@ -1,0 +1,133 @@
+import {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useCallback,
+  type ReactNode,
+} from "react";
+import type { Lang, Product, CartItem } from "@/data/types";
+
+// ─── Context Shape ────────────────────────────────────────────────────────────
+
+interface AppContextValue {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  cart: CartItem[];
+  favorites: number[];
+  toastMessage: string | null;
+  totalCartCount: number;
+  totalCartPrice: number;
+  addToCart: (product: Product) => void;
+  updateCartCount: (productId: number, delta: number) => void;
+  toggleFavorite: (productId: number) => void;
+  showToast: (msg: string) => void;
+}
+
+const AppContext = createContext<AppContextValue | null>(null);
+
+// ─── Provider ─────────────────────────────────────────────────────────────────
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [lang, setLang] = useState<Lang>("ru");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [favorites, setFavorites] = useState<number[]>([8]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage(msg);
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 3000);
+  }, []);
+
+  const addToCart = useCallback(
+    (product: Product) => {
+      setCart((prev) => {
+        const existing = prev.find((i) => i.product.id === product.id);
+        if (existing) {
+          return prev.map((i) =>
+            i.product.id === product.id
+              ? { ...i, count: i.count + 1 }
+              : i
+          );
+        }
+        return [...prev, { product, count: 1 }];
+      });
+      showToast(
+        lang === "ru"
+          ? `"${product.name}" добавлен в корзину!`
+          : `"${product.nameUz}" savatga qo'shildi!`
+      );
+    },
+    [lang, showToast]
+  );
+
+  const updateCartCount = useCallback(
+    (productId: number, delta: number) => {
+      setCart((prev) =>
+        prev
+          .map((i) => {
+            if (i.product.id !== productId) return i;
+            const newCount = i.count + delta;
+            return newCount > 0 ? { ...i, count: newCount } : null;
+          })
+          .filter(Boolean) as CartItem[]
+      );
+    },
+    []
+  );
+
+  const toggleFavorite = useCallback(
+    (productId: number) => {
+      setFavorites((prev) => {
+        const exists = prev.includes(productId);
+        showToast(
+          exists
+            ? lang === "ru"
+              ? "Удалено из избранного"
+              : "Sevimlilardan o'chirildi"
+            : lang === "ru"
+            ? "Добавлено в избранное ❤️"
+            : "Sevimlilarga qo'shildi ❤️"
+        );
+        return exists ? prev.filter((id) => id !== productId) : [...prev, productId];
+      });
+    },
+    [lang, showToast]
+  );
+
+  const totalCartCount = cart.reduce((s, i) => s + i.count, 0);
+  const totalCartPrice = cart.reduce(
+    (s, i) => s + i.product.price * i.count,
+    0
+  );
+
+  return (
+    <AppContext.Provider
+      value={{
+        lang,
+        setLang,
+        cart,
+        favorites,
+        toastMessage,
+        totalCartCount,
+        totalCartPrice,
+        addToCart,
+        updateCartCount,
+        toggleFavorite,
+        showToast,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error("useApp must be used inside <AppProvider>");
+  return ctx;
+}
