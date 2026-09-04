@@ -167,7 +167,21 @@ export default function BannerFormModal({
               <span className="font-bold text-gray-900 flex items-center gap-1.5">
                 <span>📸</span> Фотография баннера
               </span>
-              <span className="text-[11px] text-gray-500">Рекомендуемый размер: 1200 × 500 px</span>
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md border border-amber-200">
+                Идеально: 1200 × 500 px (16:9 или 2.4:1)
+              </span>
+            </div>
+
+            {/* Recommendation info callout */}
+            <div className="bg-amber-50/90 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs flex items-start gap-2.5">
+              <span className="text-base shrink-0">💡</span>
+              <div className="leading-relaxed">
+                <span className="font-bold">Рекомендуемый размер для карусели новостей:</span>{" "}
+                <strong className="text-amber-950 font-extrabold underline decoration-amber-500">1200 × 500 px</strong> (или 1920 × 800 px).
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  Рекомендуется горизонтальное изображение высокого разрешения. Главные визуальные элементы и товары лучше размещать по центру или ближе к правому краю, так как слева поверх фото накладывается заголовок и описание баннера.
+                </p>
+              </div>
             </div>
 
             {/* Upload buttons row */}

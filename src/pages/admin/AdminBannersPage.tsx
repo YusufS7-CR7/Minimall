@@ -91,6 +91,21 @@ export default function AdminBannersPage() {
         </div>
       </div>
 
+      {/* Recommended Size Tip Bar */}
+      <div className="bg-amber-50/80 border border-amber-200/80 text-amber-900 px-4 py-3 rounded-2xl text-xs flex items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-2.5">
+          <span className="text-lg">💡</span>
+          <div>
+            <span className="font-bold">Рекомендуемый размер фото для карусели:</span>{" "}
+            <span className="font-extrabold text-amber-950 underline decoration-amber-400">1200 × 500 px</span> (или 1920 × 800 px, пропорции 16:9 / 2.4:1).
+            <span className="text-amber-800 ml-1 hidden sm:inline">Горизонтальные фото высокого качества идеально заполняют экран без черных полос.</span>
+          </div>
+        </div>
+        <span className="text-[11px] font-bold text-amber-800 bg-white px-2 py-1 rounded-lg border border-amber-200 shrink-0">
+          HD 1200×500
+        </span>
+      </div>
+
       {/* Grid of Banners */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {slides.map((slide, index) => (

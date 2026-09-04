@@ -584,13 +584,27 @@ export default function ProductFormModal({
             <div className="space-y-6">
               {/* Image Upload & Management Box */}
               <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <span className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
                     <span>🖼️</span> Фотографии товара ({imagesList.length} шт.)
                   </span>
-                  <span className="text-[11px] text-gray-500">
-                    Первое фото в списке отображается на карточке товара, остальные — при открытии
+                  <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-md border border-amber-200 w-fit">
+                    Идеально для карточек: 800 × 800 px (1:1 квадрат)
                   </span>
+                </div>
+
+                {/* Recommendation info callout */}
+                <div className="bg-amber-50/90 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs flex items-start gap-2.5">
+                  <span className="text-base shrink-0">💡</span>
+                  <div className="leading-relaxed">
+                    <span className="font-bold">Рекомендуемый размер для карточек и галереи товара:</span>{" "}
+                    <strong className="text-amber-950 font-extrabold underline decoration-amber-500">800 × 800 px</strong> (или 1000 × 1000 px, пропорция 1:1, квадрат).
+                    <div className="text-[11px] text-amber-800 mt-1 space-y-0.5">
+                      <p>• <strong>Первое фото</strong> в списке отображается на карточке товара в каталоге и на главной.</p>
+                      <p>• <strong>Остальные фото</strong> покупатели смогут листать в галерее на странице товара при клике.</p>
+                      <p>• Квадратные изображения на белом или нейтральном фоне идеально центрируются без обрезки.</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Upload Options Grid */}
