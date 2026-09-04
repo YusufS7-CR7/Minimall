@@ -6,6 +6,7 @@ import { T } from "@/data/translations";
 import type { Lang } from "@/data/types";
 import CartDrawer from "@/components/ui/CartDrawer";
 import CatalogModal from "@/components/ui/CatalogModal";
+import FavoritesModal from "@/components/ui/FavoritesModal";
 
 interface HeaderProps {
   lang: Lang;
@@ -18,6 +19,7 @@ export default function Header({ lang }: HeaderProps) {
   const [search, setSearch] = useState("");
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -120,15 +122,9 @@ export default function Header({ lang }: HeaderProps) {
             {/* Favorites */}
             <button
               id="favorites-btn"
-              onClick={() =>
-                showToast(
-                  lang === "ru"
-                    ? `В избранном ${favorites.length} товаров`
-                    : `Sevimlilarda ${favorites.length} ta tovar`
-                )
-              }
+              onClick={() => setFavoritesOpen(true)}
               aria-label={t.favorites}
-              className="hidden md:flex flex-col items-center gap-0.5 relative text-gray-500 hover:text-red-500 transition-colors px-2 group"
+              className="hidden md:flex flex-col items-center gap-0.5 relative text-gray-500 hover:text-red-500 transition-colors px-2 group cursor-pointer"
             >
               <div className="relative">
                 <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -284,6 +280,9 @@ export default function Header({ lang }: HeaderProps) {
 
       {/* Cart drawer */}
       <CartDrawer lang={lang} open={cartOpen} onClose={() => setCartOpen(false)} />
+
+      {/* Favorites modal */}
+      <FavoritesModal isOpen={favoritesOpen} onClose={() => setFavoritesOpen(false)} />
     </>
   );
 }

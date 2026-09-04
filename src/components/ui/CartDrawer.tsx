@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { T } from "@/data/translations";
 import type { Lang } from "@/data/types";
+import CheckoutModal from "./CheckoutModal";
 
 const formatPrice = (p: number) =>
   new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
@@ -14,8 +16,9 @@ interface CartDrawerProps {
 export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
   const t = T[lang];
   const { cart, totalCartCount, totalCartPrice, updateCartCount } = useApp();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  if (!open) return null;
+  if (!open && !checkoutOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={t.cart}>
@@ -97,20 +100,25 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
             </div>
             <button
               onClick={() => {
-                alert(
-                  lang === "ru"
-                    ? "Заказ успешно оформлен! Наш менеджер свяжется с вами."
-                    : "Buyurtma muvaffaqiyatli qabul qilindi!"
-                );
-                onClose();
+                setCheckoutOpen(true);
               }}
-              className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3 rounded-xl transition-all shadow-md active:scale-[0.98]"
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
             >
-              {lang === "ru" ? "Оформить заказ" : "Buyurtma berish"}
+              <span>{lang === "ru" ? "Оформить заказ" : "Buyurtma berish"}</span>
+              <span>→</span>
             </button>
           </div>
         )}
       </div>
+
+      {/* Real Checkout Modal */}
+      <CheckoutModal
+        isOpen={checkoutOpen}
+        onClose={() => {
+          setCheckoutOpen(false);
+          onClose();
+        }}
+      />
     </div>
   );
 }

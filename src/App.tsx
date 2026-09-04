@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { AppProvider, useApp } from "@/context/AppContext";
 import { ProductsProvider } from "@/context/ProductsContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
+import { OrdersProvider } from "@/context/OrdersContext";
 
 // Layout components
 import TopBar from "@/components/layout/TopBar";
@@ -13,6 +14,7 @@ import Footer from "@/components/layout/Footer";
 import FloatingButtons from "@/components/layout/FloatingButtons";
 import Toast from "@/components/ui/Toast";
 import AuthModal from "@/components/auth/AuthModal";
+import InfoModal, { type InfoModalSection } from "@/components/ui/InfoModal";
 
 // Storefront Pages
 import HomePage from "@/pages/HomePage";
@@ -26,6 +28,7 @@ import NotFoundPage from "@/pages/NotFoundPage";
 import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 
 /**
@@ -47,6 +50,14 @@ function AppLayout() {
   const { isAuthenticated } = useAdminAuth();
   const isAdminRoute = pathname.startsWith("/admin");
 
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [infoModalSection, setInfoModalSection] = useState<InfoModalSection>("about");
+
+  const handleOpenInfo = (section: InfoModalSection) => {
+    setInfoModalSection(section);
+    setInfoModalOpen(true);
+  };
+
   if (isAdminRoute) {
     if (!isAuthenticated) {
       return (
@@ -65,6 +76,7 @@ function AppLayout() {
           <Routes>
             <Route path="/admin" element={<AdminProductsPage />} />
             <Route path="/admin/products" element={<AdminProductsPage />} />
+            <Route path="/admin/orders" element={<AdminOrdersPage />} />
             <Route path="/admin/admins" element={<AdminUsersPage />} />
             <Route path="/admin/*" element={<AdminProductsPage />} />
           </Routes>
@@ -78,7 +90,7 @@ function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-900 selection:bg-red-500 selection:text-white">
       <ScrollToTop />
-      <TopBar lang={lang} />
+      <TopBar lang={lang} onOpenInfo={handleOpenInfo} />
       <Header lang={lang} />
       <CategoryNavBar lang={lang} />
       <div className="flex-1">
@@ -93,10 +105,17 @@ function AppLayout() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
-      <Footer lang={lang} />
+      <Footer lang={lang} onOpenInfo={handleOpenInfo} />
       <FloatingButtons />
       <Toast />
       <AuthModal />
+      <InfoModal
+        isOpen={infoModalOpen}
+        onClose={() => setInfoModalOpen(false)}
+        section={infoModalSection}
+        onSelectSection={setInfoModalSection}
+        lang={lang}
+      />
     </div>
   );
 }
@@ -105,11 +124,13 @@ export default function App() {
   return (
     <AppProvider>
       <ProductsProvider>
-        <AuthProvider>
-          <AdminAuthProvider>
-            <AppLayout />
-          </AdminAuthProvider>
-        </AuthProvider>
+        <OrdersProvider>
+          <AuthProvider>
+            <AdminAuthProvider>
+              <AppLayout />
+            </AdminAuthProvider>
+          </AuthProvider>
+        </OrdersProvider>
       </ProductsProvider>
     </AppProvider>
   );

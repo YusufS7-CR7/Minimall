@@ -22,7 +22,9 @@ interface AppContextValue {
   totalCartPrice: number;
   addToCart: (product: Product) => void;
   updateCartCount: (productId: number, delta: number) => void;
+  clearCart: () => void;
   toggleFavorite: (productId: number) => void;
+  removeFavorite: (productId: number) => void;
   showToast: (msg: string) => void;
 }
 
@@ -101,6 +103,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const clearCart = useCallback(() => {
+    setCart([]);
+  }, []);
+
+  const removeFavorite = useCallback((productId: number) => {
+    setFavorites((prev) => prev.filter((id) => id !== productId));
+  }, []);
+
   const toggleFavorite = useCallback(
     (productId: number) => {
       setFavorites((prev) => {
@@ -138,7 +148,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         totalCartPrice,
         addToCart,
         updateCartCount,
+        clearCart,
         toggleFavorite,
+        removeFavorite,
         showToast,
       }}
     >

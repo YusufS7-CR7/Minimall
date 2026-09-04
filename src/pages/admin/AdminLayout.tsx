@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useOrders } from "@/context/OrdersContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { products, exportCatalog, resetProducts } = useProducts();
   const { showToast } = useApp();
   const { adminUser, admins, logout, isSuperAdmin, hasPermission } = useAdminAuth();
+  const { orders, newOrdersCount } = useOrders();
   const location = useLocation();
 
   const handleReset = () => {
@@ -41,6 +43,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const canManageAdmins = isSuperAdmin || hasPermission("admins_manage");
 
   const isProductsActive = location.pathname === "/admin" || location.pathname === "/admin/products";
+  const isOrdersActive = location.pathname.startsWith("/admin/orders");
   const isAdminsActive = location.pathname.startsWith("/admin/admins");
 
   return (
@@ -194,16 +197,36 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </Link>
               )}
 
-              {/* Inactive links */}
-              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl text-gray-400 text-sm cursor-not-allowed">
+              {/* Orders Link */}
+              <Link
+                to="/admin/orders"
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                  isOrdersActive
+                    ? "bg-red-50 text-red-700 font-bold"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
                   <span>🛒</span>
                   <span>Заказы</span>
                 </div>
-                <span className="text-[10px] bg-gray-100 text-gray-400 font-medium px-1.5 py-0.5 rounded-md">
-                  Скоро
-                </span>
-              </div>
+                <div className="flex items-center gap-1">
+                  {newOrdersCount > 0 && (
+                    <span className="text-[10px] bg-red-600 text-white font-black px-1.5 py-0.2 rounded-full animate-pulse">
+                      +{newOrdersCount}
+                    </span>
+                  )}
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                      isOrdersActive
+                        ? "bg-red-200/60 text-red-800"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {orders.length}
+                  </span>
+                </div>
+              </Link>
 
               <div className="flex items-center justify-between px-3 py-2.5 rounded-xl text-gray-400 text-sm cursor-not-allowed">
                 <div className="flex items-center gap-2.5">
