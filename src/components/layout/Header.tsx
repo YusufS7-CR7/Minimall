@@ -72,27 +72,17 @@ export default function Header({ lang }: HeaderProps) {
               </div>
             </Link>
 
-            {/* Catalog Button */}
-            <button
+            {/* Catalog Button -> Navigates directly to full catalog */}
+            <Link
               id="catalog-toggle"
-              onClick={() => setCatalogOpen(!catalogOpen)}
-              aria-expanded={catalogOpen}
-              aria-controls="catalog-modal"
-              className={`hidden md:flex items-center gap-2.5 font-bold text-sm px-5 py-2.5 rounded-xl transition-all shrink-0 shadow-md active:scale-[0.97] ${
-                catalogOpen
-                  ? "bg-gray-900 text-white shadow-gray-400"
-                  : "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-red-200 hover:shadow-red-300"
-              }`}
+              to="/catalog"
+              className="hidden md:flex items-center gap-2.5 font-bold text-sm px-5 py-2.5 rounded-xl transition-all shrink-0 shadow-md active:scale-[0.97] bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-red-200 hover:shadow-red-300"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                {catalogOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                )}
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
               {t.catalog}
-            </button>
+            </Link>
 
             {/* Search */}
             <form

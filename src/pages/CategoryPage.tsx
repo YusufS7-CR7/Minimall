@@ -91,20 +91,32 @@ export default function CategoryPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
-        <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
-          <li><Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link></li>
-          <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-          <li><Link to="/catalog" className="hover:text-red-500 transition-colors">{t.catalog}</Link></li>
-          {category && (
-            <>
-              <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-              <li className="text-gray-800 font-medium" aria-current="page">{categoryLabel}</li>
-            </>
-          )}
-        </ol>
-      </nav>
+      {/* Top row: Breadcrumbs & Return to Home Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <nav aria-label="Breadcrumb">
+          <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
+            <li><Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link></li>
+            <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+            <li><Link to="/catalog" className="hover:text-red-500 transition-colors">{t.catalog}</Link></li>
+            {category && (
+              <>
+                <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+                <li className="text-gray-800 font-medium" aria-current="page">{categoryLabel}</li>
+              </>
+            )}
+          </ol>
+        </nav>
+
+        {/* Return to Home Button */}
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-xs font-bold text-gray-700 hover:text-red-600 bg-white hover:bg-red-50 px-4 py-2 rounded-xl border border-gray-200 hover:border-red-200 transition-all shadow-xs w-fit group active:scale-95 cursor-pointer"
+          title={lang === "ru" ? "Вернуться на главную страницу" : "Bosh sahifaga qaytish"}
+        >
+          <span className="text-sm transition-transform group-hover:-translate-x-1">←</span>
+          <span>{lang === "ru" ? "Вернуться на главную" : "Bosh sahifaga qaytish"}</span>
+        </Link>
+      </div>
 
       {/* Heading */}
       <div className="flex items-center justify-between mb-8">
