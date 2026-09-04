@@ -115,12 +115,17 @@ export default function ProductPage() {
             />
           </div>
           {(product.images?.length ?? 0) > 1 && (
-            <div className="flex gap-2">
+            <div className="flex gap-2.5 flex-wrap">
               {product.images!.map((img, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => setMainImage(img)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all ${mainImage === img ? "border-red-500" : "border-gray-100 hover:border-red-300"}`}
+                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                    mainImage === img
+                      ? "border-red-600 shadow-sm ring-2 ring-red-500/20 scale-105"
+                      : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
+                  }`}
                 >
                   <img src={img} alt={`${name} фото ${i + 1}`} className="w-full h-full object-cover" />
                 </button>

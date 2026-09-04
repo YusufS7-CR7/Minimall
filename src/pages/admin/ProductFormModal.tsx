@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Product } from "@/data/types";
 import { CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/context/ProductsContext";
@@ -57,7 +57,11 @@ export default function ProductFormModal({
   const [badge, setBadge] = useState<string>("");
   const [rating, setRating] = useState<number>(5);
 
-  const [image, setImage] = useState("");
+  // Images state: array of images (first image is primary on product card)
+  const [imagesList, setImagesList] = useState<string[]>([]);
+  const [imageInputUrl, setImageInputUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [descRu, setDescRu] = useState("");
   const [descUz, setDescUz] = useState("");
 
@@ -86,7 +90,13 @@ export default function ProductFormModal({
       setInStock(productToEdit.inStock);
       setBadge(productToEdit.badge || "");
       setRating(productToEdit.rating || 5);
-      setImage(productToEdit.image);
+
+      const existingImages = productToEdit.images && productToEdit.images.length > 0
+        ? productToEdit.images
+        : (productToEdit.image ? [productToEdit.image] : []);
+      setImagesList(existingImages.length > 0 ? existingImages : [PRESET_IMAGES[0].url]);
+      setImageInputUrl("");
+
       setDescRu(productToEdit.descRu || "");
       setDescUz(productToEdit.descUz || "");
       setSlug(productToEdit.slug);
@@ -109,7 +119,8 @@ export default function ProductFormModal({
       setInStock(true);
       setBadge("");
       setRating(5);
-      setImage(PRESET_IMAGES[0].url);
+      setImagesList([PRESET_IMAGES[0].url]);
+      setImageInputUrl("");
       setDescRu("");
       setDescUz("");
       setSlug("");
@@ -122,6 +133,55 @@ export default function ProductFormModal({
     setError(null);
     setActiveTab("general");
   }, [productToEdit, isOpen]);
+
+  // Handle adding image by URL (supports single URL or multiple URLs separated by spaces/newlines/commas)
+  const handleAddImageUrl = () => {
+    const trimmed = imageInputUrl.trim();
+    if (!trimmed) return;
+
+    // Split on whitespace or commas or newlines if multiple URLs were pasted
+    const splitUrls = trimmed
+      .split(/[\r\n,\s]+/)
+      .map((u) => u.trim())
+      .filter(Boolean);
+
+    if (splitUrls.length > 0) {
+      setImagesList((prev) => [...prev, ...splitUrls]);
+      setImageInputUrl("");
+    }
+  };
+
+  // Handle adding multiple images from local computer files via FileReader
+  const handleUploadFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const readers: Promise<string>[] = Array.from(files).map((file) => {
+      return new Promise((resolve) => {
+        const r = new FileReader();
+        r.onload = (ev) => resolve(ev.target?.result as string);
+        r.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((newImages) => {
+      const valid = newImages.filter(Boolean);
+      setImagesList((prev) => [...prev, ...valid]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    });
+  };
+
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImagesList((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleSetMainImage = (indexToMakeMain: number) => {
+    setImagesList((prev) => {
+      const target = prev[indexToMakeMain];
+      const rest = prev.filter((_, idx) => idx !== indexToMakeMain);
+      return [target, ...rest];
+    });
+  };
 
   // Auto-generate slug when name changes (if not manually edited)
   const handleNameChange = (val: string) => {
@@ -178,8 +238,8 @@ export default function ProductFormModal({
       setActiveTab("general");
       return;
     }
-    if (!image.trim()) {
-      setError("Пожалуйста, укажите URL изображения товара.");
+    if (imagesList.length === 0) {
+      setError("Пожалуйста, добавьте хотя бы одно фото товара (по ссылке или с компьютера).");
       setActiveTab("media");
       return;
     }
@@ -194,6 +254,7 @@ export default function ProductFormModal({
     });
 
     const parsedOldPrice = oldPrice ? parseInt(oldPrice, 10) : undefined;
+    const primaryImage = imagesList[0];
 
     if (productToEdit) {
       updateProduct(productToEdit.id, {
@@ -206,8 +267,8 @@ export default function ProductFormModal({
         inStock,
         badge: badge || undefined,
         rating,
-        image: image.trim(),
-        images: [image.trim()],
+        image: primaryImage,
+        images: imagesList,
         descRu: descRu.trim() || `Качественный инструмент ${name.trim()} с официальной гарантией.`,
         descUz: descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`,
         slug: slug.trim() || slugify(name.trim()),
@@ -218,6 +279,8 @@ export default function ProductFormModal({
         ...productToEdit,
         name: name.trim(),
         price: parsedPrice,
+        image: primaryImage,
+        images: imagesList,
         slug: slug.trim() || slugify(name.trim()),
       });
     } else {
@@ -231,8 +294,8 @@ export default function ProductFormModal({
         inStock,
         badge: badge || undefined,
         rating,
-        image: image.trim(),
-        images: [image.trim()],
+        image: primaryImage,
+        images: imagesList,
         descRu: descRu.trim() || `Качественный инструмент ${name.trim()} с официальной гарантией.`,
         descUz: descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`,
         slug: slug.trim() || slugify(name.trim()),
@@ -518,51 +581,168 @@ export default function ProductFormModal({
 
           {/* TAB 2: Media & Description */}
           {activeTab === "media" && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  URL изображения <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={image}
-                  onChange={(e) => setImage(e.target.value)}
-                  className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 mb-2"
-                />
+            <div className="space-y-6">
+              {/* Image Upload & Management Box */}
+              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                    <span>🖼️</span> Фотографии товара ({imagesList.length} шт.)
+                  </span>
+                  <span className="text-[11px] text-gray-500">
+                    Первое фото в списке отображается на карточке товара, остальные — при открытии
+                  </span>
+                </div>
+
+                {/* Upload Options Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Option 1: Files from computer */}
+                  <div className="bg-white p-3.5 rounded-xl border border-gray-200 space-y-2">
+                    <label className="block text-xs font-bold text-gray-800">
+                      Вариант 1: Выбрать фото с компьютера
+                    </label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleUploadFiles}
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>📁</span>
+                      <span>Добавить фотку с компьютера (выбрать файлы)</span>
+                    </button>
+                    <p className="text-[10px] text-gray-400 text-center">
+                      Можно выбрать сразу несколько фото с компьютера (JPG, PNG, WEBP)
+                    </p>
+                  </div>
+
+                  {/* Option 2: Image URL */}
+                  <div className="bg-white p-3.5 rounded-xl border border-gray-200 space-y-2">
+                    <label className="block text-xs font-bold text-gray-800">
+                      Вариант 2: Добавить фото по прямой ссылке (URL)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Вставьте ссылку или несколько ссылок (через пробел)..."
+                        value={imageInputUrl}
+                        onChange={(e) => setImageInputUrl(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddImageUrl();
+                          }
+                        }}
+                        className="flex-1 text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors cursor-pointer shrink-0"
+                      >
+                        + Добавить фотку
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-gray-400">
+                      Можно вставить одну или несколько ссылок и нажать «+ Добавить фотку»
+                    </p>
+                  </div>
+                </div>
 
                 {/* Quick Presets */}
-                <div className="flex items-center gap-2 flex-wrap mb-4">
-                  <span className="text-xs text-gray-400 font-medium">Быстрый выбор фото:</span>
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-xs text-gray-400 font-medium">Быстрые шаблоны фото:</span>
                   {PRESET_IMAGES.map((preset) => (
                     <button
                       key={preset.label}
                       type="button"
-                      onClick={() => setImage(preset.url)}
-                      className="text-xs bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-700 px-2.5 py-1 rounded-lg transition-colors border border-gray-200"
+                      onClick={() => setImagesList((prev) => [...prev, preset.url])}
+                      className="text-xs bg-white hover:bg-red-50 hover:text-red-600 text-gray-700 px-2.5 py-1 rounded-lg transition-colors border border-gray-200 shadow-2xs cursor-pointer"
+                      title="Нажмите, чтобы добавить в галерею"
                     >
-                      {preset.label}
+                      + {preset.label}
                     </button>
                   ))}
                 </div>
 
-                {/* Live Preview */}
-                {image && (
-                  <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                    <img
-                      src={image}
-                      alt="Превью товара"
-                      className="w-20 h-20 object-contain rounded-xl border border-gray-200 bg-white"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = PRESET_IMAGES[0].url;
-                      }}
-                    />
-                    <div className="text-xs text-gray-500">
-                      <p className="font-semibold text-gray-800">Предпросмотр фото</p>
-                      <p className="text-gray-400">Изображение будет отображаться в карточке и галерее товара</p>
-                    </div>
+                {/* Gallery of Uploaded Images */}
+                <div className="border-t border-gray-200 pt-3">
+                  <div className="text-xs font-bold text-gray-700 mb-2">
+                    Галерея фотографий товара:
                   </div>
-                )}
+
+                  {imagesList.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
+                      Фотографии пока не добавлены. Загрузите фото с компьютера или укажите ссылку выше.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {imagesList.map((imgUrl, idx) => {
+                        const isPrimary = idx === 0;
+                        return (
+                          <div
+                            key={idx}
+                            className={`relative bg-white rounded-2xl border p-2 flex flex-col items-center gap-2 group transition-all ${
+                              isPrimary
+                                ? "border-red-500 shadow-xs ring-1 ring-red-500/30"
+                                : "border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            {/* Primary or Secondary Badge */}
+                            <div className="w-full flex items-center justify-between text-[10px]">
+                              {isPrimary ? (
+                                <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                                  ⭐ Главное фото
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 font-medium px-1">
+                                  Фото #{idx + 1}
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(idx)}
+                                className="w-5 h-5 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer"
+                                title="Удалить фото"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Thumbnail image */}
+                            <div className="w-full h-28 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center border border-gray-100">
+                              <img
+                                src={imgUrl}
+                                alt={`Фото ${idx + 1}`}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = PRESET_IMAGES[0].url;
+                                }}
+                              />
+                            </div>
+
+                            {/* Set as Primary Button if not already primary */}
+                            {!isPrimary && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetMainImage(idx)}
+                                className="w-full py-1 text-[11px] font-semibold text-gray-600 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 cursor-pointer"
+                              >
+                                Сделать главным
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

@@ -5,6 +5,7 @@ import { ProductsProvider } from "@/context/ProductsContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 import { OrdersProvider } from "@/context/OrdersContext";
+import { BannersProvider } from "@/context/BannersContext";
 
 // Layout components
 import TopBar from "@/components/layout/TopBar";
@@ -29,6 +30,7 @@ import AdminLayout from "@/pages/admin/AdminLayout";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminBannersPage from "@/pages/admin/AdminBannersPage";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage";
 
 /**
@@ -76,6 +78,7 @@ function AppLayout() {
           <Routes>
             <Route path="/admin" element={<AdminProductsPage />} />
             <Route path="/admin/products" element={<AdminProductsPage />} />
+            <Route path="/admin/banners" element={<AdminBannersPage />} />
             <Route path="/admin/orders" element={<AdminOrdersPage />} />
             <Route path="/admin/admins" element={<AdminUsersPage />} />
             <Route path="/admin/*" element={<AdminProductsPage />} />
@@ -124,13 +127,15 @@ export default function App() {
   return (
     <AppProvider>
       <ProductsProvider>
-        <OrdersProvider>
-          <AuthProvider>
-            <AdminAuthProvider>
-              <AppLayout />
-            </AdminAuthProvider>
-          </AuthProvider>
-        </OrdersProvider>
+        <BannersProvider>
+          <OrdersProvider>
+            <AuthProvider>
+              <AdminAuthProvider>
+                <AppLayout />
+              </AdminAuthProvider>
+            </AuthProvider>
+          </OrdersProvider>
+        </BannersProvider>
       </ProductsProvider>
     </AppProvider>
   );

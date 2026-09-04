@@ -8,16 +8,11 @@ import { CATEGORIES } from "@/data/categories";
 import ProductCard from "@/components/ui/ProductCard";
 import StarRating from "@/components/ui/StarRating";
 import PriceRangeSlider from "@/components/ui/PriceRangeSlider";
+import { useBanners } from "@/context/BannersContext";
 
 const formatPrice = (p: number) =>
   new Intl.NumberFormat("ru-UZ", { style: "decimal" }).format(p) + " сум";
 
-const BANNER_IMAGES = [
-  "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=1200&h=500&fit=crop&auto=format",
-  "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=1200&h=500&fit=crop&auto=format",
-  "https://images.unsplash.com/photo-1530124566582-a45a7e3e29f0?w=1200&h=500&fit=crop&auto=format",
-  "https://images.unsplash.com/photo-1504382103100-db7e92322d95?w=1200&h=500&fit=crop&auto=format",
-];
 
 const ADVANTAGE_ICONS = [
   "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
@@ -188,16 +183,23 @@ export default function HomePage() {
 // ─── Hero ──────────────────────────────────────────────────────────────────────
 
 function HeroSection({ lang }: { lang: string }) {
-  const t = T[lang as "ru" | "uz"];
   const { products } = useProducts();
+  const { activeSlides } = useBanners();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const total = t.newsItems.length;
+  const slides = activeSlides.length > 0 ? activeSlides : [];
+  const total = slides.length;
   const featuredProduct = products.find((p) => p.id === 8) || products[0];
   const { addToCart } = useApp();
 
   useEffect(() => {
-    if (paused) return;
+    if (active >= total && total > 0) {
+      setActive(0);
+    }
+  }, [active, total]);
+
+  useEffect(() => {
+    if (paused || total <= 1) return;
     const id = setInterval(() => setActive((a) => (a + 1) % total), 5000);
     return () => clearInterval(id);
   }, [paused, total]);
@@ -207,50 +209,108 @@ function HeroSection({ lang }: { lang: string }) {
       <div className="flex gap-4" style={{ minHeight: 360 }}>
         {/* Main Carousel */}
         <div
-          className="flex-1 relative rounded-2xl overflow-hidden"
+          className="flex-1 relative rounded-2xl overflow-hidden bg-gray-900"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          {t.newsItems.map((item, i) => (
-            <div
-              key={i}
-              className={`absolute inset-0 transition-all duration-700 ${i === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"}`}
-            >
-              <img src={BANNER_IMAGES[i]} alt={item.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-              <div className="absolute inset-0 flex flex-col justify-center p-6 md:p-10 max-w-lg">
-                <h2 className="text-white text-2xl md:text-4xl font-extrabold leading-tight mb-3" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                  {item.title}
-                </h2>
-                <p className="text-white/70 text-sm md:text-base leading-relaxed mb-5 line-clamp-2">{item.desc}</p>
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {[
-                    { icon: "🛡️", text: lang === "ru" ? "Оригинал" : "Original" },
-                    { icon: "🚚", text: lang === "ru" ? "Быстрая доставка" : "Tez yetkazish" },
-                    { icon: "💎", text: lang === "ru" ? "Лучшие цены" : "Eng yaxshi narx" },
-                  ].map((b, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md text-white/90 text-xs font-medium px-3 py-1.5 rounded-full border border-white/10">
-                      <span>{b.icon}</span>
-                      <span>{b.text}</span>
+          {slides.map((slide, i) => {
+            const title = lang === "uz" ? slide.titleUz : slide.titleRu;
+            const desc = lang === "uz" ? slide.descUz : slide.descRu;
+            const badges = [slide.badge1, slide.badge2, slide.badge3].filter(Boolean) as string[];
+
+            return (
+              <div
+                key={slide.id || i}
+                className={`absolute inset-0 transition-all duration-700 ${
+                  i === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+                }`}
+              >
+                <img
+                  src={slide.image}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
+                <div className="absolute inset-0 flex flex-col justify-center p-6 md:p-10 max-w-xl">
+                  <h2
+                    className="text-white text-2xl md:text-4xl font-extrabold leading-tight mb-3 drop-shadow-md"
+                    style={{ fontFamily: "Barlow Condensed, sans-serif" }}
+                  >
+                    {title}
+                  </h2>
+                  <p className="text-white/80 text-sm md:text-base leading-relaxed mb-5 line-clamp-2 max-w-md drop-shadow">
+                    {desc}
+                  </p>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    {badges.map((b, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/15 shadow-xs"
+                      >
+                        <span>{idx === 0 ? "🛡️" : idx === 1 ? "🚚" : "💎"}</span>
+                        <span>{b}</span>
+                      </div>
+                    ))}
+                    {badges.length === 0 && (
+                      <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/15 shadow-xs">
+                        <span>⚡</span>
+                        <span>Minimall Marketplace</span>
+                      </div>
+                    )}
+                  </div>
+                  {slide.link && (
+                    <div className="mt-5">
+                      <Link
+                        to={slide.link}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
+                      >
+                        <span>{lang === "uz" ? "Batafsil ko'rish" : "Смотреть подробнее"}</span>
+                        <span>→</span>
+                      </Link>
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
-          <button onClick={() => setActive((a) => (a - 1 + total) % total)} aria-label="Предыдущий слайд" className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-          </button>
-          <button onClick={() => setActive((a) => (a + 1) % total)} aria-label="Следующий слайд" className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-          </button>
+          {total > 1 && (
+            <>
+              <button
+                onClick={() => setActive((a) => (a - 1 + total) % total)}
+                aria-label="Предыдущий слайд"
+                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setActive((a) => (a + 1) % total)}
+                aria-label="Следующий слайд"
+                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
 
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-            {t.newsItems.map((_, i) => (
-              <button key={i} onClick={() => setActive(i)} aria-label={`Слайд ${i + 1}`} className={`transition-all rounded-full ${i === active ? "bg-red-500 w-7 h-2.5 shadow-lg shadow-red-500/50" : "bg-white/40 hover:bg-white/60 w-2.5 h-2.5"}`} />
-            ))}
-          </div>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+                {slides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActive(i)}
+                    aria-label={`Слайд ${i + 1}`}
+                    className={`transition-all rounded-full cursor-pointer ${
+                      i === active
+                        ? "bg-red-500 w-7 h-2.5 shadow-lg shadow-red-500/50"
+                        : "bg-white/40 hover:bg-white/60 w-2.5 h-2.5"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Featured Product Sidebar */}

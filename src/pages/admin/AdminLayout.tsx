@@ -3,6 +3,7 @@ import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useOrders } from "@/context/OrdersContext";
+import { useBanners } from "@/context/BannersContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { showToast } = useApp();
   const { adminUser, admins, logout, isSuperAdmin, hasPermission } = useAdminAuth();
   const { orders, newOrdersCount } = useOrders();
+  const { slides } = useBanners();
   const location = useLocation();
 
   const handleReset = () => {
@@ -45,6 +47,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const isProductsActive = location.pathname === "/admin" || location.pathname === "/admin/products";
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
   const isAdminsActive = location.pathname.startsWith("/admin/admins");
+  const isBannersActive = location.pathname.startsWith("/admin/banners");
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -228,15 +231,29 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </div>
               </Link>
 
-              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl text-gray-400 text-sm cursor-not-allowed">
+              {/* Banners Link */}
+              <Link
+                to="/admin/banners"
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                  isBannersActive
+                    ? "bg-red-50 text-red-700 font-bold"
+                    : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
                 <div className="flex items-center gap-2.5">
                   <span>⚡</span>
-                  <span>Акции и скидки</span>
+                  <span>Баннеры карусели</span>
                 </div>
-                <span className="text-[10px] bg-gray-100 text-gray-400 font-medium px-1.5 py-0.5 rounded-md">
-                  Скоро
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    isBannersActive
+                      ? "bg-red-200/60 text-red-800"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {slides.length}
                 </span>
-              </div>
+              </Link>
             </nav>
           </div>
 
