@@ -10,10 +10,8 @@ export type InfoModalSection =
   | "service"
   | "contacts"
   | "b2b"
-  | "careers"
-  | "blog"
-  | "privacy"
-  | "offer";
+  | "offer"
+  | "privacy";
 
 interface InfoModalProps {
   isOpen: boolean;
@@ -52,8 +50,6 @@ export default function InfoModal({
     { id: "service", labelRu: "Сервисные центры", labelUz: "Servis markazlari", icon: "🛠️" },
     { id: "contacts", labelRu: "Контакты и адрес", labelUz: "Aloqa va manzil", icon: "📍" },
     { id: "b2b", labelRu: "Юридическим лицам", labelUz: "Yuridik shaxslar uchun", icon: "📑" },
-    { id: "careers", labelRu: "Вакансии", labelUz: "Bo'sh ish o'rinlari", icon: "💼" },
-    { id: "blog", labelRu: "Блог и советы", labelUz: "Foydali maqolalar", icon: "📰" },
     { id: "offer", labelRu: "Публичная оферта", labelUz: "Ommaviy oferta", icon: "📜" },
     { id: "privacy", labelRu: "Конфиденциальность", labelUz: "Maxfiylik siyosati", icon: "🔒" },
   ];
@@ -491,90 +487,319 @@ export default function InfoModal({
               </div>
             )}
 
-            {section === "careers" && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                  Вакансии в Minimall
-                </h2>
-                <p className="text-xs text-gray-600">
-                  Мы активно растем и приглашаем в команду профессионалов в Ташкенте:
-                </p>
-                <div className="space-y-2 text-xs">
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-gray-900">Менеджер по продажам строительного инструмента</span>
-                      <div className="text-gray-500 text-[11px]">Ташкент, полная занятость</div>
-                    </div>
-                    <span className="text-red-600 font-bold">от 6 000 000 сум</span>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex justify-between items-center">
-                    <div>
-                      <span className="font-bold text-gray-900">Специалист по складской логистике</span>
-                      <div className="text-gray-500 text-[11px]">Ташкент, график 6/1</div>
-                    </div>
-                    <span className="text-red-600 font-bold">от 5 000 000 сум</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Резюме отправляйте на <a href="mailto:info@minimall.uz" className="text-red-600 font-bold">info@minimall.uz</a> с темой «Резюме».
-                </p>
-              </div>
-            )}
-
-            {section === "blog" && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                  Блог и советы экспертов
-                </h2>
-                <div className="space-y-3 text-xs">
-                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <span className="text-[10px] text-red-600 font-bold uppercase">Руководство</span>
-                    <h3 className="font-bold text-sm text-gray-900 mt-1">Как отличить оригинальный перфоратор Bosch от реплики?</h3>
-                    <p className="text-gray-500 mt-1">Обзор серийных номеров, качества литья корпуса и защитных голограмм официального дистрибьютора.</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <span className="text-[10px] text-red-600 font-bold uppercase">Сравнение</span>
-                    <h3 className="font-bold text-sm text-gray-900 mt-1">Аккумуляторный или сетевой шуруповерт: что выбрать для стройки?</h3>
-                    <p className="text-gray-500 mt-1">Анализ мощности, автономности и веса при работе на высоте.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {section === "offer" && (
-              <div className="space-y-3 text-xs text-gray-600">
-                <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                  Публичная оферта интернет-магазина Minimall.uz
-                </h2>
-                <p>
-                  Настоящий документ является официальным предложением (публичной офертой) маркетплейса Minimall.uz заключить договор купли-продажи товаров дистанционным способом.
-                </p>
-                <p>
-                  1. Акцептом оферты признается оформление покупателем заказа на сайте Minimall.uz или подтверждение заказа оператору контакт-центра.
-                </p>
-                <p>
-                  2. Продавец гарантирует соответствие передаваемого товара заявленным характеристикам, а также надлежащее качество и оригинальность продукции.
-                </p>
-                <p>
-                  3. Оплата товара производится выбранным покупателем способом из представленных на сайте при оформлении заказа.
-                </p>
+              <div className="space-y-6 text-gray-800 text-xs leading-relaxed">
+                {/* Formal Document Header */}
+                <div className="border-b border-gray-200 pb-5">
+                  <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full mb-3 border border-gray-300">
+                    <span>⚖️</span>
+                    <span>{lang === "ru" ? "Официальный юридический документ" : "Rasmiy yuridik hujjat"}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+                    {lang === "ru"
+                      ? "ДОГОВОР ПУБЛИЧНОЙ ОФЕРТЫ КУПЛИ-ПРОДАЖИ ТОВАРОВ ДИСТАНЦИОННЫМ СПОСОБОМ"
+                      : "TOVARLARNI MASOFADAN SOTISH VA SOTIB OLISH BO'YICHA OMMAVIY OFERTA SHARTNOMASI"}
+                  </h2>
+                  <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 mt-2 font-mono">
+                    <span>{lang === "ru" ? "г. Ташкент, Республика Узбекистан" : "Toshkent sh., O'zbekiston Respublikasi"}</span>
+                    <span>•</span>
+                    <span>{lang === "ru" ? "Редакция от 01 января 2024 года" : "Tahrir: 2024 yil 1 yanvar"}</span>
+                    <span>•</span>
+                    <span>{lang === "ru" ? "Юрисдикция: Республика Узбекистан" : "Yurisdiksiya: O'zbekiston"}</span>
+                  </div>
+                </div>
+
+                {/* Preamble */}
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/80 text-[11px] text-gray-700 space-y-2">
+                  <p>
+                    {lang === "ru"
+                      ? "Настоящий документ является официальным предложением (публичной офертой) маркетплейса «Minimall.uz» (далее — «Продавец») в соответствии со статьями 367, 369 и 426 Гражданского кодекса Республики Узбекистан, Законом Республики Узбекистан «Об электронной коммерции» и Законом Республики Узбекистан «О защите прав потребителей»."
+                      : "Ushbu hujjat O'zbekiston Respublikasi Fuqarolik kodeksining 367, 369 va 426-moddalariga, «Elektron tijorat to'g'risida»gi hamda «Iste'molchilarning huquqlarini himoya qilish to'g'risida»gi qonunlariga muvofiq, «Minimall.uz» savdo maydonchasining (keyingi o'rinlarda — «Sotuvchi») rasmiy ommaviy ofertasi hisoblanadi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "Оформление Заказа на сайте https://minimall.uz, а равно подтверждение Заказа оператору контакт-центра является полным и безоговорочным акцептом настоящей Оферты Покупателем (ст. 370 ГК РУз)."
+                      : "https://minimall.uz veb-saytida buyurtmani rasmiylashtirish yoki kontakt-markaz operatoriga buyurtmani tasdiqlash Xaridor tomonidan ushbu Ofertaning to'liq va so'zsiz qabul qilinishi (aksept) hisoblanadi."}
+                  </p>
+                </div>
+
+                {/* Article 1 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 1.</span>
+                    <span>{lang === "ru" ? "Термины и определения" : "Atamalar va ta'riflar"}</span>
+                  </h3>
+                  <ul className="list-disc list-inside space-y-1.5 pl-2 text-gray-700">
+                    <li><strong>{lang === "ru" ? "Продавец" : "Sotuvchi"}</strong> — интернет-магазин Minimall.uz, осуществляющий реализацию строительного оборудования, электроинструмента и расходных материалов дистанционным способом.</li>
+                    <li><strong>{lang === "ru" ? "Покупатель" : "Xaridor"}</strong> — дееспособное физическое или юридическое лицо, оформившее заказ исключительно для личных, коммерческих или производственных нужд на условиях настоящего Договора.</li>
+                    <li><strong>{lang === "ru" ? "Товар" : "Tovar"}</strong> — сертифицированная материальная продукция производственно-технического назначения, представленная в каталоге интернет-магазина.</li>
+                    <li><strong>{lang === "ru" ? "Заказ" : "Buyurtma"}</strong> — должным образом оформленный электронный запрос Покупателя на покупку и доставку выбранных позиций Товара по указанному адресу.</li>
+                  </ul>
+                </div>
+
+                {/* Article 2 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 2.</span>
+                    <span>{lang === "ru" ? "Предмет договора" : "Shartnoma predmeti"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "2.1. Продавец обязуется передать в собственность Покупателя Товар надлежащего качества, соответствующий заявленным техническим характеристикам и стандартам производителей (Bosch, Makita, DeWalt и др.), а Покупатель обязуется своевременно принять и оплатить Товар в порядке и на условиях, установленных настоящим Договором."
+                      : "2.1. Sotuvchi e'lon qilingan texnik tavsiflar va ishlab chiqaruvchi standartlariga (Bosch, Makita, DeWalt va h.k.) mos keladigan sifatli Tovarni Xaridor egaligiga topshirish majburiyatini, Xaridor esa ushbu Shartnomada belgilangan tartibda qabul qilish va to'lash majburiyatini oladi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "2.2. Право собственности на Товар, а также риски его случайной гибели или повреждения переходят к Покупателю в момент фактической передачи Товара и подписания товарно-сопроводительных документов."
+                      : "2.2. Tovarga egalik huquqi hamda uning tasodifiy yo'qolishi yoki shikastlanishi xavfi Tovar amalda topshirilgan va yuk xati imzolangan paytdan boshlab Xaridorga o'tadi."}
+                  </p>
+                </div>
+
+                {/* Article 3 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 3.</span>
+                    <span>{lang === "ru" ? "Цена товаров и финансовые расчеты" : "Tovar narxi va hisob-kitoblar tartibi"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "3.1. Все цены на Товары в маркетплейсе Minimall.uz указываются в национальной валюте Республики Узбекистан — сумах (UZS) и включают все применимые налоги."
+                      : "3.1. Minimall.uz saytidagi barcha tovar narxlari O'zbekiston Respublikasining milliy valyutasi — so'mda (UZS) ko'rsatiladi va barcha tegishli soliqlarni o'z ichiga oladi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "3.2. Оплата производится следующими способами: наличными денежными средствами курьеру при получении; посредством платежных систем Click / Payme; либо безналичным банковским переводом на расчетный счет Продавца на основании выставленного электронного счета-фактуры (ЭСФ) с выделенным НДС."
+                      : "3.2. To'lov quyidagi usullarda amalga oshiriladi: tovar olinganda kuryerga naqd pul; Click / Payme to'lov tizimlari orqali; yoki QQS ko'rsatilgan elektron hisob-faktura (EHF) asosida Sotuvchining hisob-raqamiga bank o'tkazmasi orqali."}
+                  </p>
+                </div>
+
+                {/* Article 4 - Delivery with 1,000,000 UZS rules */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 4.</span>
+                    <span>{lang === "ru" ? "Регламент доставки и логистики" : "Yetkazib berish va logistika reglamenti"}</span>
+                  </h3>
+                  <div className="p-3 bg-red-50/50 rounded-xl border border-red-100 space-y-1.5">
+                    <p>
+                      <strong>{lang === "ru" ? "4.1. Бесплатная доставка:" : "4.1. Bepul yetkazib berish:"}</strong>{" "}
+                      {lang === "ru"
+                        ? "Доставка по городу Ташкенту осуществляется БЕСПЛАТНО при совокупной сумме Заказа от 1 000 000 (одного миллиона) сум."
+                        : "Buyurtmaning umumiy summasi 1 000 000 (bir million) so'm va undan yuqori bo'lganda Toshkent shahri bo'ylab yetkazib berish BEPUL amalga oshiriladi."}
+                    </p>
+                    <p>
+                      <strong>{lang === "ru" ? "4.2. Исключение для мешковых товаров:" : "4.2. Qopdagi tovarlar uchun istisno:"}</strong>{" "}
+                      {lang === "ru"
+                        ? "Товары, поставляемые в мешковой таре (сухие строительные смеси, шпатлевка, цемент, клеевые составы и аналогичные тяжеловесные строительные материалы), НЕ УЧИТЫВАЮТСЯ при расчете порога бесплатной доставки в силу повышенного веса и объема."
+                        : "Qopdagi tovarlar (quruq qurilish qorishmalari, shpatlyovka, sement, yelimlar va shunga o'xshash og'ir qurilish materiallari) yuqori og'irlik va hajm sababli bepul yetkazib berish chegarasini hisoblashda HISOBGA OLINMAYDI."}
+                    </p>
+                    <p>
+                      <strong>{lang === "ru" ? "4.3. Договорная доставка:" : "4.3. Kelishilgan yetkazib berish:"}</strong>{" "}
+                      {lang === "ru"
+                        ? "При сумме Заказа менее 1 000 000 сум, а равно при заказе мешковой продукции, стоимость транспортной доставки является ДОГОВОРНОЙ и согласовывается с менеджером индивидуально."
+                        : "Buyurtma summasi 1 000 000 so'mdan kam bo'lganda yoki qopdagi tovarlar xarid qilinganda yetkazib berish narxi KELISHILGAN bo'lib, menejer bilan alohida tasdiqlanadi."}
+                    </p>
+                    <p>
+                      <strong>{lang === "ru" ? "4.4. Доставка по регионам Узбекистана:" : "4.4. Viloyatlar bo'ylab yetkazish:"}</strong>{" "}
+                      {lang === "ru"
+                        ? "Осуществляется партнерскими логистическими операторами (BTS, Fargo, EMU) в течение 24–48 часов с момента комплектации Заказа."
+                        : "Buyurtma shakllantirilgandan so'ng 24-48 soat ichida hamkor logistika xizmatlari (BTS, Fargo, EMU) orqali amalga oshiriladi."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Article 5 - 4-day returns */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 5.</span>
+                    <span>{lang === "ru" ? "Порядок возврата и обмена товара" : "Tovarni qaytarish va almashtirish tartibi"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "5.1. В соответствии с регламентом маркетплейса Minimall.uz Покупатель вправе заявить о возврате или обмене непродовольственного товара надлежащего качества в течение 4 (четырех) календарных дней с даты фактического получения Товара."
+                      : "5.1. Minimall.uz savdo maydonchasi reglamentiga muvofiq, Xaridor tegishli sifatdagi nooziq-ovqat tovarini amalda qabul qilib olgan kundan boshlab 4 (to'rt) kalendar kun ichida qaytarish yoki almashtirish huquqiga ega."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "5.2. Возврат или обмен Товара надлежащего качества допускается исключительно при одновременном соблюдении следующих критериев:"
+                      : "5.2. Tegishli sifatdagi tovarni qaytarish yoki almashtirish faqat quyidagi shartlar bir vaqtda bajarilganda amalga oshiriladi:"}
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 pl-2 text-gray-700">
+                    <li>{lang === "ru" ? "Товар не был в эксплуатации (отсутствуют следы подключения, монтажа, царапины и сколы);" : "Tovar ishlatilmagan (montaj, foydalanish izlari, tirnalishlar yo'q);"}</li>
+                    <li>{lang === "ru" ? "Полностью сохранены товарный вид, потребительские свойства, заводская упаковка, пломбы и фирменные ярлыки;" : "Tovar ko'rinishi, iste'mol xususiyatlari, zavod o'rami, plombalari va yorliqlari to'liq saqlangan;"}</li>
+                    <li>{lang === "ru" ? "Предоставлен фискальный чек, электронный документ об оплате либо товарная накладная." : "Fiskal chek, to'lov to'g'risidagi elektron hujjat yoki yuk xati taqdim etilgan."}</li>
+                  </ul>
+                  <p>
+                    {lang === "ru"
+                      ? "5.3. Возврат денежных средств осуществляется в течение 3 (трех) банковских дней с момента осмотра Товара на складе Продавца тем же способом, которым была произведена оплата."
+                      : "5.3. Pul mablag'larini qaytarish Tovar Sotuvchi omborida ko'rikdan o'tkazilgan paytdan boshlab 3 (uch) bank kuni ichida to'lov qanday usulda amalga oshirilgan bo'lsa, xuddi shu usulda qaytariladi."}
+                  </p>
+                </div>
+
+                {/* Article 6 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 6.</span>
+                    <span>{lang === "ru" ? "Гарантийные обязательства и сервис" : "Kafolat majburiyatlari va servis"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "6.1. На весь поставляемый профессиональный электроинструмент распространяется официальная заводская гарантия фирм-производителей на срок от 12 до 36 месяцев."
+                      : "6.1. Barcha taqdim etilayotgan professional asboblarga ishlab chiqaruvchi korxonalar tomonidan 12 oydan 36 oygacha rasmiy zavod kafolati beriladi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "6.2. Гарантийное и постгарантийное техническое обслуживание осуществляется в авторизованных сервисных центрах на территории Республики Узбекистан при предъявлении оригинального гарантийного талона."
+                      : "6.2. Kafolatli va kafolatdan keyingi texnik xizmat ko'rsatish O'zbekiston Respublikasi hududidagi rasmiy servis markazlarida kafolat taloni taqdim etilganda amalga oshiriladi."}
+                  </p>
+                </div>
+
+                {/* Article 7 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 7.</span>
+                    <span>{lang === "ru" ? "Ответственность сторон и разрешение споров" : "Tomonlarning javobgarligi va nizolarni hal etish"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "7.1. Стороны несут ответственность за неисполнение либо ненадлежащее исполнение обязательств в соответствии с действующим законодательством Республики Узбекистан."
+                      : "7.1. Tomonlar majburiyatlarni bajarmaganlik yoki lozim darajada bajarmaganlik uchun O'zbekiston Respublikasining amaldagi qonunchiligiga muvofiq javobgar bo'ladilar."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "7.2. Все споры и разногласия разрешаются путем переговоров. В случае недостижения согласия спор подлежит рассмотрению в судебных органах города Ташкента."
+                      : "7.2. Barcha nizolar muzokaralar yo'li bilan hal qilinadi. Kelishuvga erishilmagan taqdirda, nizo Toshkent shahri sud organlarida ko'rib chiqiladi."}
+                  </p>
+                </div>
+
+                {/* Sign-off Seal */}
+                <div className="pt-4 border-t border-gray-200 text-[11px] text-gray-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-gray-50/60 p-3 rounded-xl font-mono">
+                  <div>Юрисдикция: г. Ташкент • Электронная коммерция РУз</div>
+                  <div className="text-gray-900 font-bold">Minimall Marketplace • Юридическая служба</div>
+                </div>
               </div>
             )}
 
             {section === "privacy" && (
-              <div className="space-y-3 text-xs text-gray-600">
-                <h2 className="text-2xl font-black text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                  Политика конфиденциальности и обработки данных
-                </h2>
-                <p>
-                  Minimall.uz с уважением относится к персональным данным клиентов и строго соблюдает Закон Республики Узбекистан «О персональных данных».
-                </p>
-                <p>
-                  1. Данные клиента (имя, номер телефона, адрес доставки) используются исключительно для выполнения заказов, информирования о статусе доставки и обратной связи.
-                </p>
-                <p>
-                  2. Мы не передаем конфиденциальную информацию третьим лицам, за исключением служб курьерской доставки для вручения заказа.
-                </p>
+              <div className="space-y-6 text-gray-800 text-xs leading-relaxed">
+                {/* Formal Document Header */}
+                <div className="border-b border-gray-200 pb-5">
+                  <div className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full mb-3 border border-gray-300">
+                    <span>🔒</span>
+                    <span>{lang === "ru" ? "Политика информационной безопасности" : "Axborot xavfsizligi siyosati"}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+                    {lang === "ru"
+                      ? "ПОЛОЖЕНИЕ ОБ ОБРАБОТКЕ И ЗАЩИТЕ ПЕРСОНАЛЬНЫХ ДАННЫХ ПОЛЬЗОВАТЕЛЕЙ"
+                      : "FOYDALANUVCHILARNING SHAXSIY MA'LUMOTLARINI QAYTA ISHLASH VA HIMOYALASH TO'G'RISIDAGI NIZOM"}
+                  </h2>
+                  <div className="flex flex-wrap gap-4 text-[11px] text-gray-500 mt-2 font-mono">
+                    <span>{lang === "ru" ? "Закон РУз № ЗРУ-547 «О персональных данных»" : "O'zbekiston Qonuni O'RQ-547 «Shaxsiy ma'lumotlar to'g'risida»"}</span>
+                    <span>•</span>
+                    <span>{lang === "ru" ? "Редакция от 2024 года" : "Tahrir: 2024 yil"}</span>
+                  </div>
+                </div>
+
+                {/* Preamble */}
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/80 text-[11px] text-gray-700 space-y-2">
+                  <p>
+                    {lang === "ru"
+                      ? "Настоящее Положение определяет порядок обработки, систематизации, хранения и защиты персональных данных субъектов (пользователей и клиентов маркетплейса Minimall.uz) в строгом соответствии с Законом Республики Узбекистан «О персональных данных» от 2 июля 2019 года № ЗРУ-547 и международными стандартами информационной безопасности."
+                      : "Ushbu Nizom 2019 yil 2 iyuldagi O'zbekiston Respublikasining «Shaxsiy ma'lumotlar to'g'risida»gi O'RQ-547-son Qonuniga muvofiq, Minimall.uz foydalanuvchilari shaxsiy ma'lumotlarini qayta ishlash, saqlash va himoya qilish tartibini belgilaydi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "Использование Сервиса, оформление Заказа или регистрация учетной записи означает безоговорочное согласие субъекта персональных данных с настоящим Положением."
+                      : "Saytdan foydalanish, buyurtma berish yoki ro'yxatdan o'tish subyektning ushbu Nizom shartlariga to'liq roziligini bildiradi."}
+                  </p>
+                </div>
+
+                {/* Article 1 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 1.</span>
+                    <span>{lang === "ru" ? "Категории и объем обрабатываемых данных" : "Qayta ishlanadigan ma'lumotlar toifalari"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "Оператор осуществляет обработку исключительно тех персональных данных, которые необходимы для полноценного исполнения договорных обязательств перед Пользователем:"
+                      : "Operator foydalanuvchi oldidagi majburiyatlarni to'liq bajarish uchun zarur bo'lgan shaxsiy ma'lumotlarni qayta ishlaydi:"}
+                  </p>
+                  <ul className="list-disc list-inside space-y-1.5 pl-2 text-gray-700">
+                    <li><strong>{lang === "ru" ? "Идентификационные данные:" : "Identifikatsiya ma'lumotlari:"}</strong> {lang === "ru" ? "Фамилия, имя, отчество, контактный номер телефона, адрес электронной почты." : "Familiya, ism, sharif, telefon raqami, elektron pochta manzili."}</li>
+                    <li><strong>{lang === "ru" ? "Адресные данные:" : "Manzil ma'lumotlari:"}</strong> {lang === "ru" ? "Точный географический адрес доставки заказов, ориентиры, почтовый индекс." : "Yetkazib berishning aniq manzili, mo'ljallar."}</li>
+                    <li><strong>{lang === "ru" ? "Реквизиты юридических лиц (B2B):" : "Yuridik shaxslar rekvizitlari:"}</strong> {lang === "ru" ? "Наименование организации, ИНН, ОКЭД, банковские реквизиты, статус плательщика НДС." : "Tashkilot nomi, STIR (INN), bank rekvizitlari, QQS to'lovchisi maqomi."}</li>
+                    <li><strong>{lang === "ru" ? "Технические сведения:" : "Texnik ma'lumotlar:"}</strong> {lang === "ru" ? "IP-адрес, данные файлов cookies, сведения о типе браузера и операционной системы устройства." : "IP-manzil, cookie fayllari, brauzer va qurilma operatsion tizimi to'g'risidagi ma'lumotlar."}</li>
+                  </ul>
+                </div>
+
+                {/* Article 2 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 2.</span>
+                    <span>{lang === "ru" ? "Цели обработки персональной информации" : "Shaxsiy ma'lumotlarni qayta ishlash maqsadlari"}</span>
+                  </h3>
+                  <ul className="list-disc list-inside space-y-1 pl-2 text-gray-700">
+                    <li>{lang === "ru" ? "Оформление, комплектация, бухгалтерский учет и вручение Заказов Покупателю;" : "Buyurtmalarni rasmiylashtirish, buxgalteriya hisobi va xaridorni yetkazib berish;"}</li>
+                    <li>{lang === "ru" ? "Осуществление электронного документооборота и выставление счетов-фактур (ЭСФ);" : "Elektron hujjat aylanishi va elektron hisob-fakturalarni (EHF) rasmiylashtirish;"}</li>
+                    <li>{lang === "ru" ? "Информирование о статусе логистического перемещения отправления посредством SMS и телефонной связи;" : "SMS va qo'ng'iroqlar orqali yetkazib berish holati haqida xabardor qilish;"}</li>
+                    <li>{lang === "ru" ? "Обеспечение гарантийного сервисного обслуживания приобретенного оборудования." : "Xarid qilingan uskunalarga kafolatli texnik xizmat ko'rsatishni ta'minlash."}</li>
+                  </ul>
+                </div>
+
+                {/* Article 3 - Storage compliance */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 3.</span>
+                    <span>{lang === "ru" ? "Локализация и техническая безопасность хранения" : "Lokalizatsiya va saqlash xavfsizligi"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "3.1. В строгом соответствии со статьей 27-1 Закона РУз «О персональных данных» базы данных, содержащие персональные сведения граждан Республики Узбекистан, размещены на защищенных серверах, физически локализованных на территории Республики Узбекистан."
+                      : "3.1. O'zbekiston Respublikasining «Shaxsiy ma'lumotlar to'g'risida»gi Qonunining 27-1-moddasiga muvofiq, O'zbekiston fuqarolarining shaxsiy ma'lumotlari bazalari O'zbekiston Respublikasi hududida joylashgan serverlarda saqlanadi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "3.2. Оператор применяет комплекс административных, организационных и программно-технических мер, включая сквозное шифрование протокола SSL/TLS, многофакторную авторизацию персонала и регулярный аудит безопасности."
+                      : "3.2. Operator SSL/TLS protokoli orqali shifrlash, ko'p bosqichli autentifikatsiya va doimiy xavfsizlik auditini o'z ichiga olgan texnik choralarni qo'llaydi."}
+                  </p>
+                </div>
+
+                {/* Article 4 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 4.</span>
+                    <span>{lang === "ru" ? "Передача информации третьим лицам" : "Ma'lumotlarni uchinchi shaxslarga berish"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "4.1. Передача персональных данных третьим лицам допускается исключительно в объемах, минимально необходимых для выполнения Заказа: службам курьерской экспресс-доставки (для осуществления вручения) и финансовым шлюзам (Click, Payme, обслуживающим банкам — для проведения платежа)."
+                      : "4.1. Shaxsiy ma'lumotlarni uchinchi shaxslarga o'tkazish faqat buyurtmani bajarish uchun zarur bo'lgan hajmda: kuryerlik yetkazib berish xizmatlari va to'lov tizimlariga (Click, Payme, banklar) ruxsat etiladi."}
+                  </p>
+                  <p>
+                    {lang === "ru"
+                      ? "4.2. Продавец гарантирует, что ни при каких обстоятельствах не осуществляет возмездную передачу, продажу или распространение клиентских баз данных в рекламных или маркетинговых целях сторонних организаций."
+                      : "4.2. Sotuvchi mijozlar ma'lumotlarini hech qanday holatda uchinchi shaxslarga sotmaslik va noqonuniy tarqatmaslik majburiyatini oladi."}
+                  </p>
+                </div>
+
+                {/* Article 5 */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <span className="text-red-600">§ 5.</span>
+                    <span>{lang === "ru" ? "Права субъекта персональных данных" : "Shaxsiy ma'lumotlar subyektining huquqlari"}</span>
+                  </h3>
+                  <p>
+                    {lang === "ru"
+                      ? "Субъект персональных данных имеет право требовать уточнения, блокирования или полного уничтожения своих данных в случае их неполноты, устаревания или неправомерности обработки, направив официальное письменное обращение на адрес электронной почты info@minimall.uz."
+                      : "Foydalanuvchi o'z shaxsiy ma'lumotlarini aniqlashtirish, bloklash yoki butunlay o'chirishni talab qilish huquqiga ega bo'lib, buning uchun info@minimall.uz manziliga yozma murojaat yuborishi kifoya."}
+                  </p>
+                </div>
+
+                {/* Sign-off Seal */}
+                <div className="pt-4 border-t border-gray-200 text-[11px] text-gray-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-gray-50/60 p-3 rounded-xl font-mono">
+                  <div>Соответствие Закону № ЗРУ-547 • Безопасность данных</div>
+                  <div className="text-gray-900 font-bold">Служба информационной безопасности Minimall.uz</div>
+                </div>
               </div>
             )}
           </div>

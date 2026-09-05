@@ -232,13 +232,13 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => onOpenInfo("careers")} className="text-gray-400 hover:text-red-400 transition-colors text-left cursor-pointer">
-                    {lang === "ru" ? "Вакансии" : "Ish o'rinlari"}
+                  <button onClick={() => onOpenInfo("service")} className="text-gray-400 hover:text-red-400 transition-colors text-left cursor-pointer">
+                    {lang === "ru" ? "Сервисные центры" : "Servis markazlari"}
                   </button>
                 </li>
                 <li>
-                  <button onClick={() => onOpenInfo("blog")} className="text-gray-400 hover:text-red-400 transition-colors text-left cursor-pointer">
-                    {lang === "ru" ? "Блог и статьи" : "Blog"}
+                  <button onClick={() => onOpenInfo("b2b")} className="text-gray-400 hover:text-red-400 transition-colors text-left cursor-pointer">
+                    {t.forBusiness}
                   </button>
                 </li>
               </ul>
