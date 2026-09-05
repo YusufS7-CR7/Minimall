@@ -23,6 +23,7 @@ interface ProductsContextValue {
   getProductBySlug: (slug: string) => Product | undefined;
   getProductById: (id: number) => Product | undefined;
   brands: string[];
+  addBrand: (brandName: string) => void;
   exportCatalog: () => void;
   importCatalog: (jsonString: string) => boolean;
 }
@@ -62,15 +63,48 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     };
   }, [products]);
 
+  const [customBrands, setCustomBrands] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("minimall_custom_brands_v1");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error("Failed to load custom brands from localStorage", e);
+    }
+    return [];
+  });
+
+  const addBrand = useCallback((brandName: string) => {
+    const trimmed = brandName.trim();
+    if (!trimmed) return;
+    setCustomBrands((prev) => {
+      if (prev.some((b) => b.toLowerCase() === trimmed.toLowerCase())) {
+        return prev;
+      }
+      const updated = [...prev, trimmed];
+      try {
+        localStorage.setItem("minimall_custom_brands_v1", JSON.stringify(updated));
+      } catch (e) {
+        console.error("Failed to save custom brands to localStorage", e);
+      }
+      return updated;
+    });
+  }, []);
+
   const brands = useMemo(() => {
     const set = new Set<string>(INITIAL_BRANDS);
+    customBrands.forEach((b) => {
+      if (b && b.trim()) set.add(b.trim());
+    });
     products.forEach((p) => {
       if (p.brand && p.brand.trim()) {
         set.add(p.brand.trim());
       }
     });
-    return Array.from(set);
-  }, [products]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [products, customBrands]);
 
   const getProductBySlug = useCallback(
     (slug: string) => products.find((p) => p.slug === slug),
@@ -190,6 +224,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         getProductBySlug,
         getProductById,
         brands,
+        addBrand,
         exportCatalog,
         importCatalog,
       }}

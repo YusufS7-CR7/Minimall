@@ -162,14 +162,29 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
           /* Form screen */
           <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1 text-gray-900">
             {/* Order sum summary */}
-            <div className="bg-red-50/70 border border-red-100 rounded-2xl p-3.5 flex items-center justify-between">
-              <div>
-                <div className="text-xs text-gray-600 font-medium">Товаров в заказе: {cart.length} шт.</div>
-                <div className="text-xs text-gray-400">Доставка: по согласованию с менеджером</div>
+            <div className="bg-red-50/70 border border-red-100 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-gray-700 font-bold">
+                    {lang === "ru" ? `Товаров в заказе: ${cart.length} шт.` : `Buyurtmadagi tovarlar: ${cart.length} ta`}
+                  </div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">
+                    {totalCartPrice >= 1_000_000
+                      ? (lang === "ru" ? "🚚 Бесплатная доставка (кроме товаров в мешках)" : "🚚 Bepul yetkazib berish (qopdagi tovarlar kirmaydi)")
+                      : (lang === "ru" ? "🚚 Доставка: договорная (заказ менее 1 млн сум)" : "🚚 Yetkazib berish: kelishilgan holda (1 млн so'mdan kam)")}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                    {lang === "ru" ? "Сумма к оплате" : "To'lov summasi"}
+                  </div>
+                  <div className="text-lg font-black text-red-600">{formatPrice(totalCartPrice)}</div>
+                </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-gray-400 font-bold uppercase">Сумма к оплате</div>
-                <div className="text-lg font-black text-red-600">{formatPrice(totalCartPrice)}</div>
+              <div className="text-[10px] text-gray-500 bg-white/80 p-2 rounded-xl border border-red-100/60 leading-tight">
+                ℹ️ {lang === "ru"
+                  ? "Доставка бесплатно от 1 000 000 сум (товары в мешках не считаются), а менее 1 000 000 сум цена доставки договорная. Возврат в течение 4 дней."
+                  : "Yetkazib berish 1 000 000 so'mdan bepul (qopdagi tovarlar kirmaydi), 1 000 000 so'mgacha yetkazib berish narxi kelishilgan holda. Tovarni 4 kun ichida qaytarish."}
               </div>
             </div>
 

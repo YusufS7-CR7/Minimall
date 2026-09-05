@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import PriceRangeSlider, { formatPriceShort } from "./PriceRangeSlider";
 import type { Lang, Product } from "@/data/types";
 import { T } from "@/data/translations";
+import { BRANDS } from "@/data/products";
+import { matchBrandFuzzy } from "@/utils/brandSearch";
 
 export interface FilterState {
   priceRange: [number, number];
@@ -41,6 +43,9 @@ export default function ProductFilters({
   className = "",
 }: ProductFiltersProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState("");
+  const [isBrandCardOpen, setIsBrandCardOpen] = useState(true);
+  const [isBrandListExpanded, setIsBrandListExpanded] = useState(false);
   const t = T[lang];
 
   const isPriceFiltered =
@@ -62,6 +67,34 @@ export default function ProductFilters({
     });
     return counts;
   }, [availableProducts]);
+
+  // Merge passed brands with complete catalog brand list
+  const combinedBrands = useMemo(() => {
+    const list = Array.from(new Set([...allBrands, ...BRANDS]));
+    return list.sort((a, b) => {
+      const countA = brandCounts[a] || 0;
+      const countB = brandCounts[b] || 0;
+      if (countA > 0 && countB === 0) return -1;
+      if (countB > 0 && countA === 0) return 1;
+      return a.localeCompare(b);
+    });
+  }, [allBrands, brandCounts]);
+
+  // Matching brands with typo-tolerant fuzzy search
+  const matchingBrands = useMemo(() => {
+    if (!brandSearchQuery.trim()) return combinedBrands;
+    return combinedBrands.filter((b) => matchBrandFuzzy(b, brandSearchQuery));
+  }, [combinedBrands, brandSearchQuery]);
+
+  // Displayed brands (collapsible when not searching)
+  const displayedBrands = useMemo(() => {
+    if (brandSearchQuery.trim() || isBrandListExpanded) {
+      return matchingBrands;
+    }
+    const selected = matchingBrands.filter((b) => filters.selectedBrands.includes(b));
+    const unselected = matchingBrands.filter((b) => !filters.selectedBrands.includes(b));
+    return [...selected, ...unselected].slice(0, 7);
+  }, [matchingBrands, brandSearchQuery, isBrandListExpanded, filters.selectedBrands]);
 
   const handlePriceChange = (newRange: [number, number]) => {
     onChange({ ...filters, priceRange: newRange });
@@ -104,13 +137,34 @@ export default function ProductFilters({
         />
       </div>
 
-      {/* 2. BRANDS FILTER (if not hidden, e.g. on brand page) */}
-      {!hideBrandFilter && allBrands.length > 0 && (
-        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-900">
-              {t.brand}
-            </span>
+      {/* 2. BRANDS FILTER WITH EXPAND/COLLAPSE & TYPO-TOLERANT FUZZY SEARCH */}
+      {!hideBrandFilter && combinedBrands.length > 0 && (
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs transition-all">
+          {/* Header with Accordion toggle */}
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setIsBrandCardOpen((prev) => !prev)}
+              className="flex items-center gap-2 text-sm font-bold text-gray-900 cursor-pointer select-none hover:text-red-600 transition-colors"
+            >
+              <span>{t.brand}</span>
+              {filters.selectedBrands.length > 0 && (
+                <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full">
+                  {filters.selectedBrands.length}
+                </span>
+              )}
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                  isBrandCardOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
             {isBrandFiltered && (
               <button
                 type="button"
@@ -121,35 +175,143 @@ export default function ProductFilters({
               </button>
             )}
           </div>
-          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-            {allBrands.map((brand) => {
-              const isChecked = filters.selectedBrands.includes(brand);
-              const count = brandCounts[brand] || 0;
-              return (
-                <label
-                  key={brand}
-                  className="flex items-center justify-between text-xs text-gray-700 hover:text-gray-900 cursor-pointer py-1 px-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+
+          {/* Collapsible Body */}
+          {isBrandCardOpen && (
+            <div className="mt-3 space-y-2.5">
+              {/* Separate Search Input for Brands */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={brandSearchQuery}
+                  onChange={(e) => setBrandSearchQuery(e.target.value)}
+                  placeholder={
+                    lang === "ru"
+                      ? "Поиск бренда (напр. Bosch, Sparta)..."
+                      : "Brend qidiruvi (masalan Makita)..."
+                  }
+                  className="w-full text-xs pl-8 pr-7 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/70 focus:bg-white transition-colors"
+                />
+                <svg
+                  className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleBrand(brand)}
-                      className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600"
-                    />
-                    <span className={isChecked ? "font-semibold text-gray-900" : ""}>
-                      {brand}
-                    </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                {brandSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setBrandSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs font-bold cursor-pointer"
+                    title={lang === "ru" ? "Очистить поиск" : "Tozalash"}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Selected Brands Chips (compact quick-access) */}
+              {filters.selectedBrands.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pb-1 pt-0.5">
+                  {filters.selectedBrands.map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => toggleBrand(b)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-700 text-[11px] font-semibold rounded-lg border border-red-200/80 hover:bg-red-100 transition-colors cursor-pointer group"
+                      title={lang === "ru" ? `Удалить ${b}` : `${b}ni olib tashlash`}
+                    >
+                      <span>{b}</span>
+                      <span className="text-[10px] text-red-500 group-hover:text-red-700 font-bold">✕</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Brands List */}
+              {matchingBrands.length === 0 ? (
+                <div className="py-4 text-center">
+                  <div className="text-xl mb-1">🔍</div>
+                  <div className="text-xs text-gray-500 font-medium">
+                    {lang === "ru" ? "Бренд не найден" : "Brend topilmadi"}
                   </div>
-                  {count > 0 && (
-                    <span className="text-[11px] text-gray-400 font-medium">
-                      {count}
-                    </span>
+                  {brandSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setBrandSearchQuery("")}
+                      className="text-[11px] text-red-600 hover:underline font-semibold mt-1 cursor-pointer"
+                    >
+                      {lang === "ru" ? "Сбросить поиск" : "Qidiruvni tozalash"}
+                    </button>
                   )}
-                </label>
-              );
-            })}
-          </div>
+                </div>
+              ) : (
+                <>
+                  <div
+                    className={`space-y-1 pr-1 ${
+                      isBrandListExpanded || brandSearchQuery
+                        ? "max-h-56 overflow-y-auto"
+                        : ""
+                    }`}
+                  >
+                    {displayedBrands.map((brand) => {
+                      const isChecked = filters.selectedBrands.includes(brand);
+                      const count = brandCounts[brand] || 0;
+                      return (
+                        <label
+                          key={brand}
+                          className={`flex items-center justify-between text-xs py-1.5 px-2 rounded-lg cursor-pointer transition-colors ${
+                            isChecked
+                              ? "bg-red-50/80 font-bold text-gray-900 border border-red-100"
+                              : "text-gray-700 hover:text-gray-900 hover:bg-gray-50 border border-transparent"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleBrand(brand)}
+                              className="w-3.5 h-3.5 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer accent-red-600 shrink-0"
+                            />
+                            <span className="truncate">{brand}</span>
+                          </div>
+                          {count > 0 && (
+                            <span className="text-[10px] font-semibold text-gray-400 shrink-0 ml-1.5 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                              {count}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Expand / Collapse Button (when not searching and list is long) */}
+                  {!brandSearchQuery && matchingBrands.length > 7 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsBrandListExpanded((prev) => !prev)}
+                      className="w-full pt-2 text-center text-xs text-red-600 hover:text-red-700 font-bold flex items-center justify-center gap-1 cursor-pointer border-t border-gray-100 mt-2"
+                    >
+                      <span>
+                        {isBrandListExpanded
+                          ? (lang === "ru" ? "▲ Свернуть список" : "▲ Kamroq ko'rsatish")
+                          : (lang === "ru"
+                              ? `▼ Показать все бренды (${matchingBrands.length})`
+                              : `▼ Barcha brendlarni ko'rish (${matchingBrands.length})`)}
+                      </span>
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

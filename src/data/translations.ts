@@ -140,16 +140,16 @@ export const T: Record<Lang, Translations> = {
     ],
     advantageItems: [
       { title: "Оригинальное качество", desc: "Только сертифицированные товары" },
-      { title: "Быстрая доставка", desc: "По всему Узбекистану за 1-3 дня" },
-      { title: "Доступные цены", desc: "Прямые поставки без посредников" },
+      { title: "Бесплатная доставка", desc: "От 1 000 000 сум (кроме товаров в мешках)" },
+      { title: "Возврат за 4 дня", desc: "Гарантированный возврат и обмен" },
       {
         title: "Гарантия и сервис",
-        desc: "Официальная гарантия от производителя",
+        desc: "Официальная гарантия производителя",
       },
-      { title: "Удобная оплата", desc: "Наличные, карта, рассрочка" },
+      { title: "Удобная оплата", desc: "Наличные, Click, Payme, ЭСФ" },
       {
         title: "Профессиональная консультация",
-        desc: "Поможем с выбором",
+        desc: "Поможем с выбором техники",
       },
     ],
   },
@@ -233,12 +233,12 @@ export const T: Record<Lang, Translations> = {
     advantageItems: [
       { title: "Original sifat", desc: "Faqat sertifikatlangan tovarlar" },
       {
-        title: "Tez yetkazib berish",
-        desc: "O'zbekiston bo'ylab 1-3 kunda",
+        title: "Bepul yetkazib berish",
+        desc: "1 000 000 so'mdan (qopdagi tovarlar kirmaydi)",
       },
       {
-        title: "Arzon narxlar",
-        desc: "Vositachilarsiz to'g'ridan-to'g'ri",
+        title: "4 kun ichida qaytarish",
+        desc: "Kafolatlangan almashtirish va qaytarish",
       },
       {
         title: "Kafolat va xizmat",

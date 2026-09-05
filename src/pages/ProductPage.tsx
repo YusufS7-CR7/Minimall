@@ -195,6 +195,36 @@ export default function ProductPage() {
             </a>
           </div>
 
+          {/* Delivery & Return Trust Badges */}
+          <div className="bg-gradient-to-br from-gray-50 to-red-50/30 rounded-2xl p-4 border border-gray-200/80 space-y-2.5 mb-6 text-xs">
+            <div className="flex items-start gap-2.5">
+              <span className="text-base shrink-0 mt-0.5">🚚</span>
+              <div>
+                <span className="font-bold text-gray-900">
+                  {lang === "ru" ? "Бесплатная доставка от 1 000 000 сум" : "1 000 000 so'mdan bepul yetkazib berish"}
+                </span>
+                <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                  {lang === "ru"
+                    ? "Товары в мешках не учитываются. При сумме менее 1 000 000 сум цена доставки договорная."
+                    : "Qopdagi tovarlar bepul yetkazishga kirmaydi. 1 000 000 so'mgacha yetkazib berish narxi kelishilgan holda."}
+                </p>
+              </div>
+            </div>
+            <div className="border-t border-gray-200/60 pt-2 flex items-start gap-2.5">
+              <span className="text-base shrink-0 mt-0.5">🔄</span>
+              <div>
+                <span className="font-bold text-gray-900">
+                  {lang === "ru" ? "Возврат и обмен в течение 4 дней" : "4 kun ichida qaytarish va almashtirish"}
+                </span>
+                <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+                  {lang === "ru"
+                    ? "Гарантированный возврат товара при сохранении товарного вида и чека."
+                    : "Tovar ko'rinishi va chek saqlangan holda tovarni tez qaytarish."}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Key specs preview */}
           <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">

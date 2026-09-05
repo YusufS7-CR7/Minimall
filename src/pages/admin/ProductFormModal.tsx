@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Product } from "@/data/types";
 import { CATEGORIES } from "@/data/categories";
 import { useProducts } from "@/context/ProductsContext";
 import { slugify } from "@/data/products";
 import { translateText } from "@/utils/googleTranslate";
+import { matchBrandFuzzy } from "@/utils/brandSearch";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export default function ProductFormModal({
   productToEdit,
   onSuccess,
 }: ProductFormModalProps) {
-  const { addProduct, updateProduct, brands } = useProducts();
+  const { addProduct, updateProduct, brands, addBrand } = useProducts();
 
   const [activeTab, setActiveTab] = useState<"general" | "media" | "specs" | "seo">("general");
 
@@ -50,6 +51,47 @@ export default function ProductFormModal({
   const [nameUz, setNameUz] = useState("");
   const [brand, setBrand] = useState("Makita");
   const [customBrand, setCustomBrand] = useState("");
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState("");
+  const [newBrandInput, setNewBrandInput] = useState("");
+  const [showAddBrandInline, setShowAddBrandInline] = useState(false);
+  const [brandSuccessMsg, setBrandSuccessMsg] = useState("");
+  const brandDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close brand dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (brandDropdownRef.current && !brandDropdownRef.current.contains(event.target as Node)) {
+        setBrandDropdownOpen(false);
+      }
+    }
+    if (brandDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [brandDropdownOpen]);
+
+  // Matching brands using typo-tolerant fuzzy matching
+  const matchingBrands = useMemo(() => {
+    if (!brandSearchQuery.trim()) return brands;
+    return brands.filter((b) => matchBrandFuzzy(b, brandSearchQuery));
+  }, [brands, brandSearchQuery]);
+
+  // Handle adding a new brand and syncing across entire website
+  const handleCreateNewBrand = (brandName: string) => {
+    const trimmed = brandName.trim();
+    if (!trimmed) return;
+    addBrand(trimmed);
+    setBrand(trimmed);
+    setBrandSearchQuery("");
+    setNewBrandInput("");
+    setShowAddBrandInline(false);
+    setBrandDropdownOpen(false);
+    setBrandSuccessMsg(`Бренд «${trimmed}» сохранен и синхронизирован со всем сайтом!`);
+    setTimeout(() => setBrandSuccessMsg(""), 3500);
+  };
   const [category, setCategory] = useState("drills");
   const [price, setPrice] = useState<string>("");
   const [oldPrice, setOldPrice] = useState<string>("");
@@ -244,7 +286,8 @@ export default function ProductFormModal({
       return;
     }
 
-    const effectiveBrand = brand === "__custom__" ? (customBrand.trim() || "Прочее") : brand;
+    const effectiveBrand = brand.trim() || (customBrand.trim() || "Makita");
+    addBrand(effectiveBrand);
 
     const specsRecord: Record<string, string> = {};
     specsList.forEach((item) => {
@@ -445,30 +488,157 @@ export default function ProductFormModal({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Бренд производителя
-                  </label>
-                  <select
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
+                {/* Brand Selector with Fuzzy Search & New Brand Addition */}
+                <div ref={brandDropdownRef} className="relative">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      Бренд производителя <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddBrandInline((prev) => !prev);
+                        setBrandDropdownOpen(true);
+                      }}
+                      className="text-[11px] text-red-600 hover:text-red-700 font-bold cursor-pointer hover:underline"
+                    >
+                      + Добавить бренд
+                    </button>
+                  </div>
+
+                  {/* Brand Display Trigger */}
+                  <div
+                    onClick={() => setBrandDropdownOpen((prev) => !prev)}
+                    className="w-full text-sm px-3.5 py-2.5 border border-gray-200 hover:border-red-400 rounded-xl bg-white flex items-center justify-between cursor-pointer shadow-2xs transition-colors"
                   >
-                    {brands.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                    <option value="__custom__">+ Другой бренд (ввести вручную)</option>
-                  </select>
-                  {brand === "__custom__" && (
-                    <input
-                      type="text"
-                      placeholder="Название нового бренда"
-                      value={customBrand}
-                      onChange={(e) => setCustomBrand(e.target.value)}
-                      className="mt-2 w-full text-sm px-3.5 py-2 border border-red-200 rounded-xl focus:outline-none focus:border-red-500"
-                    />
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" />
+                      <span className="font-bold text-gray-900 truncate">{brand || "Выберите бренд"}</span>
+                    </div>
+                    <svg
+                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${
+                        brandDropdownOpen ? "rotate-180" : ""
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+
+                  {/* Success notification if brand was just created */}
+                  {brandSuccessMsg && (
+                    <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] rounded-lg font-medium animate-fadeIn flex items-center gap-1.5">
+                      <span>✓</span>
+                      <span>{brandSuccessMsg}</span>
+                    </div>
+                  )}
+
+                  {/* Dropdown Menu */}
+                  {brandDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-1.5 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 space-y-2.5 animate-fadeIn">
+                      {/* Search Bar inside dropdown */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={brandSearchQuery}
+                          onChange={(e) => setBrandSearchQuery(e.target.value)}
+                          placeholder="Поиск бренда (напр. Bosch, Sparta)..."
+                          autoFocus
+                          className="w-full text-xs pl-8 pr-7 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/70 focus:bg-white transition-colors"
+                        />
+                        <svg
+                          className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        {brandSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setBrandSearchQuery("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs font-bold cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Inline Add Brand Input */}
+                      {(showAddBrandInline || (brandSearchQuery.trim() && !brands.some((b) => b.toLowerCase() === brandSearchQuery.trim().toLowerCase()))) && (
+                        <div className="p-2.5 bg-red-50/60 rounded-xl border border-red-200/80 space-y-1.5">
+                          <div className="text-[11px] font-bold text-gray-800">
+                            Добавить новый бренд в систему:
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newBrandInput || brandSearchQuery}
+                              onChange={(e) => setNewBrandInput(e.target.value)}
+                              placeholder="Название нового бренда..."
+                              className="flex-1 text-xs px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-red-500"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleCreateNewBrand(newBrandInput || brandSearchQuery);
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleCreateNewBrand(newBrandInput || brandSearchQuery)}
+                              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-xs shrink-0"
+                            >
+                              + Сохранить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Brand List */}
+                      <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                        {matchingBrands.length === 0 ? (
+                          <div className="py-3 text-center text-xs text-gray-500">
+                            <div>Бренд не найден</div>
+                            {brandSearchQuery && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateNewBrand(brandSearchQuery)}
+                                className="mt-1.5 inline-flex items-center gap-1 text-red-600 hover:underline font-bold cursor-pointer"
+                              >
+                                <span>+ Добавить «{brandSearchQuery}» во все фильтры сайта</span>
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          matchingBrands.map((b) => {
+                            const isSelected = brand === b;
+                            return (
+                              <button
+                                key={b}
+                                type="button"
+                                onClick={() => {
+                                  setBrand(b);
+                                  setBrandDropdownOpen(false);
+                                  setBrandSearchQuery("");
+                                }}
+                                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                                  isSelected
+                                    ? "bg-red-600 text-white font-bold shadow-xs"
+                                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                                }`}
+                              >
+                                <span>{b}</span>
+                                {isSelected && <span>✓</span>}
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
 

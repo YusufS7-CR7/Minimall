@@ -40,7 +40,48 @@ export function getProductsByBrand(brandSlug: string): Product[] {
 }
 
 /** Unique brand list */
-export const BRANDS = ["Bosch", "Makita", "DeWalt", "Milwaukee", "Metabo", "Hilti"];
+export const BRANDS = [
+  "EPA",
+  "Sibrtex",
+  "Sparta",
+  "MTX",
+  "Denzel",
+  "Pollwon",
+  "Biyoti",
+  "Ubay",
+  "Bosch",
+  "Makita",
+  "DeWalt",
+  "Ferro",
+  "SL",
+  "Mexmash",
+  "Epica",
+  "PIT",
+  "Dima",
+  "LIT",
+  "Dingqi",
+  "3M",
+  "Tytan",
+  "Selsil",
+  "Soudal",
+  "Akfix",
+  "Yato",
+  "Yofe",
+  "Force",
+  "Stels",
+  "Luga",
+  "Ekspert",
+  "DDER",
+  "Varta",
+  "Beshr",
+  "Philips",
+  "Milwaukee",
+  "Metabo",
+  "Hilti",
+  "Crown",
+  "Total",
+  "Ingco",
+];
 
 // ─── Product Data ─────────────────────────────────────────────────────────────
 
