@@ -33,7 +33,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "vodyanye-nasosy",
     icon: "💧",
     image:
-      "https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=200&h=200&fit=crop&auto=format",
+      "https://ikarvon.uz/storage/products/July2024/UH6gQ8ecoKFAGJfrSFFJ.png",
     labelRu: "Водяные насосы",
     labelUz: "Suv nasoslari",
   },
@@ -42,7 +42,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "ruchnye-instrumenty",
     icon: "🔧",
     image:
-      "https://images.unsplash.com/photo-1530124566582-a45a7e3e29f0?w=200&h=200&fit=crop&auto=format",
+      "https://tekman.com.ua/wp-content/uploads/2018/04/instrument-slide1-760x700-1.jpg",
     labelRu: "Ручные инструменты",
     labelUz: "Qo'l asboblari",
   },
@@ -51,7 +51,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "elektrika-i-svet",
     icon: "💡",
     image:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=200&h=200&fit=crop&auto=format",
+      "https://lu.ru/images/articles/lampochki-dlya-doma-5.jpg",
     labelRu: "Электрика и свет",
     labelUz: "Elektrika va yorug'lik",
   },
@@ -60,7 +60,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "nizkovoltnoye-oborudovanie",
     icon: "⚡",
     image:
-      "https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=200&h=200&fit=crop&auto=format",
+      "https://www.ec74.ru/images/catalogue/avtomat_vikl_1.jpg",
     labelRu: "Низковольтное оборудование",
     labelUz: "Past kuchlanish uskunalari",
   },
@@ -69,7 +69,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "santehnika",
     icon: "🔩",
     image:
-      "https://images.unsplash.com/photo-1504382103100-db7e92322d95?w=200&h=200&fit=crop&auto=format",
+      "https://iccvortex.uz/wp-content/uploads/2023/11/f9262981_5b14_11e7_80e9_00265586-1.png",
     labelRu: "Сантехника",
     labelUz: "Santexnika",
   },
