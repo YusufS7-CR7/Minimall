@@ -14,7 +14,7 @@ interface FooterProps {
 const SOCIAL = [
   {
     label: "Telegram",
-    href: "https://t.me/minimall_uz",
+    href: "https://t.me/minimall_uzb",
     path: "M9.04 17.68l-.37 5.23 2.52-2.44 2.95 2.17c.33.24.79.1.95-.28l5.46-13.06c.2-.48-.28-.96-.77-.77L2.23 14.36c-.52.2-.51.93.01 1.12l3.97 1.37 9.29-5.85c.21-.13.45.15.27.32z",
   },
 ];
@@ -192,7 +192,7 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
                     <svg className="w-4 h-4 text-sky-400 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
                       <path d={s.path} />
                     </svg>
-                    <span>Telegram</span>
+                    <span>@minimall_uzb</span>
                   </a>
                 ))}
               </div>
@@ -317,6 +317,17 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
                 <a href="tel:+998970363636" className="text-white font-semibold text-sm hover:text-red-400 transition-colors">
                   {t.phone}
                 </a>
+                <div className="mt-1">
+                  <a
+                    href="https://t.me/minimall_uzb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                  >
+                    <span>✈️ Telegram:</span>
+                    <span className="font-semibold">@minimall_uzb</span>
+                  </a>
+                </div>
                 <div className="text-gray-400 text-xs mt-1">
                   {t.address}
                 </div>

@@ -453,7 +453,7 @@ export default function InfoModal({
                     <div className="font-bold text-gray-900 text-sm">Отдел продаж и консультаций</div>
                     <div>📞 Телефон: <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a></div>
                     <div>✉️ Email: <a href="mailto:minimalluzbek@gmail.com" className="text-gray-800">minimalluzbek@gmail.com</a></div>
-                    <div>✈️ Telegram: <a href="https://t.me/minimall_uz" target="_blank" rel="noreferrer" className="text-sky-600 font-bold">@minimall_uz</a></div>
+                    <div>✈️ Telegram: <a href="https://t.me/minimall_uzb" target="_blank" rel="noreferrer" className="text-sky-600 font-bold hover:underline">@minimall_uzb</a></div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-2">
                     <div className="font-bold text-gray-900 text-sm">Адрес и время работы</div>
@@ -481,7 +481,7 @@ export default function InfoModal({
                     <li>Отсрочка платежа для постоянных партнеров.</li>
                   </ul>
                   <div className="pt-2">
-                    Отправляйте спецификации и реквизиты на <a href="mailto:minimalluzbek@gmail.com" className="font-bold text-red-600">minimalluzbek@gmail.com</a> или звоните <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a>.
+                    Отправляйте спецификации и реквизиты на <a href="mailto:minimalluzbek@gmail.com" className="font-bold text-red-600">minimalluzbek@gmail.com</a>, пишите в Telegram <a href="https://t.me/minimall_uzb" target="_blank" rel="noreferrer" className="font-bold text-sky-600">@minimall_uzb</a> или звоните <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a>.
                   </div>
                 </div>
               </div>

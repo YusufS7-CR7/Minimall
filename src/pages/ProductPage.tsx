@@ -187,8 +187,18 @@ export default function ProductPage() {
               {t.addToCart}
             </button>
             <a
+              href={`https://t.me/minimall_uzb?text=${encodeURIComponent(`Здравствуйте! Интересует товар: ${name} (арт. MM-${product.id})`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700 text-sm font-bold transition-all shadow-xs"
+              title="Задать вопрос по товару в Telegram"
+            >
+              <span>✈️</span>
+              <span>Telegram</span>
+            </a>
+            <a
               href="tel:+998970363636"
-              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border-2 border-gray-200 hover:border-red-300 text-gray-700 hover:text-red-600 text-sm font-bold transition-all"
+              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 border-gray-200 hover:border-red-300 text-gray-700 hover:text-red-600 text-sm font-bold transition-all"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
               {lang === "ru" ? "Позвонить" : "Qo'ng'iroq"}

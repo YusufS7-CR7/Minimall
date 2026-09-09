@@ -13,10 +13,11 @@ export default function FloatingButtons() {
         </svg>
       </a>
       <a
-        href="https://t.me/minimall_uz"
+        href="https://t.me/minimall_uzb"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Написать в Telegram"
+        aria-label="Написать в Telegram (@minimall_uzb)"
+        title="Написать в Telegram (@minimall_uzb)"
         className="rounded-full flex items-center justify-center shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 transition-all text-white bg-gradient-to-br from-sky-400 to-sky-600 hover:from-sky-500 hover:to-sky-700 hover:scale-110"
         style={{ width: 52, height: 52 }}
       >

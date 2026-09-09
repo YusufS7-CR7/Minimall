@@ -194,9 +194,10 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
               </p>
             )}
 
-            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 text-xs text-gray-500 space-y-1">
-              <div>📞 Горячая линия поддержки: <a href="tel:+998970363636" className="text-gray-900 font-bold hover:text-red-600">+998 (97) 036 36 36</a></div>
-              <div>⏱ Режим работы: ежедневно с 9:00 до 19:00</div>
+            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 text-xs text-gray-500 space-y-1.5">
+              <div>📞 {lang === "ru" ? "Горячая линия поддержки:" : "Qo'llab-quvvatlash raqami:"} <a href="tel:+998970363636" className="text-gray-900 font-bold hover:text-red-600">+998 (97) 036 36 36</a></div>
+              <div>✈️ Telegram: <a href="https://t.me/minimall_uzb" target="_blank" rel="noreferrer" className="text-sky-600 font-bold hover:underline">@minimall_uzb</a></div>
+              <div>⏱ {lang === "ru" ? "Режим работы: ежедневно с 9:00 до 19:00" : "Ish vaqti: har kuni 9:00 dan 19:00 gacha"}</div>
             </div>
 
             <button

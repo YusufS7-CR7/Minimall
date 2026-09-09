@@ -122,7 +122,18 @@ export default function TopBar({ lang, onOpenInfo }: TopBarProps) {
         </div>
 
         {/* Contacts info */}
-        <div className="hidden sm:flex items-center gap-4 text-gray-400">
+        <div className="hidden sm:flex items-center gap-3 text-gray-400">
+          <a
+            href="https://t.me/minimall_uzb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-sky-400 transition-colors flex items-center gap-1 text-sky-300 font-medium"
+            title="Написать нам в Telegram"
+          >
+            <span>✈️</span>
+            <span>@minimall_uzb</span>
+          </a>
+          <span className="text-white/10">|</span>
           <a href="mailto:minimalluzbek@gmail.com" className="hover:text-white transition-colors">
             minimalluzbek@gmail.com
           </a>
