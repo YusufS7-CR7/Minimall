@@ -134,8 +134,8 @@ export default function TopBar({ lang, onOpenInfo }: TopBarProps) {
             <span>@minimall_uzb</span>
           </a>
           <span className="text-white/10">|</span>
-          <a href="mailto:minimalluzbek@gmail.com" className="hover:text-white transition-colors">
-            minimalluzbek@gmail.com
+          <a href="mailto:info@mini-mall.uz" className="hover:text-white transition-colors">
+            info@mini-mall.uz
           </a>
           <span className="text-white/10">|</span>
           <a href="tel:+998970363636" className="hover:text-white transition-colors font-semibold text-white">

@@ -452,7 +452,7 @@ export default function InfoModal({
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-2">
                     <div className="font-bold text-gray-900 text-sm">Отдел продаж и консультаций</div>
                     <div>📞 Телефон: <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a></div>
-                    <div>✉️ Email: <a href="mailto:minimalluzbek@gmail.com" className="text-gray-800">minimalluzbek@gmail.com</a></div>
+                    <div>✉️ Email: <a href="mailto:info@mini-mall.uz" className="text-gray-800">info@mini-mall.uz</a></div>
                     <div>✈️ Telegram: <a href="https://t.me/minimall_uzb" target="_blank" rel="noreferrer" className="text-sky-600 font-bold hover:underline">@minimall_uzb</a></div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-2">
@@ -481,7 +481,7 @@ export default function InfoModal({
                     <li>Отсрочка платежа для постоянных партнеров.</li>
                   </ul>
                   <div className="pt-2">
-                    Отправляйте спецификации и реквизиты на <a href="mailto:minimalluzbek@gmail.com" className="font-bold text-red-600">minimalluzbek@gmail.com</a>, пишите в Telegram <a href="https://t.me/minimall_uzb" target="_blank" rel="noreferrer" className="font-bold text-sky-600">@minimall_uzb</a> или звоните <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a>.
+                    Отправляйте спецификации и реквизиты на <a href="mailto:info@mini-mall.uz" className="font-bold text-red-600">info@mini-mall.uz</a>, пишите в Telegram <a href="https://t.me/minimall_uzb" target="_blank" rel="noreferrer" className="font-bold text-sky-600">@minimall_uzb</a> или звоните <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a>.
                   </div>
                 </div>
               </div>
@@ -790,8 +790,8 @@ export default function InfoModal({
                   </h3>
                   <p>
                     {lang === "ru"
-                      ? "Субъект персональных данных имеет право требовать уточнения, блокирования или полного уничтожения своих данных в случае их неполноты, устаревания или неправомерности обработки, направив официальное письменное обращение на адрес электронной почты minimalluzbek@gmail.com."
-                      : "Foydalanuvchi o'z shaxsiy ma'lumotlarini aniqlashtirish, bloklash yoki butunlay o'chirishni talab qilish huquqiga ega bo'lib, buning uchun minimalluzbek@gmail.com manziliga yozma murojaat yuborishi kifoya."}
+                      ? "Субъект персональных данных имеет право требовать уточнения, блокирования или полного уничтожения своих данных в случае их неполноты, устаревания или неправомерности обработки, направив официальное письменное обращение на адрес электронной почты info@mini-mall.uz."
+                      : "Foydalanuvchi o'z shaxsiy ma'lumotlarini aniqlashtirish, bloklash yoki butunlay o'chirishni talab qilish huquqiga ega bo'lib, buning uchun info@mini-mall.uz manziliga yozma murojaat yuborishi kifoya."}
                   </p>
                 </div>
 
