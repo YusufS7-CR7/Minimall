@@ -17,14 +17,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { slides } = useBanners();
   const location = useLocation();
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (
       window.confirm(
-        "Вы действительно хотите сбросить каталог к исходным 12 товарам? Все добавленные и отредактированные товары будут удалены."
+        "Вы действительно хотите удалить ВСЕ товары из каталога? Это действие нельзя отменить."
       )
     ) {
-      resetProducts();
-      showToast("Каталог сброшен к исходному состоянию");
+      await resetProducts();
+      showToast("Каталог полностью очищен");
     }
   };
 

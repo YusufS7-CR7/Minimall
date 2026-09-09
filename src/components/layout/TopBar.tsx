@@ -123,8 +123,8 @@ export default function TopBar({ lang, onOpenInfo }: TopBarProps) {
 
         {/* Contacts info */}
         <div className="hidden sm:flex items-center gap-4 text-gray-400">
-          <a href="mailto:info@minimall.uz" className="hover:text-white transition-colors">
-            info@minimall.uz
+          <a href="mailto:minimalluzbek@gmail.com" className="hover:text-white transition-colors">
+            minimalluzbek@gmail.com
           </a>
           <span className="text-white/10">|</span>
           <a href="tel:+998970363636" className="hover:text-white transition-colors font-semibold text-white">

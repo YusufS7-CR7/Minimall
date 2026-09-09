@@ -11,6 +11,7 @@ import ProductFilters, {
   DEFAULT_FILTER_STATE,
   type FilterState,
 } from "@/components/ui/ProductFilters";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 export default function BrandPage() {
   const { slug } = useParams<{ slug?: string }>();
@@ -54,13 +55,13 @@ export default function BrandPage() {
 
   useDocumentMeta({
     title: `${brandName} — инструменты и оборудование | Купить в Ташкенте Minimall`,
-    description: `Оригинальный инструмент ${brandName} в Ташкенте. Каталог из ${baseProducts.length} моделей с официальной гарантией и доставкой по Узбекистану на Minimall.uz.`,
-    canonical: `https://minimall.uz/brand/${slug}`,
+    description: `Оригинальный инструмент ${brandName} в Ташкенте. Каталог из ${baseProducts.length} моделей с официальной гарантией и доставкой по Узбекистану на mini-mall.uz.`,
+    canonical: `https://mini-mall.uz/brand/${slug}`,
     structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       name: `${brandName} — Minimall`,
-      url: `https://minimall.uz/brand/${slug}`,
+      url: `https://mini-mall.uz/brand/${slug}`,
       numberOfItems: filteredProducts.length,
       about: {
         "@type": "Brand",
@@ -187,16 +188,19 @@ export default function BrandPage() {
                 <span className="text-xs text-gray-400 font-medium hidden sm:inline">
                   {lang === "ru" ? "Сортировка:" : "Saralash:"}
                 </span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="text-xs font-semibold text-gray-800 bg-white border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-red-500 cursor-pointer shadow-2xs"
-                >
-                  <option value="default">{lang === "ru" ? "По умолчанию" : "Odatiy"}</option>
-                  <option value="price_asc">{lang === "ru" ? "Сначала дешевле" : "Avval arzonlari"}</option>
-                  <option value="price_desc">{lang === "ru" ? "Сначала дороже" : "Avval qimmatlari"}</option>
-                  <option value="rating">{lang === "ru" ? "По рейтингу" : "Reyting bo'yicha"}</option>
-                </select>
+                <div className="w-40 sm:w-48">
+                  <CustomSelect
+                    value={sortBy}
+                    onChange={(val) => setSortBy(val as any)}
+                    size="sm"
+                    options={[
+                      { value: "default", label: lang === "ru" ? "По умолчанию" : "Odatiy" },
+                      { value: "price_asc", label: lang === "ru" ? "Сначала дешевле" : "Avval arzonlari" },
+                      { value: "price_desc", label: lang === "ru" ? "Сначала дороже" : "Avval qimmatlari" },
+                      { value: "rating", label: lang === "ru" ? "По рейтингу" : "Reyting bo'yicha" },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
 

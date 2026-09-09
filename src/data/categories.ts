@@ -6,7 +6,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "elektroinstumenty",
     icon: "🔌",
     image:
-      "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=200&h=200&fit=crop&auto=format",
+      "https://iccvortex.uz/wp-content/uploads/2023/12/DSFFD-181.png",
     labelRu: "Электроинструменты",
     labelUz: "Elektr asboblar",
   },
@@ -15,7 +15,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "sad-i-ogorod",
     icon: "🌿",
     image:
-      "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200&h=200&fit=crop&auto=format",
+      "https://image.made-in-china.com/2f0j00RsyiOgJlEapc/4-Pieces-Garden-Tools-Set-Hot-Sale-on-Amazon-Non-Slip-Handle-Trowel-Transplanter-Rake-Hoe.webp",
     labelRu: "Всё для сада",
     labelUz: "Bog' uchun",
   },
@@ -24,7 +24,7 @@ export const CATEGORIES: CategoryDef[] = [
     slug: "bytovaya-tehnika",
     icon: "🏠",
     image:
-      "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=200&h=200&fit=crop&auto=format",
+      "https://ikarvon.uz/storage/products/July2026/xdwGlgll0MZ04S4RjGaUc-small.png.pagespeed.ic.1lQlvido9u.jpg",
     labelRu: "Бытовая техника",
     labelUz: "Maishiy texnika",
   },

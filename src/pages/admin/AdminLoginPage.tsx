@@ -8,7 +8,7 @@ export default function AdminLoginPage() {
 
   useDocumentMeta({
     title: "Вход в панель управления | Minimall Admin",
-    description: "Авторизация администратора маркетплейса Minimall.uz",
+    description: "Авторизация администратора маркетплейса mini-mall.uz",
     noIndex: true,
   });
 
@@ -18,7 +18,7 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -34,14 +34,12 @@ export default function AdminLoginPage() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const res = login(username, password);
-      setIsLoading(false);
+    const res = await login(username, password);
+    setIsLoading(false);
 
-      if (!res.success) {
-        setError(res.error || "Неверный логин или пароль");
-      }
-    }, 250);
+    if (!res.success) {
+      setError(res.error || "Неверный логин или пароль");
+    }
   };
 
   const handleFillSuperAdmin = () => {

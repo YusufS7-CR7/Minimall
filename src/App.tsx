@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import { AppProvider, useApp } from "@/context/AppContext";
+import { useApp } from "@/context/AppContext";
+import AppContextBridge from "@/context/AppContextBridge";
 import { ProductsProvider } from "@/context/ProductsContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
@@ -25,13 +26,24 @@ import BrandPage from "@/pages/BrandPage";
 import SearchPage from "@/pages/SearchPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
-// Admin Pages
-import AdminLayout from "@/pages/admin/AdminLayout";
-import AdminProductsPage from "@/pages/admin/AdminProductsPage";
-import AdminUsersPage from "@/pages/admin/AdminUsersPage";
-import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
-import AdminBannersPage from "@/pages/admin/AdminBannersPage";
-import AdminLoginPage from "@/pages/admin/AdminLoginPage";
+// Admin Pages (Code-split for fast customer load times)
+const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
+const AdminProductsPage = lazy(() => import("@/pages/admin/AdminProductsPage"));
+const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
+const AdminOrdersPage = lazy(() => import("@/pages/admin/AdminOrdersPage"));
+const AdminBannersPage = lazy(() => import("@/pages/admin/AdminBannersPage"));
+const AdminLoginPage = lazy(() => import("@/pages/admin/AdminLoginPage"));
+
+function AdminLoadingSpinner() {
+  return (
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-sm font-medium text-gray-400">Загрузка панели управления...</span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Automatically scrolls the browser window to top on page navigation.
@@ -63,30 +75,32 @@ function AppLayout() {
   if (isAdminRoute) {
     if (!isAuthenticated) {
       return (
-        <>
+        <Suspense fallback={<AdminLoadingSpinner />}>
           <ScrollToTop />
           <AdminLoginPage />
           <Toast />
-        </>
+        </Suspense>
       );
     }
 
     return (
-      <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-red-500 selection:text-white">
-        <ScrollToTop />
-        <AdminLayout>
-          <Routes>
-            <Route path="/admin" element={<AdminProductsPage />} />
-            <Route path="/admin/products" element={<AdminProductsPage />} />
-            <Route path="/admin/banners" element={<AdminBannersPage />} />
-            <Route path="/admin/orders" element={<AdminOrdersPage />} />
-            <Route path="/admin/admins" element={<AdminUsersPage />} />
-            <Route path="/admin/*" element={<AdminProductsPage />} />
-          </Routes>
-        </AdminLayout>
-        <Toast />
-        <AuthModal />
-      </div>
+      <Suspense fallback={<AdminLoadingSpinner />}>
+        <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-red-500 selection:text-white">
+          <ScrollToTop />
+          <AdminLayout>
+            <Routes>
+              <Route path="/admin" element={<AdminProductsPage />} />
+              <Route path="/admin/products" element={<AdminProductsPage />} />
+              <Route path="/admin/banners" element={<AdminBannersPage />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
+              <Route path="/admin/admins" element={<AdminUsersPage />} />
+              <Route path="/admin/*" element={<AdminProductsPage />} />
+            </Routes>
+          </AdminLayout>
+          <Toast />
+          <AuthModal />
+        </div>
+      </Suspense>
     );
   }
 
@@ -125,18 +139,18 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <ProductsProvider>
-        <BannersProvider>
-          <OrdersProvider>
-            <AuthProvider>
+    <AuthProvider>
+      <AppContextBridge>
+        <ProductsProvider>
+          <BannersProvider>
+            <OrdersProvider>
               <AdminAuthProvider>
                 <AppLayout />
               </AdminAuthProvider>
-            </AuthProvider>
-          </OrdersProvider>
-        </BannersProvider>
-      </ProductsProvider>
-    </AppProvider>
+            </OrdersProvider>
+          </BannersProvider>
+        </ProductsProvider>
+      </AppContextBridge>
+    </AuthProvider>
   );
 }

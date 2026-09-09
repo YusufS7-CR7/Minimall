@@ -124,7 +124,7 @@ export default function InfoModal({
                     <span>{lang === "ru" ? "Официальный поставщик инструмента с 2018 года" : "2018 yildan beri rasmiy asboblar yetkazib beruvchi"}</span>
                   </div>
                   <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                    {lang === "ru" ? "Minimall.uz — Эксперт и надежный маркетплейс инструмента в Узбекистане" : "Minimall.uz — O'zbekistonda ishonchli asboblar va uskunalar bozori"}
+                    {lang === "ru" ? "mini-mall.uz — Эксперт и надежный маркетплейс инструмента в Узбекистане" : "mini-mall.uz — O'zbekistonda ishonchli asboblar va uskunalar bozori"}
                   </h2>
                   <p className="text-gray-600 text-sm mt-2 leading-relaxed">
                     {lang === "ru"
@@ -182,8 +182,8 @@ export default function InfoModal({
                   </p>
                   <p>
                     {lang === "ru"
-                      ? "Сегодня Minimall.uz — это продуманная экосистема для снабжения строительных объектов любой сложности: от компактных мастерских до масштабных промышленных комплексов. Мы исключаем серые схемы и подделки: каждый поставляемый инструмент имеет официальный серийный номер, сертифицирован и обеспечивается гарантией авторизованных сервисных центров."
-                      : "Bugungi kunda Minimall.uz — har qanday murakkablikdagi qurilish obyektlarini ta'minlash uchun qulay ekotizimdir. Har bir taqdim etilayotgan asbob rasmiy seriya raqamiga ega, to'liq sertifikatlangan va rasmiy servis kafolatiga ega."}
+                      ? "Сегодня mini-mall.uz — это продуманная экосистема для снабжения строительных объектов любой сложности: от компактных мастерских до масштабных промышленных комплексов. Мы исключаем серые схемы и подделки: каждый поставляемый инструмент имеет официальный серийный номер, сертифицирован и обеспечивается гарантией авторизованных сервисных центров."
+                      : "Bugungi kunda mini-mall.uz — har qanday murakkablikdagi qurilish obyektlarini ta'minlash uchun qulay ekotizimdir. Har bir taqdim etilayotgan asbob rasmiy seriya raqamiga ega, to'liq sertifikatlangan va rasmiy servis kafolatiga ega."}
                   </p>
                 </div>
 
@@ -383,7 +383,7 @@ export default function InfoModal({
                   Официальная гарантия
                 </h2>
                 <p>
-                  На весь инструмент, представленный на Minimall.uz, распространяется <strong>официальная гарантия производителя от 1 года до 3 лет</strong>.
+                  На весь инструмент, представленный на mini-mall.uz, распространяется <strong>официальная гарантия производителя от 1 года до 3 лет</strong>.
                 </p>
                 <p className="text-xs text-gray-600">
                   В комплекте с каждым заказом покупатель получает гарантийный талон с печатью и датой продажи. В случае возникновения вопросов по работе оборудования наши инженеры проводят бесплатную диагностику в авторизованных центрах.
@@ -452,7 +452,7 @@ export default function InfoModal({
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-2">
                     <div className="font-bold text-gray-900 text-sm">Отдел продаж и консультаций</div>
                     <div>📞 Телефон: <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a></div>
-                    <div>✉️ Email: <a href="mailto:info@minimall.uz" className="text-gray-800">info@minimall.uz</a></div>
+                    <div>✉️ Email: <a href="mailto:minimalluzbek@gmail.com" className="text-gray-800">minimalluzbek@gmail.com</a></div>
                     <div>✈️ Telegram: <a href="https://t.me/minimall_uz" target="_blank" rel="noreferrer" className="text-sky-600 font-bold">@minimall_uz</a></div>
                   </div>
                   <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs space-y-2">
@@ -470,7 +470,7 @@ export default function InfoModal({
                   Для юридических лиц и оптовых клиентов
                 </h2>
                 <p>
-                  Minimall.uz комплектует строительные объекты, промышленные предприятия и монтажные бригады по всему Узбекистану.
+                  mini-mall.uz комплектует строительные объекты, промышленные предприятия и монтажные бригады по всему Узбекистану.
                 </p>
                 <div className="p-4 bg-red-50/70 rounded-2xl border border-red-100 space-y-2 text-xs">
                   <div className="font-bold text-red-800">Преимущества работы с нами:</div>
@@ -481,7 +481,7 @@ export default function InfoModal({
                     <li>Отсрочка платежа для постоянных партнеров.</li>
                   </ul>
                   <div className="pt-2">
-                    Отправляйте спецификации и реквизиты на <a href="mailto:info@minimall.uz" className="font-bold text-red-600">info@minimall.uz</a> или звоните <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a>.
+                    Отправляйте спецификации и реквизиты на <a href="mailto:minimalluzbek@gmail.com" className="font-bold text-red-600">minimalluzbek@gmail.com</a> или звоните <a href="tel:+998970363636" className="font-bold text-red-600">+998 (97) 036 36 36</a>.
                   </div>
                 </div>
               </div>
@@ -513,13 +513,13 @@ export default function InfoModal({
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/80 text-[11px] text-gray-700 space-y-2">
                   <p>
                     {lang === "ru"
-                      ? "Настоящий документ является официальным предложением (публичной офертой) маркетплейса «Minimall.uz» (далее — «Продавец») в соответствии со статьями 367, 369 и 426 Гражданского кодекса Республики Узбекистан, Законом Республики Узбекистан «Об электронной коммерции» и Законом Республики Узбекистан «О защите прав потребителей»."
-                      : "Ushbu hujjat O'zbekiston Respublikasi Fuqarolik kodeksining 367, 369 va 426-moddalariga, «Elektron tijorat to'g'risida»gi hamda «Iste'molchilarning huquqlarini himoya qilish to'g'risida»gi qonunlariga muvofiq, «Minimall.uz» savdo maydonchasining (keyingi o'rinlarda — «Sotuvchi») rasmiy ommaviy ofertasi hisoblanadi."}
+                      ? "Настоящий документ является официальным предложением (публичной офертой) маркетплейса «mini-mall.uz» (далее — «Продавец») в соответствии со статьями 367, 369 и 426 Гражданского кодекса Республики Узбекистан, Законом Республики Узбекистан «Об электронной коммерции» и Законом Республики Узбекистан «О защите прав потребителей»."
+                      : "Ushbu hujjat O'zbekiston Respublikasi Fuqarolik kodeksining 367, 369 va 426-moddalariga, «Elektron tijorat to'g'risida»gi hamda «Iste'molchilarning huquqlarini himoya qilish to'g'risida»gi qonunlariga muvofiq, «mini-mall.uz» savdo maydonchasining (keyingi o'rinlarda — «Sotuvchi») rasmiy ommaviy ofertasi hisoblanadi."}
                   </p>
                   <p>
                     {lang === "ru"
-                      ? "Оформление Заказа на сайте https://minimall.uz, а равно подтверждение Заказа оператору контакт-центра является полным и безоговорочным акцептом настоящей Оферты Покупателем (ст. 370 ГК РУз)."
-                      : "https://minimall.uz veb-saytida buyurtmani rasmiylashtirish yoki kontakt-markaz operatoriga buyurtmani tasdiqlash Xaridor tomonidan ushbu Ofertaning to'liq va so'zsiz qabul qilinishi (aksept) hisoblanadi."}
+                      ? "Оформление Заказа на сайте https://mini-mall.uz, а равно подтверждение Заказа оператору контакт-центра является полным и безоговорочным акцептом настоящей Оферты Покупателем (ст. 370 ГК РУз)."
+                      : "https://mini-mall.uz veb-saytida buyurtmani rasmiylashtirish yoki kontakt-markaz operatoriga buyurtmani tasdiqlash Xaridor tomonidan ushbu Ofertaning to'liq va so'zsiz qabul qilinishi (aksept) hisoblanadi."}
                   </p>
                 </div>
 
@@ -530,7 +530,7 @@ export default function InfoModal({
                     <span>{lang === "ru" ? "Термины и определения" : "Atamalar va ta'riflar"}</span>
                   </h3>
                   <ul className="list-disc list-inside space-y-1.5 pl-2 text-gray-700">
-                    <li><strong>{lang === "ru" ? "Продавец" : "Sotuvchi"}</strong> — интернет-магазин Minimall.uz, осуществляющий реализацию строительного оборудования, электроинструмента и расходных материалов дистанционным способом.</li>
+                    <li><strong>{lang === "ru" ? "Продавец" : "Sotuvchi"}</strong> — интернет-магазин mini-mall.uz, осуществляющий реализацию строительного оборудования, электроинструмента и расходных материалов дистанционным способом.</li>
                     <li><strong>{lang === "ru" ? "Покупатель" : "Xaridor"}</strong> — дееспособное физическое или юридическое лицо, оформившее заказ исключительно для личных, коммерческих или производственных нужд на условиях настоящего Договора.</li>
                     <li><strong>{lang === "ru" ? "Товар" : "Tovar"}</strong> — сертифицированная материальная продукция производственно-технического назначения, представленная в каталоге интернет-магазина.</li>
                     <li><strong>{lang === "ru" ? "Заказ" : "Buyurtma"}</strong> — должным образом оформленный электронный запрос Покупателя на покупку и доставку выбранных позиций Товара по указанному адресу.</li>
@@ -563,8 +563,8 @@ export default function InfoModal({
                   </h3>
                   <p>
                     {lang === "ru"
-                      ? "3.1. Все цены на Товары в маркетплейсе Minimall.uz указываются в национальной валюте Республики Узбекистан — сумах (UZS) и включают все применимые налоги."
-                      : "3.1. Minimall.uz saytidagi barcha tovar narxlari O'zbekiston Respublikasining milliy valyutasi — so'mda (UZS) ko'rsatiladi va barcha tegishli soliqlarni o'z ichiga oladi."}
+                      ? "3.1. Все цены на Товары в маркетплейсе mini-mall.uz указываются в национальной валюте Республики Узбекистан — сумах (UZS) и включают все применимые налоги."
+                      : "3.1. mini-mall.uz saytidagi barcha tovar narxlari O'zbekiston Respublikasining milliy valyutasi — so'mda (UZS) ko'rsatiladi va barcha tegishli soliqlarni o'z ichiga oladi."}
                   </p>
                   <p>
                     {lang === "ru"
@@ -615,8 +615,8 @@ export default function InfoModal({
                   </h3>
                   <p>
                     {lang === "ru"
-                      ? "5.1. В соответствии с регламентом маркетплейса Minimall.uz Покупатель вправе заявить о возврате или обмене непродовольственного товара надлежащего качества в течение 4 (четырех) календарных дней с даты фактического получения Товара."
-                      : "5.1. Minimall.uz savdo maydonchasi reglamentiga muvofiq, Xaridor tegishli sifatdagi nooziq-ovqat tovarini amalda qabul qilib olgan kundan boshlab 4 (to'rt) kalendar kun ichida qaytarish yoki almashtirish huquqiga ega."}
+                      ? "5.1. В соответствии с регламентом маркетплейса mini-mall.uz Покупатель вправе заявить о возврате или обмене непродовольственного товара надлежащего качества в течение 4 (четырех) календарных дней с даты фактического получения Товара."
+                      : "5.1. mini-mall.uz savdo maydonchasi reglamentiga muvofiq, Xaridor tegishli sifatdagi nooziq-ovqat tovarini amalda qabul qilib olgan kundan boshlab 4 (to'rt) kalendar kun ichida qaytarish yoki almashtirish huquqiga ega."}
                   </p>
                   <p>
                     {lang === "ru"
@@ -703,8 +703,8 @@ export default function InfoModal({
                 <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/80 text-[11px] text-gray-700 space-y-2">
                   <p>
                     {lang === "ru"
-                      ? "Настоящее Положение определяет порядок обработки, систематизации, хранения и защиты персональных данных субъектов (пользователей и клиентов маркетплейса Minimall.uz) в строгом соответствии с Законом Республики Узбекистан «О персональных данных» от 2 июля 2019 года № ЗРУ-547 и международными стандартами информационной безопасности."
-                      : "Ushbu Nizom 2019 yil 2 iyuldagi O'zbekiston Respublikasining «Shaxsiy ma'lumotlar to'g'risida»gi O'RQ-547-son Qonuniga muvofiq, Minimall.uz foydalanuvchilari shaxsiy ma'lumotlarini qayta ishlash, saqlash va himoya qilish tartibini belgilaydi."}
+                      ? "Настоящее Положение определяет порядок обработки, систематизации, хранения и защиты персональных данных субъектов (пользователей и клиентов маркетплейса mini-mall.uz) в строгом соответствии с Законом Республики Узбекистан «О персональных данных» от 2 июля 2019 года № ЗРУ-547 и международными стандартами информационной безопасности."
+                      : "Ushbu Nizom 2019 yil 2 iyuldagi O'zbekiston Respublikasining «Shaxsiy ma'lumotlar to'g'risida»gi O'RQ-547-son Qonuniga muvofiq, mini-mall.uz foydalanuvchilari shaxsiy ma'lumotlarini qayta ishlash, saqlash va himoya qilish tartibini belgilaydi."}
                   </p>
                   <p>
                     {lang === "ru"
@@ -790,15 +790,15 @@ export default function InfoModal({
                   </h3>
                   <p>
                     {lang === "ru"
-                      ? "Субъект персональных данных имеет право требовать уточнения, блокирования или полного уничтожения своих данных в случае их неполноты, устаревания или неправомерности обработки, направив официальное письменное обращение на адрес электронной почты info@minimall.uz."
-                      : "Foydalanuvchi o'z shaxsiy ma'lumotlarini aniqlashtirish, bloklash yoki butunlay o'chirishni talab qilish huquqiga ega bo'lib, buning uchun info@minimall.uz manziliga yozma murojaat yuborishi kifoya."}
+                      ? "Субъект персональных данных имеет право требовать уточнения, блокирования или полного уничтожения своих данных в случае их неполноты, устаревания или неправомерности обработки, направив официальное письменное обращение на адрес электронной почты minimalluzbek@gmail.com."
+                      : "Foydalanuvchi o'z shaxsiy ma'lumotlarini aniqlashtirish, bloklash yoki butunlay o'chirishni talab qilish huquqiga ega bo'lib, buning uchun minimalluzbek@gmail.com manziliga yozma murojaat yuborishi kifoya."}
                   </p>
                 </div>
 
                 {/* Sign-off Seal */}
                 <div className="pt-4 border-t border-gray-200 text-[11px] text-gray-500 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-gray-50/60 p-3 rounded-xl font-mono">
                   <div>Соответствие Закону № ЗРУ-547 • Безопасность данных</div>
-                  <div className="text-gray-900 font-bold">Служба информационной безопасности Minimall.uz</div>
+                  <div className="text-gray-900 font-bold">Служба информационной безопасности mini-mall.uz</div>
                 </div>
               </div>
             )}

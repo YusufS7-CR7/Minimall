@@ -46,20 +46,20 @@ export default function HomePage() {
   );
 
   useDocumentMeta({
-    title: "Minimall — интернет-магазин инструментов в Ташкенте | minimall.uz",
+    title: "Minimall — интернет-магазин инструментов в Ташкенте | mini-mall.uz",
     description:
       "Купить профессиональный строительный инструмент в Ташкенте. Широкий выбор Bosch, Makita, DeWalt, Milwaukee. Доставка по всему Узбекистану. Официальная гарантия.",
-    canonical: "https://minimall.uz/",
+    canonical: "https://mini-mall.uz/",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "WebSite",
       name: "Minimall",
-      url: "https://minimall.uz",
+      url: "https://mini-mall.uz",
       potentialAction: {
         "@type": "SearchAction",
         target: {
           "@type": "EntryPoint",
-          urlTemplate: "https://minimall.uz/search?q={search_term_string}",
+          urlTemplate: "https://mini-mall.uz/search?q={search_term_string}",
         },
         "query-input": "required name=search_term_string",
       },
@@ -159,7 +159,7 @@ export default function HomePage() {
       <div className="border-y border-gray-200/60 bg-white py-10 px-4">
         <div className="max-w-7xl mx-auto">
           <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-400 mb-7">
-            {lang === "ru" ? "Официальные поставщики" : "Rasmiy yetkazib beruvchilar"}
+            {lang === "ru" ? "Наши поставщики" : "Bizning yetkazib beruvchilar"}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-10">
             {brands.map((b) => (
@@ -182,14 +182,13 @@ export default function HomePage() {
 // ─── Hero ──────────────────────────────────────────────────────────────────────
 
 function HeroSection({ lang }: { lang: string }) {
-  const { products } = useProducts();
+
   const { activeSlides } = useBanners();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const slides = activeSlides.length > 0 ? activeSlides : [];
   const total = slides.length;
-  const featuredProduct = products.find((p) => p.id === 8) || products[0];
-  const { addToCart } = useApp();
+
 
   useEffect(() => {
     if (active >= total && total > 0) {
@@ -205,73 +204,49 @@ function HeroSection({ lang }: { lang: string }) {
 
   return (
     <section aria-label="Главный баннер" className="max-w-7xl mx-auto px-4 pt-5 pb-2">
-      <div className="flex gap-4" style={{ minHeight: 360 }}>
-        {/* Main Carousel */}
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch" style={{ minHeight: 380 }}>
+        {/* Main News Carousel (70%) */}
         <div
-          className="flex-1 relative rounded-2xl overflow-hidden bg-gray-900"
+          className="w-full lg:flex-[7] relative rounded-2xl overflow-hidden bg-gray-900 min-h-[340px] sm:min-h-[380px]"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          {slides.map((slide, i) => {
-            const title = lang === "uz" ? slide.titleUz : slide.titleRu;
-            const desc = lang === "uz" ? slide.descUz : slide.descRu;
-            const badges = [slide.badge1, slide.badge2, slide.badge3].filter(Boolean) as string[];
-
-            return (
-              <div
-                key={slide.id || i}
-                className={`absolute inset-0 transition-all duration-700 ${
-                  i === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
-                }`}
-              >
+          {slides.map((slide, i) => (
+            <div
+              key={slide.id || i}
+              className={`absolute inset-0 transition-all duration-700 ${
+                i === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+              }`}
+            >
+              {slide.link ? (
+                <Link to={slide.link} className="block w-full h-full">
+                  <img
+                    src={slide.image}
+                    alt="Баннер"
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+              ) : (
                 <img
                   src={slide.image}
-                  alt={title}
+                  alt="Баннер"
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
-                <div className="absolute inset-0 flex flex-col justify-center p-6 md:p-10 max-w-xl">
-                  <h2
-                    className="text-white text-2xl md:text-4xl font-extrabold leading-tight mb-3 drop-shadow-md"
-                    style={{ fontFamily: "Barlow Condensed, sans-serif" }}
+              )}
+
+              {slide.link && (
+                <div className="absolute bottom-6 left-6 z-10 pointer-events-auto">
+                  <Link
+                    to={slide.link}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
                   >
-                    {title}
-                  </h2>
-                  <p className="text-white/80 text-sm md:text-base leading-relaxed mb-5 line-clamp-2 max-w-md drop-shadow">
-                    {desc}
-                  </p>
-                  <div className="flex items-center gap-2.5 flex-wrap">
-                    {badges.map((b, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/15 shadow-xs"
-                      >
-                        <span>{idx === 0 ? "🛡️" : idx === 1 ? "🚚" : "💎"}</span>
-                        <span>{b}</span>
-                      </div>
-                    ))}
-                    {badges.length === 0 && (
-                      <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/15 shadow-xs">
-                        <span>⚡</span>
-                        <span>Minimall Marketplace</span>
-                      </div>
-                    )}
-                  </div>
-                  {slide.link && (
-                    <div className="mt-5">
-                      <Link
-                        to={slide.link}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
-                      >
-                        <span>{lang === "uz" ? "Batafsil ko'rish" : "Смотреть подробнее"}</span>
-                        <span>→</span>
-                      </Link>
-                    </div>
-                  )}
+                    <span>{lang === "uz" ? "Batafsil" : "Подробнее"}</span>
+                    <span>→</span>
+                  </Link>
                 </div>
-              </div>
-            );
-          })}
+              )}
+            </div>
+          ))}
 
           {total > 1 && (
             <>
@@ -312,22 +287,9 @@ function HeroSection({ lang }: { lang: string }) {
           )}
         </div>
 
-        {/* Featured Product Sidebar */}
-        <div className="hidden lg:flex w-72 shrink-0 bg-white border border-gray-100 rounded-2xl flex-col items-center p-5 shadow-sm hover:shadow-lg transition-all duration-300 group relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-24 h-24 bg-gradient-to-br from-red-500/10 to-transparent rounded-full" />
-          <Link to={`/product/${featuredProduct.slug}`} className="w-full bg-gradient-to-br from-gray-50 to-white rounded-xl overflow-hidden mb-4 flex items-center justify-center relative" style={{ height: 180 }}>
-            <img src={featuredProduct.image} alt={lang === "ru" ? featuredProduct.name : featuredProduct.nameUz} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-          </Link>
-          <h3 className="text-sm font-semibold text-gray-800 text-center leading-snug mb-2">
-            <Link to={`/product/${featuredProduct.slug}`} className="hover:text-red-600 transition-colors">
-              {lang === "ru" ? featuredProduct.name : featuredProduct.nameUz}
-            </Link>
-          </h3>
-          <div className="text-xl font-extrabold text-gray-900 mb-1.5">{formatPrice(featuredProduct.price)}</div>
-          <StarRating rating={featuredProduct.rating} />
-          <button onClick={() => addToCart(featuredProduct)} className="mt-3 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-[0.97]">
-            {T[lang as "ru" | "uz"].addToCart}
-          </button>
+        {/* Sale Products Carousel (30%) */}
+        <div className="w-full lg:flex-[3] flex flex-col min-h-[360px] lg:min-h-0">
+          <SaleCarousel lang={lang} />
         </div>
       </div>
     </section>
@@ -465,4 +427,193 @@ function DiscountProductsRow({ lang }: { lang: string }) {
   );
 }
 
+// ─── Sale Carousel Sidebar ────────────────────────────────────────────────────
 
+function SaleCarousel({ lang }: { lang: string }) {
+  const { products } = useProducts();
+  const { addToCart } = useApp();
+  const t = T[lang as "ru" | "uz"];
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const saleProducts = products.filter(
+    (p) =>
+      (p.oldPrice && p.oldPrice > p.price) ||
+      (p.badge && /скидк|sale|акци/i.test(p.badge))
+  );
+
+  useEffect(() => {
+    if (active >= saleProducts.length && saleProducts.length > 0) {
+      setActive(0);
+    }
+  }, [active, saleProducts.length]);
+
+  useEffect(() => {
+    if (saleProducts.length <= 1 || paused) return;
+    const id = setInterval(() => setActive((a) => (a + 1) % saleProducts.length), 3500);
+    return () => clearInterval(id);
+  }, [paused, saleProducts.length]);
+
+  // Empty state when no sale products have been added yet
+  if (saleProducts.length === 0) {
+    return (
+      <div className="h-full w-full min-h-[340px] bg-gradient-to-br from-white via-red-50/25 to-amber-50/20 border border-red-100/90 rounded-2xl flex flex-col justify-between p-5 shadow-xs relative overflow-hidden group">
+        {/* Ambient background decoration */}
+        <div className="absolute -top-10 -right-10 w-36 h-36 bg-red-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-red-500/15 transition-all duration-500" />
+        <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <span className="text-xs font-black uppercase tracking-wider text-red-600">
+              {lang === "ru" ? "Товары со скидкой" : "Chegirmali tovarlar"}
+            </span>
+          </div>
+          <span className="bg-gradient-to-r from-red-500 to-rose-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
+            Sale %
+          </span>
+        </div>
+
+        {/* Center content */}
+        <div className="my-auto py-5 text-center flex flex-col items-center relative z-10">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-red-500/20 mb-4 group-hover:scale-105 transition-transform duration-300">
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-black text-gray-900 mb-2 leading-snug" style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.02em" }}>
+            {lang === "ru" ? "Горячие скидки и акции" : "Qaynoq chegirmalar va aksiyalar"}
+          </h3>
+          <p className="text-xs text-gray-500 leading-relaxed max-w-[250px]">
+            {lang === "ru"
+              ? "Следите за обновлениями! Скоро здесь появятся выгодные спецпредложения и сезонные скидки на лучшие инструменты."
+              : "Yangiliklarni kuzatib boring! Tez orada bu yerda eng yaxshi asboblar uchun mavsumiy chegirmalar va maxsus takliflar paydo bo'ladi."}
+          </p>
+        </div>
+
+        {/* Bottom customer action */}
+        <div className="pt-2 relative z-10">
+          <Link
+            to="/catalog"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white hover:bg-gray-50 text-gray-800 hover:text-red-600 border border-gray-200 hover:border-red-200 rounded-xl text-xs font-bold shadow-2xs transition-all active:scale-98"
+          >
+            <span>{lang === "ru" ? "Смотреть все товары" : "Barcha tovarlarni ko'rish"}</span>
+            <span>→</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const p = saleProducts[active];
+  const discount = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : null;
+  const name = lang === "ru" ? p.name : p.nameUz;
+
+  return (
+    <div
+      className="h-full w-full min-h-[340px] bg-white border border-gray-100 rounded-2xl flex flex-col justify-between p-0 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-black uppercase tracking-wider text-red-600">
+            {lang === "ru" ? "Товары со скидкой" : "Chegirmali tovarlar"}
+          </span>
+          <span className="bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase animate-pulse">Sale</span>
+        </div>
+        {saleProducts.length > 1 && (
+          <div className="flex items-center gap-1">
+            {saleProducts.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActive(i)}
+                aria-label={`Товар ${i + 1}`}
+                className={`rounded-full transition-all cursor-pointer ${
+                  i === active
+                    ? "bg-red-500 w-5 h-1.5"
+                    : "bg-gray-200 hover:bg-gray-300 w-1.5 h-1.5"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Product Image */}
+      <div className="relative overflow-hidden mx-3 rounded-xl bg-gradient-to-br from-gray-50 to-white flex-1 min-h-[160px] max-h-[190px]">
+        <Link to={`/product/${p.slug}`} className="block w-full h-full">
+          <img
+            key={p.id}
+            src={p.image}
+            alt={name}
+            className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
+          />
+        </Link>
+        {/* Badges */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {discount !== null && (
+            <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-sm">
+              -{discount}%
+            </span>
+          )}
+          {p.badge && (
+            <span className="bg-gradient-to-r from-orange-400 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-sm">
+              {p.badge}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="px-4 py-3 flex flex-col justify-between shrink-0">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2">
+            <Link to={`/product/${p.slug}`} className="hover:text-red-600 transition-colors">
+              {name}
+            </Link>
+          </h3>
+          <div className="flex items-baseline gap-2 mb-0.5">
+            <span className="text-base font-extrabold text-gray-900">{formatPrice(p.price)}</span>
+            {p.oldPrice && (
+              <span className="text-xs text-gray-400 line-through">{formatPrice(p.oldPrice)}</span>
+            )}
+          </div>
+          <StarRating rating={p.rating} />
+        </div>
+        <button
+          onClick={() => addToCart(p)}
+          className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer"
+        >
+          {t.addToCart}
+        </button>
+      </div>
+
+      {/* Prev / Next arrows */}
+      {saleProducts.length > 1 && (
+        <>
+          <button
+            onClick={() => setActive((a) => (a - 1 + saleProducts.length) % saleProducts.length)}
+            aria-label="Предыдущий"
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white backdrop-blur-sm text-gray-500 hover:text-red-500 w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-sm border border-gray-100 cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => setActive((a) => (a + 1) % saleProducts.length)}
+            aria-label="Следующий"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white backdrop-blur-sm text-gray-500 hover:text-red-500 w-7 h-7 rounded-full flex items-center justify-center transition-all shadow-sm border border-gray-100 cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+    </div>
+  );
+}

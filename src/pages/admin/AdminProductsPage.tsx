@@ -7,6 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 import { formatPrice } from "@/utils/formatPrice";
 
@@ -22,7 +23,7 @@ export default function AdminProductsPage() {
 
   useDocumentMeta({
     title: "Панель управления товарами | Minimall Admin",
-    description: "Управление каталогом товаров маркетплейса Minimall.uz",
+    description: "Управление каталогом товаров маркетплейса mini-mall.uz",
     noIndex: true,
   });
 
@@ -105,14 +106,16 @@ export default function AdminProductsPage() {
     );
   };
 
-  const handleDuplicate = (product: Product) => {
-    const duplicated = addProduct({
+  const handleDuplicate = async (product: Product) => {
+    const duplicated = await addProduct({
       ...product,
       name: `${product.name} (Копия)`,
       nameUz: `${product.nameUz || product.name} (Nusxa)`,
       slug: `${product.slug}-copy`,
     });
-    showToast(`Создана копия товара: "${duplicated.name}"`);
+    if (duplicated) {
+      showToast(`Создана копия товара: "${duplicated.name}"`);
+    }
   };
 
   if (!canView) {
@@ -232,43 +235,48 @@ export default function AdminProductsPage() {
         </div>
 
         {/* Category Filter */}
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full md:w-auto text-xs sm:text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-        >
-          <option value="all">Все категории</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.key} value={c.key}>
-              {c.labelRu}
-            </option>
-          ))}
-        </select>
+        <div className="w-full md:w-48">
+          <CustomSelect
+            value={selectedCategory}
+            onChange={(val) => setSelectedCategory(val)}
+            options={[
+              { value: "all", label: "Все категории" },
+              ...CATEGORIES.map((c) => ({
+                value: c.key,
+                label: c.labelRu,
+                icon: c.icon,
+              })),
+            ]}
+          />
+        </div>
 
         {/* Brand Filter */}
-        <select
-          value={selectedBrand}
-          onChange={(e) => setSelectedBrand(e.target.value)}
-          className="w-full md:w-auto text-xs sm:text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-        >
-          <option value="all">Все бренды</option>
-          {brands.map((b) => (
-            <option key={b} value={b}>
-              {b}
-            </option>
-          ))}
-        </select>
+        <div className="w-full md:w-44">
+          <CustomSelect
+            value={selectedBrand}
+            onChange={(val) => setSelectedBrand(val)}
+            options={[
+              { value: "all", label: "Все бренды" },
+              ...brands.map((b) => ({
+                value: b,
+                label: b,
+              })),
+            ]}
+          />
+        </div>
 
         {/* Stock Filter */}
-        <select
-          value={stockFilter}
-          onChange={(e) => setStockFilter(e.target.value as "all" | "in" | "out")}
-          className="w-full md:w-auto text-xs sm:text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-        >
-          <option value="all">Любой статус</option>
-          <option value="in">В наличии</option>
-          <option value="out">Нет в наличии</option>
-        </select>
+        <div className="w-full md:w-44">
+          <CustomSelect
+            value={stockFilter}
+            onChange={(val) => setStockFilter(val as "all" | "in" | "out")}
+            options={[
+              { value: "all", label: "Любой статус" },
+              { value: "in", label: "В наличии", icon: "🟢" },
+              { value: "out", label: "Нет в наличии", icon: "🔴" },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Products Table */}

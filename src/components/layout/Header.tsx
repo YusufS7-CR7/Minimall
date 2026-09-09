@@ -7,6 +7,7 @@ import type { Lang } from "@/data/types";
 import CartDrawer from "@/components/ui/CartDrawer";
 import CatalogModal from "@/components/ui/CatalogModal";
 import FavoritesModal from "@/components/ui/FavoritesModal";
+import OrderHistoryModal from "@/components/ui/OrderHistoryModal";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 
 interface HeaderProps {
@@ -22,6 +23,7 @@ export default function Header({ lang }: HeaderProps) {
   const [cartOpen, setCartOpen] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -190,6 +192,16 @@ export default function Header({ lang }: HeaderProps) {
                       <p className="text-xs text-gray-400 truncate">{user.email}</p>
                     </div>
                     <button
+                      id="my-orders-btn"
+                      onClick={() => { setOrdersOpen(true); setUserMenuOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium border-b border-gray-100"
+                    >
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      {lang === "ru" ? "Мои заказы" : "Mening buyurtmalarim"}
+                    </button>
+                    <button
                       id="logout-btn"
                       onClick={() => { logout(); setUserMenuOpen(false); showToast("Вы вышли из аккаунта"); }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
@@ -284,6 +296,9 @@ export default function Header({ lang }: HeaderProps) {
 
       {/* Favorites modal */}
       <FavoritesModal isOpen={favoritesOpen} onClose={() => setFavoritesOpen(false)} />
+
+      {/* Order history modal */}
+      <OrderHistoryModal isOpen={ordersOpen} onClose={() => setOrdersOpen(false)} />
     </>
   );
 }

@@ -28,6 +28,7 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   status: OrderStatus;
+  userId?: string;   // ID покупателя из user_profiles (undefined = гость)
 }
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, { ru: string; uz: string; color: string }> = {

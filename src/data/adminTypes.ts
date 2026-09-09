@@ -48,7 +48,7 @@ export const ALL_ADMIN_PERMISSIONS: AdminPermissionDef[] = [
   {
     id: "products_reset",
     label: "Сброс каталога",
-    description: "Возврат базы товаров к исходным 12 заводским позициям",
+    description: "Очистка базы товаров до пустого каталога",
     category: "products",
   },
   {

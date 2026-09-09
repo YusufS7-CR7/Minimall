@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { BannerSlide } from "@/data/bannerTypes";
-import { translateText } from "@/utils/googleTranslate";
+import { uploadMediaFile } from "@/lib/storage";
 
 interface BannerFormModalProps {
   isOpen: boolean;
@@ -17,54 +17,31 @@ export default function BannerFormModal({
 }: BannerFormModalProps) {
   const isEditing = !!slide;
 
-  const [titleRu, setTitleRu] = useState("");
-  const [titleUz, setTitleUz] = useState("");
-  const [descRu, setDescRu] = useState("");
-  const [descUz, setDescUz] = useState("");
   const [image, setImage] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [link, setLink] = useState("/catalog");
   const [isActive, setIsActive] = useState(true);
-  const [badge1, setBadge1] = useState("Оригинал");
-  const [badge2, setBadge2] = useState("Быстрая доставка");
-  const [badge3, setBadge3] = useState("Лучшие цены");
-
-  const [translatingTitle, setTranslatingTitle] = useState(false);
-  const [translatingDesc, setTranslatingDesc] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (slide) {
-      setTitleRu(slide.titleRu);
-      setTitleUz(slide.titleUz);
-      setDescRu(slide.descRu);
-      setDescUz(slide.descUz);
       setImage(slide.image);
       setUrlInput(slide.image.startsWith("data:") ? "" : slide.image);
       setLink(slide.link || "/catalog");
       setIsActive(slide.isActive);
-      setBadge1(slide.badge1 || "");
-      setBadge2(slide.badge2 || "");
-      setBadge3(slide.badge3 || "");
     } else {
-      setTitleRu("");
-      setTitleUz("");
-      setDescRu("");
-      setDescUz("");
       setImage("https://images.unsplash.com/photo-1504148455328-c376907d081c?w=1200&h=500&fit=crop&auto=format");
       setUrlInput("");
       setLink("/catalog");
       setIsActive(true);
-      setBadge1("Оригинал");
-      setBadge2("Быстрая доставка");
-      setBadge3("Лучшие цены");
     }
   }, [slide, isOpen]);
 
   if (!isOpen) return null;
 
-  // Handle local file upload via FileReader
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle local file upload via Supabase Storage (with fallback)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -73,15 +50,19 @@ export default function BannerFormModal({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      if (result) {
-        setImage(result);
+    setUploading(true);
+    try {
+      const res = await uploadMediaFile(file, "banners");
+      if (res.url) {
+        setImage(res.url);
         setUrlInput("");
       }
-    };
-    reader.readAsDataURL(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      console.error("Banner upload error:", err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleApplyUrl = () => {
@@ -90,44 +71,21 @@ export default function BannerFormModal({
     }
   };
 
-  const handleTranslateTitle = async () => {
-    if (!titleRu.trim()) return;
-    setTranslatingTitle(true);
-    const res = await translateText(titleRu);
-    setTranslatingTitle(false);
-    if (res) setTitleUz(res);
-  };
-
-  const handleTranslateDesc = async () => {
-    if (!descRu.trim()) return;
-    setTranslatingDesc(true);
-    const res = await translateText(descRu);
-    setTranslatingDesc(false);
-    if (res) setDescUz(res);
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!titleRu.trim()) {
-      alert("Укажите заголовок баннера");
-      return;
-    }
     if (!image) {
-      alert("Добавьте изображение баннера");
+      alert("Пожалуйста, добавьте изображение баннера (с компьютера или по ссылке)");
       return;
     }
 
     onSave({
-      titleRu: titleRu.trim(),
-      titleUz: titleUz.trim() || titleRu.trim(),
-      descRu: descRu.trim(),
-      descUz: descUz.trim() || descRu.trim(),
+      titleRu: "Баннер",
+      titleUz: "Banner",
+      descRu: "",
+      descUz: "",
       image,
       link: link.trim() || "/catalog",
       isActive,
-      badge1: badge1.trim() || undefined,
-      badge2: badge2.trim() || undefined,
-      badge3: badge3.trim() || undefined,
     });
     onClose();
   };
@@ -162,34 +120,26 @@ export default function BannerFormModal({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
           {/* Image Upload / URL Section */}
-          <div className="space-y-3 bg-gray-50 p-4 rounded-2xl border border-gray-200">
+          <div className="space-y-4 bg-gray-50 p-5 rounded-2xl border border-gray-200">
             <div className="flex items-center justify-between">
-              <span className="font-bold text-gray-900 flex items-center gap-1.5">
-                <span>📸</span> Фотография баннера
+              <span className="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
+                <span>📸</span> Изображение баннера <span className="text-red-500">*</span>
               </span>
-              <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md border border-amber-200">
-                Идеально: 1200 × 500 px (16:9 или 2.4:1)
+              <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-200">
+                1200 × 500 px (или 1920 × 800 px)
               </span>
             </div>
 
-            {/* Recommendation info callout */}
-            <div className="bg-amber-50/90 border border-amber-200 text-amber-900 p-3 rounded-xl text-xs flex items-start gap-2.5">
-              <span className="text-base shrink-0">💡</span>
-              <div className="leading-relaxed">
-                <span className="font-bold">Рекомендуемый размер для карусели новостей:</span>{" "}
-                <strong className="text-amber-950 font-extrabold underline decoration-amber-500">1200 × 500 px</strong> (или 1920 × 800 px).
-                <p className="text-[11px] text-amber-800 mt-0.5">
-                  Рекомендуется горизонтальное изображение высокого разрешения. Главные визуальные элементы и товары лучше размещать по центру или ближе к правому краю, так как слева поверх фото накладывается заголовок и описание баннера.
-                </p>
-              </div>
-            </div>
+            <p className="text-xs text-gray-500">
+              Баннер отображается в главной карусели как чистое изображение без перекрывающих текстов.
+            </p>
 
             {/* Upload buttons row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Option 1: File from Computer */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-700">
-                  Вариант 1: Загрузить файл с компьютера
+                  Загрузить картинку с компьютера
                 </label>
                 <input
                   type="file"
@@ -200,18 +150,28 @@ export default function BannerFormModal({
                 />
                 <button
                   type="button"
+                  disabled={uploading}
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
+                  className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
                 >
-                  <span>📁</span>
-                  <span>Добавить фотку с компьютера</span>
+                  {uploading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Загрузка в облако...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>📁</span>
+                      <span>Выбрать файл на устройстве</span>
+                    </>
+                  )}
                 </button>
               </div>
 
               {/* Option 2: Image URL */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] font-bold text-gray-700">
-                  Вариант 2: Вставить прямую ссылку на фото (URL)
+                  Или вставить прямую ссылку (URL)
                 </label>
                 <div className="flex gap-1.5">
                   <input
@@ -226,7 +186,7 @@ export default function BannerFormModal({
                     onClick={handleApplyUrl}
                     className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shrink-0 cursor-pointer"
                   >
-                    + Добавить фотку
+                    Применить
                   </button>
                 </div>
               </div>
@@ -234,159 +194,42 @@ export default function BannerFormModal({
 
             {/* Live Banner Preview */}
             {image && (
-              <div className="relative rounded-2xl overflow-hidden border border-gray-300 shadow-sm mt-2" style={{ height: 160 }}>
-                <img src={image} alt="Предпросмотр баннера" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent flex flex-col justify-center p-5 text-white">
-                  <div className="text-xs uppercase font-bold tracking-wider text-red-400">Предпросмотр на сайте</div>
-                  <div className="text-base sm:text-xl font-bold truncate max-w-md mt-0.5">
-                    {titleRu || "Заголовок баннера"}
-                  </div>
-                  <div className="text-xs text-white/70 truncate max-w-sm mt-1">
-                    {descRu || "Краткое описание акции или предложения"}
-                  </div>
+              <div className="space-y-1.5 pt-2">
+                <div className="text-[11px] font-bold text-gray-500">Предпросмотр баннера:</div>
+                <div className="relative rounded-2xl overflow-hidden border border-gray-300 shadow-sm" style={{ height: 200 }}>
+                  <img src={image} alt="Предпросмотр баннера" className="w-full h-full object-cover" />
+                  {link && (
+                    <div className="absolute bottom-4 left-4 z-10">
+                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 text-white text-xs font-bold rounded-xl shadow-md">
+                        <span>Подробнее</span>
+                        <span>→</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Titles RU & UZ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Заголовок на русском (RU) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={titleRu}
-                onChange={(e) => setTitleRu(e.target.value)}
-                placeholder="Новое поступление Bosch Professional"
-                className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-gray-700">
-                  Заголовок на узбекском (UZ)
-                </label>
-                <button
-                  type="button"
-                  onClick={handleTranslateTitle}
-                  disabled={translatingTitle || !titleRu.trim()}
-                  className="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer disabled:opacity-50 flex items-center gap-1"
-                >
-                  <span>🌐</span>
-                  <span>{translatingTitle ? "Перевод..." : "Google Перевод"}</span>
-                </button>
-              </div>
-              <input
-                type="text"
-                value={titleUz}
-                onChange={(e) => setTitleUz(e.target.value)}
-                placeholder="Bosch Professional yangi mahsulotlar"
-                className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Descriptions RU & UZ */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Описание акции (RU)
-              </label>
-              <textarea
-                rows={3}
-                value={descRu}
-                onChange={(e) => setDescRu(e.target.value)}
-                placeholder="Официальные поставки профессионального инструмента с гарантией..."
-                className="w-full text-xs sm:text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-gray-700">
-                  Описание акции (UZ)
-                </label>
-                <button
-                  type="button"
-                  onClick={handleTranslateDesc}
-                  disabled={translatingDesc || !descRu.trim()}
-                  className="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer disabled:opacity-50 flex items-center gap-1"
-                >
-                  <span>🌐</span>
-                  <span>{translatingDesc ? "Перевод..." : "Google Перевод"}</span>
-                </button>
-              </div>
-              <textarea
-                rows={3}
-                value={descUz}
-                onChange={(e) => setDescUz(e.target.value)}
-                placeholder="Rasmiy kafolat bilan professional asboblarni yetkazib berish..."
-                className="w-full text-xs sm:text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white"
-              />
-            </div>
-          </div>
-
-          {/* Link & Badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            <div className="sm:col-span-1">
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Ссылка при клике
-              </label>
-              <input
-                type="text"
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                placeholder="/catalog или /brand/bosch"
-                className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Бейдж 1
-              </label>
-              <input
-                type="text"
-                value={badge1}
-                onChange={(e) => setBadge1(e.target.value)}
-                placeholder="Оригинал"
-                className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Бейдж 2
-              </label>
-              <input
-                type="text"
-                value={badge2}
-                onChange={(e) => setBadge2(e.target.value)}
-                placeholder="Быстрая доставка"
-                className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Бейдж 3
-              </label>
-              <input
-                type="text"
-                value={badge3}
-                onChange={(e) => setBadge3(e.target.value)}
-                placeholder="Лучшие цены"
-                className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl"
-              />
-            </div>
+          {/* Link */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Ссылка для перехода по кнопке «Подробнее» (и клику на баннер)
+            </label>
+            <input
+              type="text"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              placeholder="/catalog или /brand/makita"
+              className="w-full text-xs sm:text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white"
+            />
+            <p className="text-[11px] text-gray-400 mt-1">
+              При нажатии на кнопку «Подробнее» или на сам баннер пользователь перейдет по этой ссылке.
+            </p>
           </div>
 
           {/* Status */}
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-1">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -395,7 +238,7 @@ export default function BannerFormModal({
                 className="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500 cursor-pointer accent-red-600"
               />
               <span className="text-xs font-semibold text-gray-800">
-                Показывать баннер на главной странице сайта
+                Показывать баннер в карусели на главной странице
               </span>
             </label>
           </div>

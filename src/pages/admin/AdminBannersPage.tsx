@@ -115,64 +115,48 @@ export default function AdminBannersPage() {
               !slide.isActive ? "opacity-60 bg-gray-50/50" : ""
             }`}
           >
-            {/* Image Preview with overlay text */}
-            <div className="relative bg-gray-900 overflow-hidden" style={{ height: 200 }}>
+            {/* Image Preview */}
+            <div className="relative bg-gray-100 overflow-hidden" style={{ height: 200 }}>
               <img
                 src={slide.image}
-                alt={slide.titleRu}
+                alt={`Слайд ${index + 1}`}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col justify-between p-4 text-white">
-                <div className="flex items-center justify-between">
-                  <span className="bg-black/60 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-full border border-white/20">
-                    Слайд #{index + 1}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      slide.isActive
-                        ? "bg-emerald-500 text-white"
-                        : "bg-gray-700 text-gray-300"
-                    }`}
-                  >
-                    {slide.isActive ? "Показывается" : "Скрыт"}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-extrabold line-clamp-1 leading-snug">
-                    {slide.titleRu}
-                  </h3>
-                  <p className="text-xs text-white/80 line-clamp-2 mt-0.5">
-                    {slide.descRu}
-                  </p>
-                </div>
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                <span className="bg-black/70 backdrop-blur-xs text-white text-[11px] font-bold px-2.5 py-1 rounded-full border border-white/20 shadow-xs">
+                  Слайд #{index + 1}
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2.5 py-1 rounded-full shadow-xs ${
+                    slide.isActive
+                      ? "bg-emerald-500 text-white"
+                      : "bg-gray-800 text-gray-300"
+                  }`}
+                >
+                  {slide.isActive ? "✓ Активен" : "✕ Скрыт"}
+                </span>
               </div>
+              {slide.link && (
+                <div className="absolute bottom-3 left-3 pointer-events-none">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 text-white text-[11px] font-bold rounded-lg shadow-md">
+                    <span>Подробнее</span>
+                    <span>→</span>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Meta info & Actions */}
             <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-              <div className="space-y-1.5 text-xs text-gray-600">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-gray-400">🇺🇿 На узбекском:</span>
-                  <span className="font-semibold text-gray-800 truncate">{slide.titleUz}</span>
-                </div>
-                {slide.link && (
+              <div className="space-y-1 text-xs text-gray-600">
+                {slide.link ? (
                   <div className="flex items-center gap-1.5">
-                    <span className="text-gray-400">🔗 Ссылка:</span>
+                    <span className="text-gray-400">🔗 Ссылка при клике:</span>
                     <span className="font-mono text-red-600 font-semibold">{slide.link}</span>
                   </div>
+                ) : (
+                  <div className="text-gray-400">Без ссылки (только показ изображения)</div>
                 )}
-                {/* Badges preview */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  {[slide.badge1, slide.badge2, slide.badge3].filter(Boolean).map((b, i) => (
-                    <span
-                      key={i}
-                      className="bg-gray-100 text-gray-700 text-[10px] font-medium px-2 py-0.5 rounded-md border border-gray-200/60"
-                    >
-                      {b}
-                    </span>
-                  ))}
-                </div>
               </div>
 
               {/* Action buttons */}

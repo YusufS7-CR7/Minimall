@@ -59,14 +59,14 @@ export default function AdminUsersPage() {
     setModalOpen(true);
   };
 
-  const handleDelete = (target: AdminUser) => {
+  const handleDelete = async (target: AdminUser) => {
     if (target.isSuperAdmin) {
       alert("Главного администратора нельзя удалить!");
       return;
     }
 
     if (window.confirm(`Вы действительно хотите удалить администратора "${target.name}" (@${target.username})?`)) {
-      const res = deleteAdmin(target.id);
+      const res = await deleteAdmin(target.id);
       if (res.success) {
         showToast(`Администратор "${target.name}" удален`);
       } else {
@@ -75,9 +75,9 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleToggleStatus = (target: AdminUser) => {
+  const handleToggleStatus = async (target: AdminUser) => {
     if (target.isSuperAdmin) return;
-    const res = toggleAdminStatus(target.id);
+    const res = await toggleAdminStatus(target.id);
     if (res.success) {
       showToast(
         target.isActive
@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleSave = (data: {
+  const handleSave = async (data: {
     username: string;
     name: string;
     password: string;
@@ -95,7 +95,7 @@ export default function AdminUsersPage() {
     permissions: AdminPermission[];
   }) => {
     if (editingAdmin) {
-      const res = updateAdmin(editingAdmin.id, {
+      const res = await updateAdmin(editingAdmin.id, {
         name: data.name,
         password: data.password || undefined,
         role: data.role,
@@ -106,7 +106,7 @@ export default function AdminUsersPage() {
       }
       return res;
     } else {
-      const res = createAdmin({
+      const res = await createAdmin({
         username: data.username,
         name: data.name,
         password: data.password,

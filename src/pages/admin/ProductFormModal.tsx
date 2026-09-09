@@ -5,6 +5,8 @@ import { useProducts } from "@/context/ProductsContext";
 import { slugify } from "@/data/products";
 import { translateText } from "@/utils/googleTranslate";
 import { matchBrandFuzzy } from "@/utils/brandSearch";
+import CustomSelect from "@/components/ui/CustomSelect";
+import { uploadMediaFile } from "@/lib/storage";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -102,6 +104,7 @@ export default function ProductFormModal({
   // Images state: array of images (first image is primary on product card)
   const [imagesList, setImagesList] = useState<string[]>([]);
   const [imageInputUrl, setImageInputUrl] = useState("");
+  const [uploadingImages, setUploadingImages] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [descRu, setDescRu] = useState("");
@@ -193,24 +196,23 @@ export default function ProductFormModal({
     }
   };
 
-  // Handle adding multiple images from local computer files via FileReader
-  const handleUploadFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle adding multiple images from local computer files via Supabase Storage (with fallback)
+  const handleUploadFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const readers: Promise<string>[] = Array.from(files).map((file) => {
-      return new Promise((resolve) => {
-        const r = new FileReader();
-        r.onload = (ev) => resolve(ev.target?.result as string);
-        r.readAsDataURL(file);
-      });
-    });
-
-    Promise.all(readers).then((newImages) => {
-      const valid = newImages.filter(Boolean);
-      setImagesList((prev) => [...prev, ...valid]);
+    setUploadingImages(true);
+    try {
+      const uploadPromises = Array.from(files).map((file) => uploadMediaFile(file, "products"));
+      const results = await Promise.all(uploadPromises);
+      const urls = results.map((r) => r.url).filter(Boolean);
+      setImagesList((prev) => [...prev, ...urls]);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    });
+    } catch (err) {
+      console.error("Image upload error:", err);
+    } finally {
+      setUploadingImages(false);
+    }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -265,7 +267,7 @@ export default function ProductFormModal({
     setSpecsList(updated);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -300,7 +302,7 @@ export default function ProductFormModal({
     const primaryImage = imagesList[0];
 
     if (productToEdit) {
-      updateProduct(productToEdit.id, {
+      await updateProduct(productToEdit.id, {
         name: name.trim(),
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
@@ -327,7 +329,7 @@ export default function ProductFormModal({
         slug: slug.trim() || slugify(name.trim()),
       });
     } else {
-      const created = addProduct({
+      const created = await addProduct({
         name: name.trim(),
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
@@ -346,7 +348,7 @@ export default function ProductFormModal({
         specs: specsRecord,
       });
 
-      onSuccess(created);
+      if (created) onSuccess(created);
     }
 
     onClose();
@@ -442,7 +444,7 @@ export default function ProductFormModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Название товара (RU) <span className="text-red-500">*</span>
+                  Название товара <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -450,39 +452,6 @@ export default function ProductFormModal({
                   placeholder="например: Ударная дрель Makita HP1630"
                   value={name}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Название товара (UZ)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleTranslateName}
-                    disabled={translatingName || !name.trim()}
-                    title="Автоматически перевести с RU на UZ через Google Translate"
-                    className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {translatingName ? (
-                      <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
-                      </svg>
-                    )}
-                    {translatingName ? "Переводим..." : "Google Перевод"}
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  placeholder="masalan: Makita HP1630 zarbli burg'u"
-                  value={nameUz}
-                  onChange={(e) => setNameUz(e.target.value)}
                   className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
                 />
               </div>
@@ -646,17 +615,15 @@ export default function ProductFormModal({
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Категория каталога
                   </label>
-                  <select
+                  <CustomSelect
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c.key} value={c.key}>
-                        {c.labelRu} ({c.labelUz})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setCategory(val)}
+                    options={CATEGORIES.map((c) => ({
+                      value: c.key,
+                      label: c.labelRu,
+                      icon: c.icon,
+                    }))}
+                  />
                 </div>
               </div>
 
@@ -705,31 +672,31 @@ export default function ProductFormModal({
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Бейдж на карточке
                   </label>
-                  <select
+                  <CustomSelect
                     value={badge}
-                    onChange={(e) => setBadge(e.target.value)}
-                    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-                  >
-                    <option value="">Без бейджа</option>
-                    <option value="Хит">Хит продаж</option>
-                    <option value="Новинка">Новинка</option>
-                    <option value="Скидка">Акция / Скидка</option>
-                  </select>
+                    onChange={(val) => setBadge(val)}
+                    options={[
+                      { value: "", label: "Без бейджа" },
+                      { value: "Хит", label: "Хит продаж", icon: "🔥" },
+                      { value: "Новинка", label: "Новинка", icon: "✨" },
+                      { value: "Скидка", label: "Акция / Скидка", icon: "🏷️" },
+                    ]}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Рейтинг (1-5)
                   </label>
-                  <select
+                  <CustomSelect
                     value={rating}
-                    onChange={(e) => setRating(parseInt(e.target.value, 10))}
-                    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-                  >
-                    <option value={5}>★★★★★ (5)</option>
-                    <option value={4}>★★★★☆ (4)</option>
-                    <option value={3}>★★★☆☆ (3)</option>
-                  </select>
+                    onChange={(val) => setRating(val)}
+                    options={[
+                      { value: 5, label: "★★★★★ (5.0)" },
+                      { value: 4, label: "★★★★☆ (4.0)" },
+                      { value: 3, label: "★★★☆☆ (3.0)" },
+                    ]}
+                  />
                 </div>
 
                 <div className="flex items-center gap-3 pt-6">
@@ -794,11 +761,21 @@ export default function ProductFormModal({
                     />
                     <button
                       type="button"
+                      disabled={uploadingImages}
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>📁</span>
-                      <span>Добавить фотку с компьютера (выбрать файлы)</span>
+                      {uploadingImages ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Загрузка фото в облако...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>📁</span>
+                          <span>Добавить фотку с компьютера (выбрать файлы)</span>
+                        </>
+                      )}
                     </button>
                     <p className="text-[10px] text-gray-400 text-center">
                       Можно выбрать сразу несколько фото с компьютера (JPG, PNG, WEBP)
@@ -931,46 +908,16 @@ export default function ProductFormModal({
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Описание на русском языке (RU)
+                  Описание товара
                 </label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   placeholder="Подробное описание назначения, комплектации и преимуществ инструмента..."
                   value={descRu}
-                  onChange={(e) => setDescRu(e.target.value)}
-                  className="w-full text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Описание на узбекском языке (UZ)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleTranslateDesc}
-                    disabled={translatingDesc || !descRu.trim()}
-                    title="Автоматически перевести описание с RU на UZ через Google Translate"
-                    className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {translatingDesc ? (
-                      <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" />
-                      </svg>
-                    ) : (
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
-                      </svg>
-                    )}
-                    {translatingDesc ? "Переводим..." : "Google Перевод"}
-                  </button>
-                </div>
-                <textarea
-                  rows={3}
-                  placeholder="Asbobning maqsadi, to'plami va afzalliklari haqida batafsil tavsif..."
-                  value={descUz}
-                  onChange={(e) => setDescUz(e.target.value)}
+                  onChange={(e) => {
+                    setDescRu(e.target.value);
+                    setDescUz(e.target.value);
+                  }}
                   className="w-full text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
                 />
               </div>
@@ -1038,7 +985,7 @@ export default function ProductFormModal({
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400 font-mono">
-                    https://minimall.uz/product/
+                    https://mini-mall.uz/product/
                   </span>
                   <input
                     type="text"
@@ -1062,7 +1009,7 @@ export default function ProductFormModal({
                   Предпросмотр сниппета в Google:
                 </p>
                 <div className="text-xs text-gray-600 mb-1 font-mono">
-                  https://minimall.uz &gt; product &gt; {slug || "primer-tovara"}
+                  https://mini-mall.uz &gt; product &gt; {slug || "primer-tovara"}
                 </div>
                 <div className="text-blue-700 hover:underline text-base font-medium cursor-pointer line-clamp-1">
                   {name || "Название товара"} — купить в Ташкенте | Minimall

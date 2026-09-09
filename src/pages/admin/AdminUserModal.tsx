@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { AdminUser, AdminPermission } from "@/data/adminTypes";
 import { ALL_ADMIN_PERMISSIONS } from "@/data/adminTypes";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 interface AdminUserModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface AdminUserModalProps {
     password: string;
     role: "admin" | "manager";
     permissions: AdminPermission[];
-  }) => { success: boolean; error?: string };
+  }) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
 }
 
 export default function AdminUserModal({
@@ -34,6 +35,7 @@ export default function AdminUserModal({
     "products_edit",
   ]);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (adminToEdit) {
@@ -77,7 +79,7 @@ export default function AdminUserModal({
     setPermissions(["products_view"]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -101,18 +103,25 @@ export default function AdminUserModal({
       return;
     }
 
-    const res = onSave({
-      username: username.trim().toLowerCase(),
-      name: name.trim(),
-      password,
-      role,
-      permissions: isSuperAdmin ? ALL_ADMIN_PERMISSIONS.map((p) => p.id) : permissions,
-    });
+    setSaving(true);
+    try {
+      const res = await onSave({
+        username: username.trim().toLowerCase(),
+        name: name.trim(),
+        password,
+        role,
+        permissions: isSuperAdmin ? ALL_ADMIN_PERMISSIONS.map((p) => p.id) : permissions,
+      });
 
-    if (!res.success) {
-      setError(res.error || "Ошибка сохранения");
-    } else {
-      onClose();
+      if (!res.success) {
+        setError(res.error || "Ошибка сохранения");
+      } else {
+        onClose();
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Неизвестная ошибка сохранения");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -217,21 +226,19 @@ export default function AdminUserModal({
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
                 Роль в системе
               </label>
-              <select
+              <CustomSelect
                 disabled={isSuperAdmin}
                 value={isSuperAdmin ? "superadmin" : role}
-                onChange={(e) => setRole(e.target.value as "admin" | "manager")}
-                className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-              >
-                {isSuperAdmin ? (
-                  <option value="superadmin">👑 Главный Администратор (Суперадмин)</option>
-                ) : (
-                  <>
-                    <option value="admin">🛡️ Администратор</option>
-                    <option value="manager">💼 Контент-менеджер</option>
-                  </>
-                )}
-              </select>
+                onChange={(val) => setRole(val as "admin" | "manager")}
+                options={
+                  isSuperAdmin
+                    ? [{ value: "superadmin", label: "Главный Администратор (Суперадмин)", icon: "👑" }]
+                    : [
+                        { value: "admin", label: "Администратор", icon: "🛡️" },
+                        { value: "manager", label: "Контент-менеджер", icon: "💼" },
+                      ]
+                }
+              />
             </div>
           </div>
 
@@ -330,9 +337,19 @@ export default function AdminUserModal({
             </button>
             <button
               type="submit"
-              className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-red-600/20 transition-all cursor-pointer"
+              disabled={saving}
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-red-600/20 transition-all cursor-pointer flex items-center gap-2"
             >
-              {isEditing ? "Сохранить изменения" : "Создать администратора"}
+              {saving ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Сохранение...
+                </>
+              ) : isEditing ? (
+                "Сохранить изменения"
+              ) : (
+                "Создать администратора"
+              )}
             </button>
           </div>
         </form>

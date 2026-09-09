@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { useOrders } from "@/context/OrdersContext";
+import { useAuth } from "@/context/AuthContext";
 import type { CustomerInfo } from "@/data/orderTypes";
 
 import { formatPrice } from "@/utils/formatPrice";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -13,6 +15,7 @@ interface CheckoutModalProps {
 export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
   const { cart, totalCartPrice, clearCart, lang, showToast } = useApp();
   const { placeOrder } = useOrders();
+  const { user, userProfile, saveProfile } = useAuth();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+998 ");
@@ -20,33 +23,43 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
   const [address, setAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<CustomerInfo["paymentMethod"]>("cash");
   const [comment, setComment] = useState("");
+  const [saveData, setSaveData] = useState(true);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
+
+  // ── Auto-fill from saved profile ──────────────────────────────────────────
+  useEffect(() => {
+    if (!isOpen) return;
+    if (userProfile) {
+      if (userProfile.name) setName(userProfile.name);
+      if (userProfile.phone) setPhone(userProfile.phone);
+      if (userProfile.city) setCity(userProfile.city);
+      if (userProfile.address) setAddress(userProfile.address);
+    } else if (user) {
+      setName(user.name);
+    }
+  }, [isOpen, userProfile, user]);
 
   if (!isOpen) return null;
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
-    if (!val.startsWith("+998")) {
-      val = "+998 ";
-    }
+    if (!val.startsWith("+998")) val = "+998 ";
     setPhone(val);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) {
       showToast("Пожалуйста, укажите ваше имя");
       return;
     }
-
     if (phone.trim().length < 9) {
       showToast("Пожалуйста, укажите контактный номер телефона");
       return;
     }
-
     if (!address.trim()) {
       showToast("Укажите адрес доставки");
       return;
@@ -54,42 +67,55 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      const orderItems = cart.map((i) => ({
-        productId: i.product.id,
-        slug: i.product.slug,
-        name: i.product.name,
-        nameUz: i.product.nameUz,
-        image: i.product.image,
-        price: i.product.price,
-        count: i.count,
-      }));
+    // Save profile for next order (if user logged in and checkbox checked)
+    if (user && saveData) {
+      await saveProfile({
+        name: name.trim(),
+        phone: phone.trim(),
+        city: city.trim(),
+        address: address.trim(),
+      });
+    }
 
-      const res = placeOrder(
-        {
-          name: name.trim(),
-          phone: phone.trim(),
-          city: city.trim(),
-          address: address.trim(),
-          paymentMethod,
-          comment: comment.trim() || undefined,
-        },
-        orderItems,
-        totalCartPrice
-      );
+    const orderItems = cart.map((i) => ({
+      productId: i.product.id,
+      slug: i.product.slug,
+      name: i.product.name,
+      nameUz: i.product.nameUz,
+      image: i.product.image,
+      price: i.product.price,
+      count: i.count,
+    }));
 
-      setIsSubmitting(false);
-      if (res.success) {
-        clearCart();
-        setCompletedOrderId(res.orderId);
-      }
-    }, 400);
+    const res = await placeOrder(
+      {
+        name: name.trim(),
+        phone: phone.trim(),
+        city: city.trim(),
+        address: address.trim(),
+        paymentMethod,
+        comment: comment.trim() || undefined,
+      },
+      orderItems,
+      totalCartPrice,
+      user?.id
+    );
+
+    setIsSubmitting(false);
+    if (res.success) {
+      clearCart();
+      setCompletedOrderId(res.orderId);
+    } else {
+      showToast("Ошибка при оформлении заказа. Попробуйте ещё раз.");
+    }
   };
 
   const handleFinish = () => {
     setCompletedOrderId(null);
     onClose();
   };
+
+  const isProfileFilled = !!(userProfile?.phone && userProfile?.address);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
@@ -122,6 +148,20 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
           </button>
         </div>
 
+        {/* Quick-fill banner for logged-in users with saved profile */}
+        {!completedOrderId && user && isProfileFilled && (
+          <div className="px-6 pt-4">
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 text-xs text-emerald-700 font-medium">
+              <span className="text-base">⚡</span>
+              <span>
+                {lang === "ru"
+                  ? "Данные заполнены из вашего профиля — просто проверьте и подтвердите!"
+                  : "Ma'lumotlar profilingizdan to'ldirildi — tekshirib tasdiqlang!"}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Success screen */}
         {completedOrderId ? (
           <div className="p-8 text-center space-y-5">
@@ -145,6 +185,14 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                 ? `Спасибо за заказ, ${name}! Менеджер Minimall свяжется с вами по номеру ${phone} для подтверждения деталей доставки.`
                 : `Rahmat, ${name}! Minimall menejeri yetkazib berish tafsilotlarini tasdiqlash uchun tez orada siz bilan bog'lanadi.`}
             </p>
+
+            {user && (
+              <p className="text-xs text-gray-400">
+                {lang === "ru"
+                  ? "Отслеживайте статус заказа в разделе «Мои заказы»"
+                  : "\"Mening buyurtmalarim\" bo'limida holati kuzating"}
+              </p>
+            )}
 
             <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 text-xs text-gray-500 space-y-1">
               <div>📞 Горячая линия поддержки: <a href="tel:+998970363636" className="text-gray-900 font-bold hover:text-red-600">+998 (97) 036 36 36</a></div>
@@ -224,20 +272,20 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                 <label className="block text-xs font-bold text-gray-700 mb-1">
                   Город / Регион
                 </label>
-                <select
+                <CustomSelect
                   value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full text-sm px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white"
-                >
-                  <option value="Ташкент">Ташкент</option>
-                  <option value="Ташкентская область">Ташкентская обл.</option>
-                  <option value="Самарканд">Самарканд</option>
-                  <option value="Бухара">Бухара</option>
-                  <option value="Андижан">Андижан</option>
-                  <option value="Фергана">Фергана</option>
-                  <option value="Наманган">Наманган</option>
-                  <option value="Другой регион">Другой регион</option>
-                </select>
+                  onChange={(val) => setCity(val)}
+                  options={[
+                    { value: "Ташкент", label: "Ташкент", icon: "🏙️" },
+                    { value: "Ташкентская область", label: "Ташкентская обл.", icon: "🏞️" },
+                    { value: "Самарканд", label: "Самарканд", icon: "🕌" },
+                    { value: "Бухара", label: "Бухара", icon: "🏛️" },
+                    { value: "Андижан", label: "Андижан", icon: "🌄" },
+                    { value: "Фергана", label: "Фергана", icon: "🌳" },
+                    { value: "Наманган", label: "Наманган", icon: "🌺" },
+                    { value: "Другой регион", label: "Другой регион", icon: "📦" },
+                  ]}
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-gray-700 mb-1">
@@ -278,7 +326,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                       type="radio"
                       name="payment"
                       checked={paymentMethod === m.id}
-                      onChange={() => setPaymentMethod(m.id as any)}
+                      onChange={() => setPaymentMethod(m.id as CustomerInfo["paymentMethod"])}
                       className="sr-only"
                     />
                     <span>{m.icon}</span>
@@ -301,6 +349,31 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                 className="w-full text-xs px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors"
               />
             </div>
+
+            {/* Save data for next order (only for logged-in users) */}
+            {user && (
+              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                <div
+                  onClick={() => setSaveData((v) => !v)}
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                    saveData
+                      ? "bg-red-500 border-red-500"
+                      : "border-gray-300 group-hover:border-red-300"
+                  }`}
+                >
+                  {saveData && (
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-xs text-gray-600">
+                  {lang === "ru"
+                    ? "Сохранить данные для быстрого оформления следующих заказов"
+                    : "Keyingi buyurtmalar uchun ma'lumotlarni saqlash"}
+                </span>
+              </label>
+            )}
 
             {/* Submit */}
             <div className="pt-2">

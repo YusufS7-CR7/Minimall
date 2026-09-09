@@ -29,9 +29,9 @@ export default function ProductPage() {
       ? `${name} — купить в Ташкенте | Minimall`
       : "Товар не найден | Minimall",
     description: product
-      ? `${name}: ${desc.slice(0, 150)}. Купить на Minimall.uz с доставкой по Узбекистану.`
+      ? `${name}: ${desc.slice(0, 150)}. Купить на mini-mall.uz с доставкой по Узбекистану.`
       : undefined,
-    canonical: product ? `https://minimall.uz/product/${product.slug}` : undefined,
+    canonical: product ? `https://mini-mall.uz/product/${product.slug}` : undefined,
     structuredData: product
       ? {
           "@context": "https://schema.org",
@@ -43,7 +43,7 @@ export default function ProductPage() {
           sku: `MM-${product.id}`,
           offers: {
             "@type": "Offer",
-            url: `https://minimall.uz/product/${product.slug}`,
+            url: `https://mini-mall.uz/product/${product.slug}`,
             priceCurrency: "UZS",
             price: product.price,
             availability: product.inStock

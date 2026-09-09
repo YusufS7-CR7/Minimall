@@ -10,8 +10,8 @@ export default function NotFoundPage() {
     title: lang === "ru" ? "Страница не найдена (404) — Minimall" : "Sahifa topilmadi (404) — Minimall",
     description:
       lang === "ru"
-        ? "Запрашиваемая страница не найдена на маркетплейсе Minimall.uz. Вернитесь на главную страницу или воспользуйтесь каталогом товаров."
-        : "Minimall.uz marketpleysida so'ralgan sahifa topilmadi. Bosh sahifaga qayting yoki mahsulotlar katalogidan foydalaning.",
+        ? "Запрашиваемая страница не найдена на маркетплейсе mini-mall.uz. Вернитесь на главную страницу или воспользуйтесь каталогом товаров."
+        : "mini-mall.uz marketpleysida so'ralgan sahifa topilmadi. Bosh sahifaga qayting yoki mahsulotlar katalogidan foydalaning.",
     noIndex: true,
   });
 

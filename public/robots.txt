@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
 Disallow: /search
 
-Sitemap: https://minimall.uz/sitemap.xml
+Sitemap: https://mini-mall.uz/sitemap.xml
