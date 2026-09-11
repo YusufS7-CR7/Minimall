@@ -71,9 +71,9 @@ export default function BrandPage() {
   });
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
       {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
+      <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
         <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
           <li>
             <Link to="/" className="hover:text-red-500 transition-colors">
@@ -232,7 +232,7 @@ export default function BrandPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
                 {filteredProducts.map((p) => (
                   <ProductCard key={p.id} product={p} lang={lang} />
                 ))}

@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { useOrders } from "@/context/OrdersContext";
 import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import type { OrderStatus } from "@/data/orderTypes";
+import type { Order, OrderStatus } from "@/data/orderTypes";
 import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
-
 import { formatPrice } from "@/utils/formatPrice";
 import CustomSelect from "@/components/ui/CustomSelect";
+import OrderInvoiceModal from "./OrderInvoiceModal";
+import TelegramSettingsModal from "./TelegramSettingsModal";
 
 export default function AdminOrdersPage() {
   const { orders, updateOrderStatus, deleteOrder, fetchAllOrders, loading } = useOrders();
@@ -20,13 +21,34 @@ export default function AdminOrdersPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "week">("all");
+
+  // Modals state
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
 
   const filteredOrders = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const sevenDaysAgo = startOfToday - 7 * 24 * 60 * 60 * 1000;
+
     return orders.filter((o) => {
       // Status filter
       if (selectedStatus !== "all" && o.status !== selectedStatus) {
         return false;
       }
+
+      // Date filter
+      if (dateFilter !== "all") {
+        const orderTime = new Date(o.createdAt).getTime();
+        if (dateFilter === "today" && orderTime < startOfToday) {
+          return false;
+        }
+        if (dateFilter === "week" && orderTime < sevenDaysAgo) {
+          return false;
+        }
+      }
+
       // Search
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -41,7 +63,7 @@ export default function AdminOrdersPage() {
       }
       return true;
     });
-  }, [orders, selectedStatus, searchQuery]);
+  }, [orders, selectedStatus, dateFilter, searchQuery]);
 
   const stats = useMemo(() => {
     const total = orders.length;
@@ -77,10 +99,62 @@ export default function AdminOrdersPage() {
     }
   };
 
+  // Export orders to Excel CSV with UTF-8 BOM
+  const handleExportCsv = () => {
+    if (filteredOrders.length === 0) {
+      showToast("Нет заказов для экспорта");
+      return;
+    }
+
+    const headers = [
+      "№ Заказа",
+      "Дата оформления",
+      "ФИО Покупателя",
+      "Телефон",
+      "Город",
+      "Адрес",
+      "Способ оплаты",
+      "Сумма (сум)",
+      "Статус",
+      "Комментарий",
+      "Состав заказа",
+    ];
+
+    const rows = filteredOrders.map((o) => {
+      const itemsStr = o.items.map((i) => `${i.name} (${i.count} шт. x ${i.price} сум)`).join(" | ");
+      return [
+        o.id,
+        new Date(o.createdAt).toLocaleString("ru-RU"),
+        `"${o.customer.name.replace(/"/g, '""')}"`,
+        `"${o.customer.phone}"`,
+        `"${o.customer.city.replace(/"/g, '""')}"`,
+        `"${o.customer.address.replace(/"/g, '""')}"`,
+        o.customer.paymentMethod,
+        o.totalAmount,
+        ORDER_STATUS_LABELS[o.status]?.ru || o.status,
+        `"${(o.customer.comment || "").replace(/"/g, '""')}"`,
+        `"${itemsStr.replace(/"/g, '""')}"`,
+      ].join(";");
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `minimall_orders_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("Файл заказов CSV успешно скачан");
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-xs">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-gray-100 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
             <h1
@@ -99,77 +173,72 @@ export default function AdminOrdersPage() {
             Все заказы, оформленные покупателями на сайте, поступают сюда в реальном времени
           </p>
         </div>
-        <button
-          onClick={() => fetchAllOrders()}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
-        >
-          {loading
-            ? <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-            : "🔄"}
-          Обновить
-        </button>
+
+        {/* Top actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Telegram notifications setup */}
+          <button
+            onClick={() => setIsTelegramModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-colors cursor-pointer"
+            title="Настройка Telegram-бота для мгновенных оповещений"
+          >
+            <span>✈️</span>
+            <span>Telegram бот</span>
+          </button>
+
+          {/* Export CSV */}
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+            title="Скачать заказы в Excel / CSV"
+          >
+            <span>📥</span>
+            <span>Экспорт в CSV</span>
+          </button>
+
+          {/* Refresh button */}
+          <button
+            onClick={() => fetchAllOrders()}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? (
+              <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span>🔄</span>
+            )}
+            <span>Обновить</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Всего заказов
-          </div>
-          <div
-            className="text-2xl sm:text-3xl font-black text-gray-900 mt-1"
-            style={{ fontFamily: "Barlow Condensed, sans-serif" }}
-          >
-            {stats.total}
-          </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Всего заказов</div>
+          <div className="text-2xl sm:text-3xl font-black text-gray-900 mt-1" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>{stats.total}</div>
           <div className="text-[11px] text-gray-400 mt-1">за все время</div>
         </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Новые заказы
-          </div>
-          <div
-            className="text-2xl sm:text-3xl font-black text-blue-600 mt-1"
-            style={{ fontFamily: "Barlow Condensed, sans-serif" }}
-          >
-            {stats.newCount}
-          </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Новые</div>
+          <div className="text-2xl sm:text-3xl font-black text-blue-600 mt-1" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>{stats.newCount}</div>
           <div className="text-[11px] text-blue-600/80 mt-1">требуют подтверждения</div>
         </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            В доставке / работе
-          </div>
-          <div
-            className="text-2xl sm:text-3xl font-black text-purple-600 mt-1"
-            style={{ fontFamily: "Barlow Condensed, sans-serif" }}
-          >
-            {stats.inProgress}
-          </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">В доставке</div>
+          <div className="text-2xl sm:text-3xl font-black text-purple-600 mt-1" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>{stats.inProgress}</div>
           <div className="text-[11px] text-purple-600/80 mt-1">активные отгрузки</div>
         </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Сумма заказов
-          </div>
-          <div
-            className="text-xl sm:text-2xl font-black text-gray-900 mt-1 truncate"
-            style={{ fontFamily: "Barlow Condensed, sans-serif" }}
-            title={formatPrice(stats.totalValue)}
-          >
-            {formatPrice(stats.totalValue)}
-          </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Сумма</div>
+          <div className="text-lg sm:text-2xl font-black text-gray-900 mt-1 truncate" style={{ fontFamily: "Barlow Condensed, sans-serif" }} title={formatPrice(stats.totalValue)}>{formatPrice(stats.totalValue)}</div>
           <div className="text-[11px] text-gray-400 mt-1">общий оборот</div>
         </div>
       </div>
 
       {/* Filter toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col sm:flex-row items-center gap-3">
-        <div className="relative w-full sm:flex-1">
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col md:flex-row items-center gap-3">
+        <div className="relative w-full md:flex-1">
           <span className="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
           <input
             type="text"
@@ -180,7 +249,36 @@ export default function AdminOrdersPage() {
           />
         </div>
 
-        <div className="w-full sm:w-48">
+        {/* Date Filter Pills */}
+        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-full md:w-auto shrink-0 text-xs font-semibold">
+          <button
+            onClick={() => setDateFilter("all")}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              dateFilter === "all" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            Все даты
+          </button>
+          <button
+            onClick={() => setDateFilter("today")}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              dateFilter === "today" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            Сегодня
+          </button>
+          <button
+            onClick={() => setDateFilter("week")}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              dateFilter === "week" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            7 дней
+          </button>
+        </div>
+
+        {/* Status Filter */}
+        <div className="w-full md:w-48">
           <CustomSelect
             value={selectedStatus}
             onChange={(val) => setSelectedStatus(val)}
@@ -205,16 +303,17 @@ export default function AdminOrdersPage() {
           </div>
         ) : (
           filteredOrders.map((order) => {
-            const statusMeta = ORDER_STATUS_LABELS[order.status];
+            const cleanedPhone = order.customer.phone.replace(/[^0-9]/g, "");
+
             return (
               <div
                 key={order.id}
                 className="bg-white rounded-3xl border border-gray-100 shadow-xs p-5 sm:p-6 transition-all hover:shadow-md space-y-4"
               >
                 {/* Header row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-black font-mono text-gray-900 bg-gray-100 px-3 py-1 rounded-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 pb-3 border-b border-gray-100">
+                  <div className="flex items-center justify-between sm:justify-start gap-3">
+                    <span className="text-base font-black font-mono text-gray-900 bg-gray-100 px-2.5 py-1 rounded-xl">
                       {order.id}
                     </span>
                     <span className="text-xs text-gray-400">
@@ -224,9 +323,9 @@ export default function AdminOrdersPage() {
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Status dropdown */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-400 font-medium">Статус:</span>
-                      <div className="w-36">
+                    <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
+                      <span className="text-xs text-gray-400 font-medium shrink-0">Статус:</span>
+                      <div className="flex-1 sm:flex-none sm:w-36">
                         <CustomSelect
                           value={order.status}
                           onChange={(val) => handleStatusChange(order.id, val as OrderStatus)}
@@ -242,9 +341,20 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
+                    {/* Print Invoice Button */}
+                    <button
+                      onClick={() => setInvoiceOrder(order)}
+                      className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+                      title="Открыть товарный чек / накладную для печати"
+                    >
+                      <span>🖨️</span>
+                      <span className="hidden sm:inline">Чек</span>
+                    </button>
+
+                    {/* Delete Order Button */}
                     <button
                       onClick={() => handleDelete(order.id)}
-                      className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                      className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer shrink-0"
                       title="Удалить заказ"
                     >
                       🗑️
@@ -260,12 +370,34 @@ export default function AdminOrdersPage() {
                       <span>👤</span>
                       <span>{order.customer.name}</span>
                     </div>
-                    <div className="font-mono text-gray-800 font-semibold">
-                      📞 <a href={`tel:${order.customer.phone}`} className="hover:text-red-600 underline underline-offset-2">{order.customer.phone}</a>
+
+                    {/* Phone + Quick Telegram Contact */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a
+                        href={`tel:${order.customer.phone}`}
+                        className="font-mono text-gray-800 font-bold hover:text-red-600 underline underline-offset-2 flex items-center gap-1"
+                      >
+                        <span>📞</span>
+                        <span>{order.customer.phone}</span>
+                      </a>
+                      {cleanedPhone && (
+                        <a
+                          href={`https://t.me/+${cleanedPhone}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="bg-sky-100 hover:bg-sky-200 text-sky-700 text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors flex items-center gap-0.5"
+                          title="Написать клиенту в Telegram"
+                        >
+                          <span>✈️</span>
+                          <span>Telegram</span>
+                        </a>
+                      )}
                     </div>
+
                     <div className="text-gray-600">
                       📍 <strong>{order.customer.city}</strong>, {order.customer.address}
                     </div>
+
                     <div className="text-gray-500 pt-1 border-t border-gray-200/60">
                       💳 Оплата:{" "}
                       <span className="font-bold text-gray-800">
@@ -278,6 +410,7 @@ export default function AdminOrdersPage() {
                           : "Безналичный расчет (юр. лица)"}
                       </span>
                     </div>
+
                     {order.customer.comment && (
                       <div className="bg-amber-50 text-amber-800 p-2 rounded-lg text-[11px] border border-amber-200/60">
                         💬 <em>«{order.customer.comment}»</em>
@@ -327,6 +460,20 @@ export default function AdminOrdersPage() {
           })
         )}
       </div>
+
+      {/* Invoice Modal for Printing */}
+      <OrderInvoiceModal
+        order={invoiceOrder}
+        isOpen={!!invoiceOrder}
+        onClose={() => setInvoiceOrder(null)}
+      />
+
+      {/* Telegram Settings Modal */}
+      <TelegramSettingsModal
+        isOpen={isTelegramModalOpen}
+        onClose={() => setIsTelegramModalOpen(false)}
+        onSuccessToast={showToast}
+      />
     </div>
   );
 }

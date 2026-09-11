@@ -20,9 +20,10 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
   if (!open && !checkoutOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={t.cart}>
+    <div className="fixed inset-0 z-50 flex items-end sm:justify-end" role="dialog" aria-modal="true" aria-label={t.cart}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={onClose} aria-hidden="true" />
-      <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col p-6 z-10 animate-slideLeft">
+      {/* On mobile: slide up from bottom full-width; on desktop: slide in from right */}
+      <div className="relative w-full sm:max-w-md bg-white sm:h-full h-[92vh] rounded-t-3xl sm:rounded-none shadow-2xl flex flex-col p-5 sm:p-6 z-10 animate-slideUp sm:animate-slideLeft">
         <div className="flex items-center justify-between pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
@@ -65,21 +66,29 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
                   <div className="text-xs text-red-600 font-extrabold mt-1">
                     {formatPrice(item.product.price)}
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-2.5">
                     <button
                       onClick={() => updateCartCount(item.product.id, -1)}
                       aria-label="Уменьшить количество"
-                      className="w-6 h-6 bg-white border border-gray-200 rounded flex items-center justify-center text-xs font-bold text-gray-600 hover:bg-gray-100"
+                      className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-100 active:scale-95 cursor-pointer"
                     >
                       -
                     </button>
-                    <span className="text-xs font-bold text-gray-800">{item.count}</span>
+                    <span className="text-xs font-extrabold text-gray-800 min-w-[20px] text-center">{item.count}</span>
                     <button
                       onClick={() => updateCartCount(item.product.id, 1)}
                       aria-label="Увеличить количество"
-                      className="w-6 h-6 bg-white border border-gray-200 rounded flex items-center justify-center text-xs font-bold text-gray-600 hover:bg-gray-100"
+                      className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-100 active:scale-95 cursor-pointer"
                     >
                       +
+                    </button>
+                    <button
+                      onClick={() => updateCartCount(item.product.id, -item.count)}
+                      aria-label="Удалить товар"
+                      className="w-8 h-8 ml-auto text-gray-400 hover:text-red-600 flex items-center justify-center text-xs rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                      title="Удалить из корзины"
+                    >
+                      🗑️
                     </button>
                   </div>
                 </div>
@@ -90,7 +99,7 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
 
         {/* Checkout */}
         {cart.length > 0 && (
-          <div className="pt-4 border-t border-gray-100">
+          <div className="pt-4 border-t border-gray-100" style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}>
             <div className="flex justify-between items-center mb-4">
               <span className="text-sm font-semibold text-gray-600">
                 {lang === "ru" ? "Итого:" : "Jami:"}

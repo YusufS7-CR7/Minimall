@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "format": "oxfmt"
+    "format": "oxfmt",
+    "test:systems": "node scripts/verifyAllSystems.js",
+    "bot": "node server/telegramBotService.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",

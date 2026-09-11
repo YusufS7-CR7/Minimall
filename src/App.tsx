@@ -14,6 +14,7 @@ import Header from "@/components/layout/Header";
 import CategoryNavBar from "@/components/layout/CategoryNavBar";
 import Footer from "@/components/layout/Footer";
 import FloatingButtons from "@/components/layout/FloatingButtons";
+import MobileNavBar from "@/components/layout/MobileNavBar";
 import Toast from "@/components/ui/Toast";
 import AuthModal from "@/components/auth/AuthModal";
 import InfoModal, { type InfoModalSection } from "@/components/ui/InfoModal";
@@ -110,7 +111,8 @@ function AppLayout() {
       <TopBar lang={lang} onOpenInfo={handleOpenInfo} />
       <Header lang={lang} />
       <CategoryNavBar lang={lang} />
-      <div className="flex-1">
+      {/* pb-16 on mobile to clear the sticky bottom nav */}
+      <div className="flex-1 pb-16 md:pb-0">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CategoryPage />} />
@@ -123,6 +125,7 @@ function AppLayout() {
         </Routes>
       </div>
       <Footer lang={lang} onOpenInfo={handleOpenInfo} />
+      <MobileNavBar />
       <FloatingButtons />
       <Toast />
       <AuthModal />

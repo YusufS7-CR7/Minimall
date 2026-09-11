@@ -126,17 +126,17 @@ export default function AdminUserModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-xs">
+      <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[90vh]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">
+        <div className="bg-white text-gray-900 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between border-b border-gray-100 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="text-xl sm:text-2xl">
               {isSuperAdmin ? "👑" : isEditing ? "✏️" : "👤"}
             </span>
             <div>
               <h2
-                className="text-xl font-bold tracking-wide"
+                className="text-lg sm:text-xl font-bold tracking-wide text-gray-900"
                 style={{ fontFamily: "Barlow Condensed, sans-serif" }}
               >
                 {isSuperAdmin
@@ -145,7 +145,7 @@ export default function AdminUserModal({
                   ? `Редактирование: ${adminToEdit?.name}`
                   : "Создание нового администратора"}
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-[11px] sm:text-xs text-gray-400">
                 {isSuperAdmin
                   ? "Главный администратор обладает всеми правами доступа"
                   : "Назначьте персональный логин, пароль и индивидуальные права доступа"}
@@ -154,14 +154,14 @@ export default function AdminUserModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 flex items-center justify-center text-sm transition-colors cursor-pointer shrink-0"
           >
             ✕
           </button>
         </div>
 
         {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 text-gray-900">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 text-gray-900">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-3 rounded-xl flex items-center gap-2">
               <span>⚠️</span>

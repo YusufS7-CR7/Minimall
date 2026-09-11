@@ -48,15 +48,16 @@ export default function Header({ lang }: HeaderProps) {
   return (
     <>
       <header className="bg-white sticky top-0 z-40 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center gap-5 h-[68px]">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-5 h-[60px] sm:h-[68px]">
+
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 shrink-0 group" aria-label="Minimall — на главную">
-              <div className="relative p-1 bg-white rounded-xl shadow-xs border border-gray-100 group-hover:border-red-200 transition-all">
+            <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0 group" aria-label="Minimall — на главную">
+              <div className="relative p-0.5 sm:p-1 bg-white rounded-xl shadow-xs border border-gray-100 group-hover:border-red-200 transition-all">
                 <img
                   src="/logo.jpg"
                   alt="Minimall"
-                  className="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   width={44}
                   height={44}
                 />
@@ -74,7 +75,7 @@ export default function Header({ lang }: HeaderProps) {
               </div>
             </Link>
 
-            {/* Catalog Button -> Navigates directly to full catalog */}
+            {/* Catalog Button — desktop only */}
             <Link
               id="catalog-toggle"
               to="/catalog"
@@ -86,7 +87,7 @@ export default function Header({ lang }: HeaderProps) {
               {t.catalog}
             </Link>
 
-            {/* Search */}
+            {/* Search — takes all remaining space, smaller on mobile */}
             <form
               role="search"
               onSubmit={handleSearch}
@@ -99,25 +100,24 @@ export default function Header({ lang }: HeaderProps) {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t.searchPlaceholder}
                 aria-label={t.searchPlaceholder}
-                className="flex-1 py-2.5 px-4 bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400"
+                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400 min-w-0"
               />
               <button
                 type="submit"
                 aria-label="Найти"
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2.5 transition-all"
+                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 transition-all shrink-0"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                 </svg>
               </button>
             </form>
 
-            {/* Theme Toggle (Desktop & Tablet) */}
+            {/* ── Desktop-only actions ── */}
             <div className="hidden sm:flex items-center px-1">
               <ThemeToggle showIcon={true} />
             </div>
 
-            {/* Favorites */}
             <button
               id="favorites-btn"
               onClick={() => setFavoritesOpen(true)}
@@ -137,7 +137,6 @@ export default function Header({ lang }: HeaderProps) {
               <span className="text-[10px] font-medium">{t.favorites}</span>
             </button>
 
-            {/* Cart */}
             <button
               id="cart-btn"
               onClick={() => setCartOpen(true)}
@@ -157,7 +156,6 @@ export default function Header({ lang }: HeaderProps) {
               <span className="text-[10px] font-medium">{t.cart}</span>
             </button>
 
-            {/* Auth button — Login or User menu */}
             {user ? (
               <div ref={userMenuRef} className="hidden md:block relative">
                 <button
@@ -168,11 +166,7 @@ export default function Header({ lang }: HeaderProps) {
                   className="flex flex-col items-center gap-0.5 text-gray-600 hover:text-red-500 transition-colors px-2 group"
                 >
                   {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="w-7 h-7 rounded-full object-cover ring-2 ring-red-100 group-hover:ring-red-300 transition"
-                    />
+                    <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover ring-2 ring-red-100 group-hover:ring-red-300 transition" />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center text-white text-xs font-bold ring-2 ring-red-100 group-hover:ring-red-300 transition">
                       {user.name.charAt(0).toUpperCase()}
@@ -181,46 +175,25 @@ export default function Header({ lang }: HeaderProps) {
                   <span className="text-[10px] font-medium max-w-[56px] truncate">{user.name.split(" ")[0]}</span>
                 </button>
 
-                {/* Dropdown */}
                 {userMenuOpen && (
-                  <div
-                    className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white shadow-xl border border-gray-100 overflow-hidden z-50"
-                    style={{ animation: "authSlideIn 0.18s cubic-bezier(.22,1,.36,1)" }}
-                  >
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white shadow-xl border border-gray-100 overflow-hidden z-50" style={{ animation: "authSlideIn 0.18s cubic-bezier(.22,1,.36,1)" }}>
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
                       <p className="text-xs text-gray-400 truncate">{user.email}</p>
                     </div>
-                    <button
-                      id="my-orders-btn"
-                      onClick={() => { setOrdersOpen(true); setUserMenuOpen(false); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium border-b border-gray-100"
-                    >
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                      </svg>
+                    <button id="my-orders-btn" onClick={() => { setOrdersOpen(true); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium border-b border-gray-100">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       {lang === "ru" ? "Мои заказы" : "Mening buyurtmalarim"}
                     </button>
-                    <button
-                      id="logout-btn"
-                      onClick={() => { logout(); setUserMenuOpen(false); showToast("Вы вышли из аккаунта"); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium"
-                    >
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
+                    <button id="logout-btn" onClick={() => { logout(); setUserMenuOpen(false); showToast("Вы вышли из аккаунта"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                       Выйти из аккаунта
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <button
-                id="login-btn"
-                onClick={() => openAuthModal("login")}
-                aria-label={T[lang].login}
-                className="hidden md:flex flex-col items-center gap-0.5 text-gray-500 hover:text-red-500 transition-colors px-2 group"
-              >
+              <button id="login-btn" onClick={() => openAuthModal("login")} aria-label={T[lang].login} className="hidden md:flex flex-col items-center gap-0.5 text-gray-500 hover:text-red-500 transition-colors px-2 group">
                 <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -228,13 +201,7 @@ export default function Header({ lang }: HeaderProps) {
               </button>
             )}
 
-            {/* Admin Panel */}
-            <Link
-              to="/admin"
-              aria-label="Админ-панель"
-              title="Перейти в панель управления товарами"
-              className="hidden md:flex flex-col items-center gap-0.5 text-gray-500 hover:text-red-500 transition-colors px-2 group"
-            >
+            <Link to="/admin" aria-label="Админ-панель" title="Перейти в панель управления товарами" className="hidden md:flex flex-col items-center gap-0.5 text-gray-500 hover:text-red-500 transition-colors px-2 group">
               <div className="relative">
                 <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -244,52 +211,14 @@ export default function Header({ lang }: HeaderProps) {
               <span className="text-[10px] font-medium">{lang === "ru" ? "Админка" : "Admin"}</span>
             </Link>
 
-            {/* Theme Toggle (Mobile) */}
-            <div className="flex sm:hidden items-center">
-              <ThemeToggle showIcon={false} />
-            </div>
-
-            {/* Mobile Admin Link */}
-            <Link
-              to="/admin"
-              aria-label="Админ-панель"
-              title="Админка"
-              className="md:hidden text-gray-600 hover:text-red-500 p-1"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </Link>
-
-            {/* Mobile cart */}
-            <button
-              onClick={() => setCartOpen(true)}
-              aria-label={t.cart}
-              className="md:hidden relative text-gray-600"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 9M17 13l2.3 9M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm8 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" />
-              </svg>
-              {totalCartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {totalCartCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
         {/* Accent bar */}
         <div className="h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-60" />
       </header>
 
-      {/* Catalog mega-menu — only mount when needed */}
-      <CatalogModal
-        id="catalog-modal"
-        lang={lang}
-        open={false}
-        onClose={() => {}}
-      />
+      {/* Catalog mega-menu */}
+      <CatalogModal id="catalog-modal" lang={lang} open={false} onClose={() => {}} />
 
       {/* Cart drawer */}
       <CartDrawer lang={lang} open={cartOpen} onClose={() => setCartOpen(false)} />

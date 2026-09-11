@@ -32,10 +32,10 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
   };
 
   return (
-    <footer className="bg-gray-950 text-white">
+    <footer className="bg-gray-950 text-white mb-16 md:mb-0">
       {/* Store Location Map Section in Footer */}
       <div className="border-t border-white/5 bg-gray-950">
-        <div className="max-w-7xl mx-auto px-4 py-10">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
           <div className="grid lg:grid-cols-12 gap-8 items-center bg-gray-900/70 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden">
             <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-red-500/10 to-transparent pointer-events-none" />
 
@@ -341,9 +341,42 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-gray-600 text-xs">{t.copyright}</p>
+      <div className="border-t border-white/5 bg-black/40">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-1 sm:gap-2.5 text-center sm:text-left">
+            <p className="text-gray-500">{t.copyright}</p>
+            <span className="hidden sm:inline text-gray-700">•</span>
+            {/* Discreet developer credit */}
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-600 flex-wrap justify-center sm:justify-start">
+              <span>{lang === "ru" ? "Разработка и поддержка:" : "Ishlab chiqish va qo'llab-quvvatlash:"}</span>
+              <a
+                href="https://t.me/yusuf_jf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-500 hover:text-sky-400 font-medium transition-colors inline-flex items-center gap-0.5"
+                title="Telegram разработчика"
+              >
+                <span>@yusuf_jf</span>
+              </a>
+              <span className="text-gray-700">|</span>
+              <a
+                href="tel:+998909513343"
+                className="hover:text-gray-400 transition-colors font-mono"
+                title="Позвонить"
+              >
+                (90) 951 33 43
+              </a>
+              <span className="text-gray-700">,</span>
+              <a
+                href="tel:+998921530513"
+                className="hover:text-gray-400 transition-colors font-mono"
+                title="Позвонить"
+              >
+                (92) 153 05 13
+              </a>
+            </div>
+          </div>
+
           <div className="flex items-center gap-4 text-xs">
             <button
               onClick={() => onOpenInfo("privacy")}

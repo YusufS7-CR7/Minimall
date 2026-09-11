@@ -1,6 +1,6 @@
 export default function FloatingButtons() {
   return (
-    <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+    <div className="fixed bottom-[76px] md:bottom-6 right-4 md:right-6 flex flex-col gap-3 z-50">
       <a
         href="tel:+998970363636"
         aria-label="Позвонить нам: +998 (97) 036 36 36"

@@ -118,22 +118,22 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
   const isProfileFilled = !!(userProfile?.phone && userProfile?.address);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/70 backdrop-blur-xs">
+      <div className="bg-white w-full sm:max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[92vh] animate-slideUp sm:animate-none">
         {/* Header */}
-        <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📦</span>
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <span className="text-xl sm:text-2xl">📦</span>
             <div>
               <h2
-                className="text-xl font-bold tracking-wide"
+                className="text-lg sm:text-xl font-bold tracking-wide"
                 style={{ fontFamily: "Barlow Condensed, sans-serif" }}
               >
                 {completedOrderId
                   ? (lang === "ru" ? "Заказ успешно оформлен!" : "Buyurtma muvaffaqiyatli rasmiylashtirildi!")
                   : (lang === "ru" ? "Оформление заказа" : "Buyurtmani rasmiylashtirish")}
               </h2>
-              <p className="text-xs text-gray-400">
+              <p className="text-[11px] sm:text-xs text-gray-400">
                 {completedOrderId
                   ? (lang === "ru" ? "Заказ передан в обработку" : "Buyurtma qabul qilindi")
                   : (lang === "ru" ? "Заполните данные для быстрой доставки" : "Yetkazib berish ma'lumotlarini to'ldiring")}
@@ -142,7 +142,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
           </div>
           <button
             onClick={completedOrderId ? handleFinish : onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm transition-colors cursor-pointer shrink-0"
           >
             ✕
           </button>
@@ -209,7 +209,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
           </div>
         ) : (
           /* Form screen */
-          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 flex-1 text-gray-900">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 flex-1 text-gray-900" style={{ paddingBottom: "env(safe-area-inset-bottom, 20px)" }}>
             {/* Order sum summary */}
             <div className="bg-red-50/70 border border-red-100 rounded-2xl p-4 space-y-2">
               <div className="flex items-center justify-between">

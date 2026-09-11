@@ -1,10 +1,107 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import type { AdminUser, AdminPermission } from "@/data/adminTypes";
 import { ALL_ADMIN_PERMISSIONS } from "@/data/adminTypes";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import AdminUserModal from "./AdminUserModal";
+
+// ── Superadmin own-password change form ───────────────────────────────────────
+function SuperAdminPasswordSection() {
+  const { adminUser, updateAdmin } = useAdminAuth();
+  const { showToast } = useApp();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPwd, setShowPwd] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (newPassword.length < 4) {
+      setError("Пароль должен содержать минимум 4 символа");
+      return;
+    }
+    if (newPassword !== confirmPwd) {
+      setError("Пароли не совпадают");
+      return;
+    }
+    setSaving(true);
+    const res = await updateAdmin(adminUser!.id, { password: newPassword });
+    setSaving(false);
+    if (res.success) {
+      showToast("Пароль Главного Администратора успешно изменён!");
+      setNewPassword("");
+      setConfirmPwd("");
+    } else {
+      setError(res.error || "Ошибка сохранения");
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-3xl border border-amber-200 shadow-xs overflow-hidden">
+      <div className="px-6 py-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center gap-3">
+        <span className="text-xl">👑</span>
+        <div>
+          <h3 className="text-sm font-bold text-gray-900">Сменить мой пароль</h3>
+          <p className="text-xs text-gray-500">Только Главный Администратор может изменить свой собственный пароль</p>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="p-6">
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
+            <span>⚠️</span><span>{error}</span>
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">Новый пароль *</label>
+            <div className="relative">
+              <input
+                type={showPwd ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Минимум 4 символа"
+                className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPwd((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs"
+              >
+                {showPwd ? "🙈" : "👁️"}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">Подтверждение пароля *</label>
+            <input
+              type={showPwd ? "text" : "password"}
+              value={confirmPwd}
+              onChange={(e) => setConfirmPwd(e.target.value)}
+              placeholder="Повторите пароль"
+              className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors font-mono"
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="submit"
+            disabled={saving || !newPassword || !confirmPwd}
+            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+          >
+            {saving ? (
+              <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Сохранение...</>
+            ) : (
+              "🔐 Сохранить новый пароль"
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 export default function AdminUsersPage() {
   const {
@@ -204,6 +301,9 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {/* Superadmin: Change own password */}
+      {isSuperAdmin && <SuperAdminPasswordSection />}
+
       {/* Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">
         <div className="relative flex-1">
@@ -226,8 +326,139 @@ export default function AdminUsersPage() {
         )}
       </div>
 
-      {/* Admins Table */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
+      {/* Mobile Admins List (Cards) */}
+      <div className="md:hidden space-y-3">
+        {filteredAdmins.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400 text-sm">
+            Администраторы не найдены
+          </div>
+        ) : (
+          filteredAdmins.map((target) => {
+            const isCurrent = adminUser?.id === target.id;
+            return (
+              <div
+                key={target.id}
+                className={`bg-white rounded-2xl border border-gray-100 p-4 shadow-xs flex flex-col gap-3 ${
+                  !target.isActive ? "opacity-60 bg-gray-50/40" : ""
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-base shrink-0 shadow-xs ${
+                        target.isSuperAdmin
+                          ? "bg-gradient-to-br from-amber-400 to-red-600 text-white shadow-red-500/20"
+                          : "bg-gradient-to-br from-gray-700 to-gray-900 text-white"
+                      }`}
+                    >
+                      {target.isSuperAdmin ? "👑" : target.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-gray-900 text-sm flex items-center gap-1.5 truncate">
+                        <span>{target.name}</span>
+                        {isCurrent && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">
+                            Вы
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-400 font-mono mt-0.5">@{target.username}</div>
+                    </div>
+                  </div>
+
+                  {target.isSuperAdmin ? (
+                    <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
+                      Бессрочно
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(target)}
+                      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors cursor-pointer shrink-0 ${
+                        target.isActive
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                          : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${target.isActive ? "bg-emerald-500" : "bg-red-500"}`} />
+                      <span>{target.isActive ? "Активен" : "Блок"}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">Роль:</span>
+                  {target.isSuperAdmin ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-amber-100 to-red-100 text-red-800 border border-red-200 px-2.5 py-0.5 rounded-full">
+                      👑 Главный Администратор
+                    </span>
+                  ) : target.role === "admin" ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 px-2.5 py-0.5 rounded-full">
+                      🛡️ Администратор
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-0.5 rounded-full">
+                      💼 Контент-менеджер
+                    </span>
+                  )}
+                </div>
+
+                {/* Permissions */}
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="text-[11px] text-gray-400 font-semibold mb-1">Разрешения:</div>
+                  {target.isSuperAdmin ? (
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                      ✨ Полный доступ ко всем разделам
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {target.permissions.map((pId) => {
+                        const pDef = ALL_ADMIN_PERMISSIONS.find((p) => p.id === pId);
+                        return (
+                          <span
+                            key={pId}
+                            className="text-[10px] bg-gray-100 text-gray-700 font-medium px-2 py-0.5 rounded-md"
+                          >
+                            {pDef ? pDef.label : pId}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => handleOpenEdit(target)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-colors cursor-pointer"
+                  >
+                    <span>✏️</span>
+                    <span>Редактировать права / пароль</span>
+                  </button>
+                  {!target.isSuperAdmin && (
+                    <button
+                      onClick={() => handleDelete(target)}
+                      disabled={isCurrent}
+                      className={`p-2 rounded-xl text-xs transition-colors ${
+                        isCurrent
+                          ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                          : "bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer border border-red-200"
+                      }`}
+                      title={isCurrent ? "Нельзя удалить себя" : "Удалить"}
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Admins Table (Desktop) */}
+      <div className="hidden md:block bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>

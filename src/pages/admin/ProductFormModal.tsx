@@ -288,8 +288,10 @@ export default function ProductFormModal({
       return;
     }
 
-    const effectiveBrand = brand.trim() || (customBrand.trim() || "Makita");
-    addBrand(effectiveBrand);
+    const effectiveBrand = brand.trim() || (customBrand.trim() || "Без бренда");
+    if (effectiveBrand !== "Без бренда") {
+      addBrand(effectiveBrand);
+    }
 
     const specsRecord: Record<string, string> = {};
     specsList.forEach((item) => {
@@ -357,18 +359,18 @@ export default function ProductFormModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
+      <div className="bg-white w-full max-w-3xl rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[96vh] sm:max-h-[90vh]">
         {/* Modal Header */}
-        <div className="bg-gray-900 text-white px-6 py-4 flex items-center justify-between border-b border-gray-800 shrink-0">
+        <div className="bg-white text-gray-900 px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between border-b border-gray-100 shrink-0">
           <div>
             <h2
-              className="text-xl font-bold tracking-wide"
+              className="text-lg sm:text-xl font-bold tracking-wide text-gray-900"
               style={{ fontFamily: "Barlow Condensed, sans-serif" }}
             >
               {productToEdit ? "Редактирование товара" : "Добавить новый товар"}
             </h2>
-            <p className="text-xs text-gray-400">
+            <p className="text-[11px] sm:text-xs text-gray-400">
               {productToEdit
                 ? `ID: #${productToEdit.id} | ${productToEdit.slug}`
                 : "Заполните данные для публикации товара в каталоге Minimall"}
@@ -376,18 +378,18 @@ export default function ProductFormModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition-colors cursor-pointer shrink-0"
           >
             ✕
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-gray-100 px-6 bg-gray-50/70 shrink-0">
+        <div className="flex border-b border-gray-100 px-2 sm:px-6 bg-gray-50/70 shrink-0 overflow-x-auto scrollbar-hide">
           <button
             type="button"
             onClick={() => setActiveTab("general")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "general"
                 ? "border-red-600 text-red-600 bg-white"
                 : "border-transparent text-gray-500 hover:text-gray-900"
@@ -398,7 +400,7 @@ export default function ProductFormModal({
           <button
             type="button"
             onClick={() => setActiveTab("media")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "media"
                 ? "border-red-600 text-red-600 bg-white"
                 : "border-transparent text-gray-500 hover:text-gray-900"
@@ -409,7 +411,7 @@ export default function ProductFormModal({
           <button
             type="button"
             onClick={() => setActiveTab("specs")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "specs"
                 ? "border-red-600 text-red-600 bg-white"
                 : "border-transparent text-gray-500 hover:text-gray-900"
@@ -420,7 +422,7 @@ export default function ProductFormModal({
           <button
             type="button"
             onClick={() => setActiveTab("seo")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3 sm:px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "seo"
                 ? "border-red-600 text-red-600 bg-white"
                 : "border-transparent text-gray-500 hover:text-gray-900"
@@ -431,7 +433,7 @@ export default function ProductFormModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 flex flex-col justify-between">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col justify-between">
           {error && (
             <div className="mb-4 bg-red-50 text-red-700 border border-red-200 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
               <span>⚠️</span>
@@ -481,8 +483,10 @@ export default function ProductFormModal({
                     className="w-full text-sm px-3.5 py-2.5 border border-gray-200 hover:border-red-400 rounded-xl bg-white flex items-center justify-between cursor-pointer shadow-2xs transition-colors"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" />
-                      <span className="font-bold text-gray-900 truncate">{brand || "Выберите бренд"}</span>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${brand === "Без бренда" ? "bg-gray-400" : "bg-red-600"}`} />
+                      <span className="font-bold text-gray-900 truncate">
+                        {brand === "Без бренда" ? "🏷️ Без бренда" : (brand || "Выберите бренд")}
+                      </span>
                     </div>
                     <svg
                       className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${
@@ -535,6 +539,29 @@ export default function ProductFormModal({
                           </button>
                         )}
                       </div>
+
+                      {/* Option: Без бренда (No brand) */}
+                      {(!brandSearchQuery || "без бренда".includes(brandSearchQuery.toLowerCase()) || "no brand".includes(brandSearchQuery.toLowerCase())) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBrand("Без бренда");
+                            setBrandDropdownOpen(false);
+                            setBrandSearchQuery("");
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-all cursor-pointer border ${
+                            brand === "Без бренда"
+                              ? "bg-gray-900 text-white font-bold border-gray-900 shadow-xs"
+                              : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:text-gray-900"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>🏷️</span>
+                            <span className="font-semibold">Без бренда</span>
+                          </div>
+                          {brand === "Без бренда" && <span>✓</span>}
+                        </button>
+                      )}
 
                       {/* Inline Add Brand Input */}
                       {(showAddBrandInline || (brandSearchQuery.trim() && !brands.some((b) => b.toLowerCase() === brandSearchQuery.trim().toLowerCase()))) && (

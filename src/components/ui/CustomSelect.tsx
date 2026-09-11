@@ -102,7 +102,7 @@ export default function CustomSelect<T extends string | number = string>({
         onKeyDown={handleKeyDown}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`w-full flex items-center justify-between gap-2.5 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 shadow-2xs hover:border-red-400 dark:hover:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`w-full flex items-center justify-between gap-2.5 bg-white text-gray-800 border border-gray-200 shadow-2xs hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
           sizeClasses[size]
         } ${isOpen ? "ring-2 ring-red-500/20 border-red-500" : ""}`}
       >
@@ -122,7 +122,7 @@ export default function CustomSelect<T extends string | number = string>({
 
         {/* Custom Chevron Indicator */}
         <svg
-          className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 shrink-0 ${
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ${
             isOpen ? "rotate-180 text-red-500" : ""
           }`}
           fill="none"
@@ -137,7 +137,7 @@ export default function CustomSelect<T extends string | number = string>({
       {isOpen && (
         <div
           role="listbox"
-          className={`absolute left-0 right-0 z-50 mt-1.5 max-h-60 overflow-y-auto rounded-2xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-900/10 p-1.5 focus:outline-none animate-fadeIn scrollbar-thin ${menuClassName}`}
+          className={`absolute left-0 right-0 z-50 mt-1.5 max-h-60 overflow-y-auto rounded-2xl bg-white border border-gray-100 shadow-xl shadow-gray-900/10 p-1.5 focus:outline-none animate-fadeIn scrollbar-thin ${menuClassName}`}
           style={{ animationDuration: "140ms" }}
         >
           {options.map((option) => {
@@ -153,8 +153,8 @@ export default function CustomSelect<T extends string | number = string>({
                 }}
                 className={`group flex items-center justify-between gap-2.5 px-3 py-2 text-xs sm:text-sm rounded-xl cursor-pointer transition-all duration-120 ${
                   isSelected
-                    ? "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-bold"
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100/80 dark:hover:bg-gray-800 font-medium"
+                    ? "bg-red-50 text-red-600 font-bold"
+                    : "text-gray-700 hover:bg-gray-100/80 font-medium"
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">

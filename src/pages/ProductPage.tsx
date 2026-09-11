@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { getCategoryByKey } from "@/data/categories";
@@ -13,6 +14,7 @@ import { formatPrice } from "@/utils/formatPrice";
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const { lang, addToCart } = useApp();
+  const { user, openAuthModal } = useAuth();
   const { getProductBySlug, products } = useProducts();
   const t = T[lang];
 
@@ -31,6 +33,7 @@ export default function ProductPage() {
     description: product
       ? `${name}: ${desc.slice(0, 150)}. Купить на mini-mall.uz с доставкой по Узбекистану.`
       : undefined,
+    image: product?.image,
     canonical: product ? `https://mini-mall.uz/product/${product.slug}` : undefined,
     structuredData: product
       ? {
@@ -79,9 +82,9 @@ export default function ProductPage() {
   }, [product?.id, product?.image]);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
       {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
+      <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
         <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
           <li>
             <Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link>
@@ -101,10 +104,10 @@ export default function ProductPage() {
         </ol>
       </nav>
 
-      <div className="grid lg:grid-cols-2 gap-10 mb-12">
+      <div className="grid lg:grid-cols-2 gap-4 sm:gap-10 mb-8 sm:mb-12">
         {/* Images */}
         <div>
-          <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm mb-3" style={{ height: 420 }}>
+          <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm mb-3" style={{ height: "min(420px, 72vw)" }}>
             <img
               src={mainImage}
               alt={name}
@@ -114,13 +117,13 @@ export default function ProductPage() {
             />
           </div>
           {(product.images?.length ?? 0) > 1 && (
-            <div className="flex gap-2.5 flex-wrap">
+            <div className="flex gap-2 sm:gap-2.5 flex-wrap">
               {product.images!.map((img, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setMainImage(img)}
-                  className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                     mainImage === img
                       ? "border-red-600 shadow-sm ring-2 ring-red-500/20 scale-105"
                       : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
@@ -137,9 +140,15 @@ export default function ProductPage() {
         <div>
           {/* Brand & badges */}
           <div className="flex items-center gap-2 mb-3">
-            <Link to={`/brand/${product.brand.toLowerCase()}`} className="text-xs font-bold text-red-500 uppercase tracking-wider hover:text-red-700 transition-colors">
-              {product.brand}
-            </Link>
+            {product.brand && product.brand !== "Без бренда" ? (
+              <Link to={`/brand/${product.brand.toLowerCase()}`} className="text-xs font-bold text-red-500 uppercase tracking-wider hover:text-red-700 transition-colors">
+                {product.brand}
+              </Link>
+            ) : (
+              <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+                {lang === "uz" ? "Brendsiz" : "Без бренда"}
+              </span>
+            )}
             {product.badge && (
               <span className="bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg">
                 {product.badge}
@@ -172,10 +181,13 @@ export default function ProductPage() {
             )}
           </div>
 
-          {/* CTA */}
-          <div className="flex gap-3 mb-8">
+          {/* CTA — стacked on mobile */}
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
-              onClick={() => addToCart(product)}
+              onClick={() => {
+                if (!user) { openAuthModal("register"); return; }
+                addToCart(product);
+              }}
               disabled={!product.inStock}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all ${
                 product.inStock
@@ -186,23 +198,25 @@ export default function ProductPage() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" /></svg>
               {t.addToCart}
             </button>
-            <a
-              href={`https://t.me/minimall_uzb?text=${encodeURIComponent(`Здравствуйте! Интересует товар: ${name} (арт. MM-${product.id})`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700 text-sm font-bold transition-all shadow-xs"
-              title="Задать вопрос по товару в Telegram"
-            >
-              <span>✈️</span>
-              <span>Telegram</span>
-            </a>
-            <a
-              href="tel:+998970363636"
-              className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 border-gray-200 hover:border-red-300 text-gray-700 hover:text-red-600 text-sm font-bold transition-all"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-              {lang === "ru" ? "Позвонить" : "Qo'ng'iroq"}
-            </a>
+            <div className="flex gap-2 sm:gap-3">
+              <a
+                href={`https://t.me/minimall_uzb?text=${encodeURIComponent(`Здравствуйте! Интересует товар: ${name} (арт. MM-${product.id})`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700 text-sm font-bold transition-all shadow-xs"
+                title="Задать вопрос по товару в Telegram"
+              >
+                <span>✈️</span>
+                <span>Telegram</span>
+              </a>
+              <a
+                href="tel:+998970363636"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 border-gray-200 hover:border-red-300 text-gray-700 hover:text-red-600 text-sm font-bold transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                {lang === "ru" ? "Позвонить" : "Qo'ng'iroq"}
+              </a>
+            </div>
           </div>
 
           {/* Delivery & Return Trust Badges */}

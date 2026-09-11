@@ -53,6 +53,25 @@ body {
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slideLeft { animation: slideLeft 0.28s cubic-bezier(.22,1,.36,1); }
+.animate-slideUp   { animation: slideUp 0.32s cubic-bezier(.22,1,.36,1); }
+.animate-fadeIn    { animation: fadeIn 0.18s ease; }
+
 /* ─── Google Translate: hide banner, prevent body shift ──────────────────────── */
 .goog-te-banner-frame.skiptranslate,
 .goog-te-banner-frame,

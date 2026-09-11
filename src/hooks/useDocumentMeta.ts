@@ -5,6 +5,8 @@ interface DocumentMetaOptions {
   title: string;
   /** Meta description content */
   description?: string;
+  /** Image URL for Open Graph & Twitter Cards */
+  image?: string;
   /** Schema.org structured data object (JSON-LD) */
   structuredData?: Record<string, unknown>;
   /** If true, inject noindex meta (e.g., search result pages) */
@@ -24,6 +26,7 @@ interface DocumentMetaOptions {
 export function useDocumentMeta({
   title,
   description,
+  image,
   structuredData,
   noIndex = false,
   canonical,
@@ -86,6 +89,28 @@ export function useDocumentMeta({
       ldScript.textContent = JSON.stringify(structuredData);
     }
 
+    // ── Open Graph & Twitter Image ────────────────────────────────────
+    let ogImgMeta = document.querySelector<HTMLMetaElement>("meta[property='og:image']");
+    let twImgMeta = document.querySelector<HTMLMetaElement>("meta[name='twitter:image']");
+    const prevOgImg = ogImgMeta?.getAttribute("content") || "";
+    const prevTwImg = twImgMeta?.getAttribute("content") || "";
+
+    if (image) {
+      if (!ogImgMeta) {
+        ogImgMeta = document.createElement("meta");
+        ogImgMeta.setAttribute("property", "og:image");
+        document.head.appendChild(ogImgMeta);
+      }
+      ogImgMeta.setAttribute("content", image);
+
+      if (!twImgMeta) {
+        twImgMeta = document.createElement("meta");
+        twImgMeta.setAttribute("name", "twitter:image");
+        document.head.appendChild(twImgMeta);
+      }
+      twImgMeta.setAttribute("content", image);
+    }
+
     // ── Cleanup ────────────────────────────────────────────────────────
     return () => {
       document.title = prevTitle;
@@ -96,9 +121,13 @@ export function useDocumentMeta({
           descMeta.setAttribute("content", prevDesc);
         }
       }
+      if (image) {
+        if (ogImgMeta) ogImgMeta.setAttribute("content", prevOgImg);
+        if (twImgMeta) twImgMeta.setAttribute("content", prevTwImg);
+      }
       if (noIndex && robotsMeta) robotsMeta.remove();
       if (canonicalLink) canonicalLink.remove();
       if (ldScript) ldScript.remove();
     };
-  }, [title, description, structuredData, noIndex, canonical]);
+  }, [title, description, image, structuredData, noIndex, canonical]);
 }

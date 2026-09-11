@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
+import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { T } from "@/data/translations";
@@ -147,7 +148,7 @@ export default function HomePage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
             {displayedProducts.map((p) => (
               <ProductCard key={p.id} product={p} lang={lang} />
             ))}
@@ -379,10 +380,19 @@ function AdvantagesSection({ lang }: { lang: string }) {
 
 function DiscountProductsRow({ lang }: { lang: string }) {
   const { addToCart } = useApp();
+  const { user, openAuthModal } = useAuth();
   const { products } = useProducts();
   const t = T[lang as "ru" | "uz"];
   const discountProducts = products.filter((p) => p.oldPrice);
   if (discountProducts.length === 0) return null;
+
+  const handleAddToCart = (product: any) => {
+    if (!user) {
+      openAuthModal("register");
+      return;
+    }
+    addToCart(product);
+  };
 
   return (
     <section aria-labelledby="discounts-heading" className="max-w-7xl mx-auto px-4 py-8">
@@ -416,7 +426,7 @@ function DiscountProductsRow({ lang }: { lang: string }) {
               </div>
               <div className="text-xs text-gray-400 line-through mb-2">{formatPrice(p.oldPrice!)}</div>
               <StarRating rating={p.rating} />
-              <button onClick={() => addToCart(p)} className="mt-3 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97]">
+              <button onClick={() => handleAddToCart(p)} className="mt-3 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer">
                 {t.addToCart}
               </button>
             </div>
@@ -432,6 +442,7 @@ function DiscountProductsRow({ lang }: { lang: string }) {
 function SaleCarousel({ lang }: { lang: string }) {
   const { products } = useProducts();
   const { addToCart } = useApp();
+  const { user, openAuthModal } = useAuth();
   const t = T[lang as "ru" | "uz"];
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -584,7 +595,13 @@ function SaleCarousel({ lang }: { lang: string }) {
           <StarRating rating={p.rating} />
         </div>
         <button
-          onClick={() => addToCart(p)}
+          onClick={() => {
+            if (!user) {
+              openAuthModal("register");
+              return;
+            }
+            addToCart(p);
+          }}
           className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer"
         >
           {t.addToCart}

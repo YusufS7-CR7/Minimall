@@ -91,9 +91,9 @@ export default function CategoryPage() {
   });
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
       {/* Top row: Breadcrumbs & Return to Home Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <nav aria-label="Breadcrumb">
           <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
             <li><Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link></li>
@@ -120,12 +120,12 @@ export default function CategoryPage() {
       </div>
 
       {/* Heading */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4 sm:mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
             {categoryLabel}
           </h1>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
             {filteredProducts.length === baseProducts.length
               ? `${baseProducts.length} ${lang === "ru" ? "товаров" : "ta tovar"}`
               : lang === "ru"
@@ -160,17 +160,17 @@ export default function CategoryPage() {
         {/* Products Column */}
         <div className="flex-1 min-w-0">
           {/* Top toolbar: Count + Sort dropdown */}
-          <div className="flex items-center justify-between gap-4 mb-4 bg-gray-50/70 p-3 rounded-2xl border border-gray-100">
-            <span className="text-xs text-gray-600 font-semibold">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4 bg-gray-50/70 p-2.5 sm:p-3 rounded-2xl border border-gray-100">
+            <span className="text-xs text-gray-600 font-semibold truncate">
               {lang === "ru"
-                ? `Показано ${filteredProducts.length} товаров`
-                : `${filteredProducts.length} ta tovar ko'rsatilmoqda`}
+                ? `Показано: ${filteredProducts.length}`
+                : `Ko'rsatildi: ${filteredProducts.length}`}
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <span className="text-xs text-gray-400 font-medium hidden sm:inline">
                 {lang === "ru" ? "Сортировка:" : "Saralash:"}
               </span>
-              <div className="w-40 sm:w-48">
+              <div className="w-36 sm:w-48">
                 <CustomSelect
                   value={sortBy}
                   onChange={(val) => setSortBy(val as any)}
@@ -215,7 +215,7 @@ export default function CategoryPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
               {filteredProducts.map((p) => (
                 <ProductCard key={p.id} product={p} lang={lang} />
               ))}

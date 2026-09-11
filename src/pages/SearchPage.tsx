@@ -73,9 +73,9 @@ export default function SearchPage() {
   });
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-8">
+    <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
       {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-6">
+      <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
         <ol className="flex items-center gap-1.5 text-xs text-gray-500">
           <li><Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link></li>
           <li aria-hidden="true"><span className="text-gray-300">›</span></li>
@@ -86,7 +86,7 @@ export default function SearchPage() {
         </ol>
       </nav>
 
-      <div className="mb-8">
+      <div className="mb-4 sm:mb-8">
         <h1 className="text-3xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
           {q ? (
             <>
@@ -203,7 +203,7 @@ export default function SearchPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
                 {filteredResults.map((p) => (
                   <ProductCard key={p.id} product={p} lang={lang} />
                 ))}
