@@ -284,9 +284,15 @@ export default function AdminProductsPage() {
       <div className="md:hidden space-y-3">
         {filteredProducts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">
-            <div className="text-3xl mb-2">🔍</div>
-            <div className="text-sm font-medium text-gray-600">Товары не найдены</div>
-            <div className="text-xs text-gray-400 mt-0.5">Попробуйте изменить параметры поиска или фильтров</div>
+            <div className="text-3xl mb-2">{products.length === 0 ? "📦" : "🔍"}</div>
+            <div className="text-sm font-bold text-gray-800">
+              {products.length === 0 ? "Каталог пока пуст" : "Товары не найдены"}
+            </div>
+            <div className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
+              {products.length === 0
+                ? "Нажмите кнопку «+ Добавить товар» выше, чтобы создать первую позицию."
+                : "Попробуйте изменить параметры поиска или фильтров"}
+            </div>
           </div>
         ) : (
           filteredProducts.map((p) => {
@@ -402,12 +408,14 @@ export default function AdminProductsPage() {
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-400">
-                    <div className="text-3xl mb-2">🔍</div>
-                    <div className="text-sm font-medium text-gray-600">
-                      Товары не найдены
+                    <div className="text-3xl mb-2">{products.length === 0 ? "📦" : "🔍"}</div>
+                    <div className="text-sm font-bold text-gray-800">
+                      {products.length === 0 ? "Каталог пока пуст" : "Товары не найдены"}
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
-                      Попробуйте изменить параметры поиска или фильтров
+                    <div className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
+                      {products.length === 0
+                        ? "Нажмите кнопку «+ Добавить товар» выше, чтобы создать первую позицию."
+                        : "Попробуйте изменить параметры поиска или фильтров"}
                     </div>
                   </td>
                 </tr>

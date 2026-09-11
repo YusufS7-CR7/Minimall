@@ -131,21 +131,45 @@ export default function HomePage() {
         )}
 
         {displayedProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-100 p-8">
-            <div className="text-5xl mb-4">🔍</div>
-            <p className="text-gray-800 text-lg font-bold">
-              {lang === "ru" ? "Товары не найдены" : "Tovarlar topilmadi"}
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-100 p-8 max-w-lg mx-auto shadow-xs">
+            <div className="text-5xl mb-4">{products.length === 0 ? "📦" : "🔍"}</div>
+            <p className="text-gray-900 text-lg font-black" style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.02em" }}>
+              {products.length === 0
+                ? lang === "ru"
+                  ? "Витрина пополняется новыми товарами"
+                  : "Ko'rgazma yangi tovarlar bilan to'ldirilmoqda"
+                : lang === "ru"
+                ? "Товары не найдены"
+                : "Tovarlar topilmadi"}
             </p>
-            <p className="text-gray-400 text-sm mt-1">
-              {lang === "ru" ? "В выбранном ценовом диапазоне товаров нет" : "Tanlangan narx oralig'ida tovarlar yo'q"}
+            <p className="text-gray-500 text-xs sm:text-sm mt-1.5 leading-relaxed max-w-sm">
+              {products.length === 0
+                ? lang === "ru"
+                  ? "Администратор магазина уже наполняет каталог электроинструментом и оборудованием. Скоро здесь появится весь ассортимент!"
+                  : "Do'kon ma'muri ayni paytda katalogga elektr asbob-uskunalarini qo'shmoqda. Tez orada barcha assortiment taqdim etiladi!"
+                : lang === "ru"
+                ? "В выбранном ценовом диапазоне товаров нет. Попробуйте сбросить фильтр."
+                : "Tanlangan narx oralig'ida tovarlar yo'q."}
             </p>
-            <button
-              type="button"
-              onClick={() => setPriceRange([0, 20_000_000])}
-              className="mt-4 px-5 py-2 bg-red-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-red-700 transition-all cursor-pointer"
-            >
-              {t.resetFilters}
-            </button>
+            {products.length === 0 ? (
+              <a
+                href="https://t.me/minimall_uzb"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+              >
+                <span>💬</span>
+                <span>{lang === "ru" ? "Связаться с нами в Telegram" : "Telegram orqali bog'lanish"}</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPriceRange([0, 20_000_000])}
+                className="mt-4 px-5 py-2 bg-red-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-red-700 transition-all cursor-pointer"
+              >
+                {t.resetFilters}
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
@@ -208,82 +232,160 @@ function HeroSection({ lang }: { lang: string }) {
       <div className="flex flex-col lg:flex-row gap-4 items-stretch" style={{ minHeight: 380 }}>
         {/* Main News Carousel (70%) */}
         <div
-          className="w-full lg:flex-[7] relative rounded-2xl overflow-hidden bg-gray-900 min-h-[340px] sm:min-h-[380px]"
+          className="w-full lg:flex-[7] relative rounded-2xl overflow-hidden bg-gray-900 min-h-[340px] sm:min-h-[380px] flex flex-col justify-center"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
-          {slides.map((slide, i) => (
-            <div
-              key={slide.id || i}
-              className={`absolute inset-0 transition-all duration-700 ${
-                i === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
-              }`}
-            >
-              {slide.link ? (
-                <Link to={slide.link} className="block w-full h-full">
-                  <img
-                    src={slide.image}
-                    alt="Баннер"
-                    className="w-full h-full object-cover"
-                  />
-                </Link>
-              ) : (
-                <img
-                  src={slide.image}
-                  alt="Баннер"
-                  className="w-full h-full object-cover"
-                />
-              )}
+          {total === 0 ? (
+            <div className="relative w-full h-full min-h-[340px] sm:min-h-[380px] bg-gradient-to-br from-gray-950 via-gray-900 to-red-950/40 p-6 sm:p-9 flex flex-col justify-between overflow-hidden">
+              {/* Ambient background glows */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/15 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
-              {slide.link && (
-                <div className="absolute bottom-6 left-6 z-10 pointer-events-auto">
-                  <Link
-                    to={slide.link}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
+              {/* Top badge bar */}
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-2 bg-red-600/20 border border-red-500/40 px-3 py-1 rounded-full shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-red-300">
+                    {lang === "uz" ? "Minimall yangiliklari" : "Новости Minimall"}
+                  </span>
+                </div>
+                <span className="text-xs text-gray-400 font-medium hidden sm:inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  {lang === "uz" ? "Do'kon faol ishlamoqda" : "Магазин открыт и принимает заказы"}
+                </span>
+              </div>
+
+              {/* Main Headline & Description */}
+              <div className="relative z-10 my-auto py-4">
+                <h2
+                  className="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight mb-3"
+                  style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.02em" }}
+                >
+                  {lang === "uz"
+                    ? "Bu yerda do'konimizning yangiliklari va maxsus aksiyalari paydo bo'ladi!"
+                    : "Здесь будут появляться новости и горячие акции нашего магазина!"}
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">
+                  {lang === "uz"
+                    ? "Biz siz uchun yetakchi jahon brendlarining original elektr asboblari va uskunalari bo'yicha eng yaxshi takliflarni tayyorlayapmiz. Yangiliklar va chegirmalarni kuzatib boring!"
+                    : "Мы готовим для вас специальные предложения, сезонные скидки и новинки от ведущих мировых производителей электроинструмента. Следите за обновлениями!"}
+                </p>
+              </div>
+
+              {/* Bottom Feature Badges & Action Links */}
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs font-semibold text-gray-300">
+                  <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
+                    <span>⚡</span>
+                    <span>{lang === "uz" ? "Tezkor yetkazib berish" : "Быстрая доставка"}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
+                    <span>🛡️</span>
+                    <span>{lang === "uz" ? "Original kafolati" : "Гарантия оригинальности"}</span>
+                  </span>
+                  <span className="hidden md:inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
+                    <span>💬</span>
+                    <span>{lang === "uz" ? "Ekspert maslahati" : "Консультация экспертов"}</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href="https://t.me/minimall_uzb"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition-all active:scale-95"
                   >
-                    <span>{lang === "uz" ? "Batafsil" : "Подробнее"}</span>
+                    <span>✈️</span>
+                    <span>Telegram</span>
+                  </a>
+                  <Link
+                    to="/catalog"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all active:scale-95"
+                  >
+                    <span>{lang === "uz" ? "Katalog" : "Каталог"}</span>
                     <span>→</span>
                   </Link>
                 </div>
-              )}
-            </div>
-          ))}
-
-          {total > 1 && (
-            <>
-              <button
-                onClick={() => setActive((a) => (a - 1 + total) % total)}
-                aria-label="Предыдущий слайд"
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setActive((a) => (a + 1) % total)}
-                aria-label="Следующий слайд"
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-                {slides.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActive(i)}
-                    aria-label={`Слайд ${i + 1}`}
-                    className={`transition-all rounded-full cursor-pointer ${
-                      i === active
-                        ? "bg-red-500 w-7 h-2.5 shadow-lg shadow-red-500/50"
-                        : "bg-white/40 hover:bg-white/60 w-2.5 h-2.5"
-                    }`}
-                  />
-                ))}
               </div>
+            </div>
+          ) : (
+            <>
+              {slides.map((slide, i) => (
+                <div
+                  key={slide.id || i}
+                  className={`absolute inset-0 transition-all duration-700 ${
+                    i === active ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+                  }`}
+                >
+                  {slide.link ? (
+                    <Link to={slide.link} className="block w-full h-full">
+                      <img
+                        src={slide.image}
+                        alt="Баннер"
+                        className="w-full h-full object-cover"
+                      />
+                    </Link>
+                  ) : (
+                    <img
+                      src={slide.image}
+                      alt="Баннер"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+
+                  {slide.link && (
+                    <div className="absolute bottom-6 left-6 z-10 pointer-events-auto">
+                      <Link
+                        to={slide.link}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
+                      >
+                        <span>{lang === "uz" ? "Batafsil" : "Подробнее"}</span>
+                        <span>→</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {total > 1 && (
+                <>
+                  <button
+                    onClick={() => setActive((a) => (a - 1 + total) % total)}
+                    aria-label="Предыдущий слайд"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setActive((a) => (a + 1) % total)}
+                    aria-label="Следующий слайд"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+                    {slides.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActive(i)}
+                        aria-label={`Слайд ${i + 1}`}
+                        className={`transition-all rounded-full cursor-pointer ${
+                          i === active
+                            ? "bg-red-500 w-7 h-2.5 shadow-lg shadow-red-500/50"
+                            : "bg-white/40 hover:bg-white/60 w-2.5 h-2.5"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

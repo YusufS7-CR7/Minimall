@@ -80,11 +80,10 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
 
     if (!error && data) {
       const fetched = (data as DbBanner[]).map(dbToSlide);
-      setSlides(fetched.length > 0 ? fetched : INITIAL_BANNER_SLIDES);
+      setSlides(fetched);
     } else if (error) {
       console.error("Failed to fetch banners:", error.message);
-      // Fallback to initial slides on error
-      setSlides(INITIAL_BANNER_SLIDES);
+      setSlides([]);
     }
     setLoading(false);
   }, []);
@@ -188,14 +187,14 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setSlides(INITIAL_BANNER_SLIDES);
+    setSlides([]);
   }, []);
 
   return (
     <BannersContext.Provider
       value={{
         slides,
-        activeSlides: activeSlides.length > 0 ? activeSlides : INITIAL_BANNER_SLIDES,
+        activeSlides,
         loading,
         addSlide,
         updateSlide,

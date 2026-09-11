@@ -6,7 +6,7 @@ import type { BannerSlide } from "@/data/bannerTypes";
 import BannerFormModal from "./BannerFormModal";
 
 export default function AdminBannersPage() {
-  const { slides, addSlide, updateSlide, deleteSlide, toggleSlideActive, resetSlides } = useBanners();
+  const { slides, addSlide, updateSlide, deleteSlide, toggleSlideActive } = useBanners();
   const { showToast } = useApp();
 
   useDocumentMeta({
@@ -32,13 +32,6 @@ export default function AdminBannersPage() {
     if (window.confirm(`Удалить баннер "${slide.titleRu}"?`)) {
       deleteSlide(slide.id);
       showToast(`Баннер "${slide.titleRu}" удален`);
-    }
-  };
-
-  const handleReset = () => {
-    if (window.confirm("Восстановить заводские 4 баннера? Все добавленные баннеры будут сброшены.")) {
-      resetSlides();
-      showToast("Баннеры сброшены к стандартным");
     }
   };
 
@@ -75,13 +68,6 @@ export default function AdminBannersPage() {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={handleReset}
-            className="text-xs font-medium text-gray-500 hover:text-red-600 bg-gray-50 hover:bg-red-50 border border-gray-200 px-3.5 py-2.5 rounded-2xl transition-colors cursor-pointer"
-            title="Вернуть стандартные баннеры"
-          >
-            🔄 Сброс к дефолту
-          </button>
-          <button
             onClick={handleOpenCreate}
             className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
@@ -106,9 +92,29 @@ export default function AdminBannersPage() {
         </span>
       </div>
 
-      {/* Grid of Banners */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {slides.map((slide, index) => (
+      {/* Grid of Banners or Empty State */}
+      {slides.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-gray-100 p-10 sm:p-12 text-center max-w-lg mx-auto shadow-xs">
+          <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
+            🖼️
+          </div>
+          <h3 className="text-lg font-extrabold text-gray-900 mb-1">
+            Баннеров пока нет
+          </h3>
+          <p className="text-xs sm:text-sm text-gray-500 mb-6 leading-relaxed">
+            Пока баннеры не загружены, на главной странице сайта будет автоматически отображаться брендовая визитка с новостями и преимуществами Minimall.
+          </p>
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-md hover:from-red-700 hover:to-red-800 transition-all cursor-pointer"
+          >
+            <span>+</span>
+            <span>Добавить первый баннер</span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {slides.map((slide, index) => (
           <div
             key={slide.id}
             className={`bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden flex flex-col transition-all hover:shadow-md ${
@@ -194,7 +200,8 @@ export default function AdminBannersPage() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Modal */}
       <BannerFormModal

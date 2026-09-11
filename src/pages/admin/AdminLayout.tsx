@@ -10,28 +10,12 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const { products, exportCatalog, resetProducts } = useProducts();
+  const { products } = useProducts();
   const { showToast } = useApp();
   const { adminUser, admins, logout, isSuperAdmin, hasPermission } = useAdminAuth();
   const { orders, newOrdersCount } = useOrders();
   const { slides } = useBanners();
   const location = useLocation();
-
-  const handleReset = async () => {
-    if (
-      window.confirm(
-        "Вы действительно хотите удалить ВСЕ товары из каталога? Это действие нельзя отменить."
-      )
-    ) {
-      await resetProducts();
-      showToast("Каталог полностью очищен");
-    }
-  };
-
-  const handleExport = () => {
-    exportCatalog();
-    showToast("Файл каталога успешно экспортирован");
-  };
 
   const handleLogout = () => {
     if (window.confirm("Выйти из панели администратора?")) {
@@ -40,8 +24,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   };
 
-  const canExport = isSuperAdmin || hasPermission("products_export");
-  const canReset = isSuperAdmin || hasPermission("products_reset");
   const canManageAdmins = isSuperAdmin || hasPermission("admins_manage");
 
   const isProductsActive = location.pathname === "/admin" || location.pathname === "/admin/products";
@@ -99,26 +81,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   </div>
                 </div>
               </div>
-            )}
-
-            {canExport && (
-              <button
-                onClick={handleExport}
-                className="hidden lg:inline-flex items-center gap-1.5 text-xs font-semibold text-gray-300 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 transition-colors cursor-pointer"
-                title="Скачать все товары в формате JSON"
-              >
-                📥 Экспорт JSON
-              </button>
-            )}
-
-            {canReset && (
-              <button
-                onClick={handleReset}
-                className="hidden lg:inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-xl transition-colors cursor-pointer"
-                title="Восстановить заводские 12 товаров"
-              >
-                🔄 Сброс к дефолту
-              </button>
             )}
 
             <Link
