@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 import { OrdersProvider } from "@/context/OrdersContext";
 import { BannersProvider } from "@/context/BannersContext";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 
 // Layout components
 import TopBar from "@/components/layout/TopBar";
@@ -142,18 +143,20 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContextBridge>
-        <ProductsProvider>
-          <BannersProvider>
-            <OrdersProvider>
-              <AdminAuthProvider>
-                <AppLayout />
-              </AdminAuthProvider>
-            </OrdersProvider>
-          </BannersProvider>
-        </ProductsProvider>
-      </AppContextBridge>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContextBridge>
+          <ProductsProvider>
+            <BannersProvider>
+              <OrdersProvider>
+                <AdminAuthProvider>
+                  <AppLayout />
+                </AdminAuthProvider>
+              </OrdersProvider>
+            </BannersProvider>
+          </ProductsProvider>
+        </AppContextBridge>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

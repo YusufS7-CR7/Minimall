@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { AdminUser, AdminPermission } from "@/data/adminTypes";
 import { ALL_ADMIN_PERMISSIONS } from "@/data/adminTypes";
 import { useAdminAuth } from "@/context/AdminAuthContext";
@@ -113,6 +113,7 @@ export default function AdminUsersPage() {
     updateAdmin,
     deleteAdmin,
     toggleAdminStatus,
+    fetchAdmins,
   } = useAdminAuth();
   const { showToast } = useApp();
 
@@ -127,6 +128,12 @@ export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const canManageAdmins = isSuperAdmin || hasPermission("admins_manage");
+
+  useEffect(() => {
+    if (canManageAdmins) {
+      fetchAdmins();
+    }
+  }, [canManageAdmins, fetchAdmins]);
 
   const filteredAdmins = useMemo(() => {
     if (!searchQuery.trim()) return admins;

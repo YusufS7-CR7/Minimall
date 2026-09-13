@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase";
+import { hashPassword } from "@/utils/crypto";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,9 +45,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 // ─── Helpers — session storage for current user (standard practice) ──────────
-// sessionStorage is appropriate here: it stores the logged-in user session
-// and is cleared automatically when the browser tab/window is closed.
-
 function getSession(): User | null {
   try {
     const raw = sessionStorage.getItem("mm_current_user");
@@ -63,13 +61,13 @@ function setSession(u: User | null) {
 
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 
-type DbUser = { id: string; name: string; email: string; password: string };
+type DbUser = { id: string; name: string; email: string; password?: string };
 
 async function dbGetUser(email: string): Promise<DbUser | null> {
   const { data } = await supabase
     .from("mm_users")
     .select("*")
-    .eq("email", email)
+    .eq("email", email.trim().toLowerCase())
     .maybeSingle();
   return data ?? null;
 }
@@ -144,10 +142,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string): Promise<{ error?: string }> => {
-    const found = await dbGetUser(email);
-    if (!found || found.password !== password) {
+    const cleanEmail = email.trim().toLowerCase();
+    const found = await dbGetUser(cleanEmail);
+    if (!found) {
       return { error: "Неверный email или пароль" };
     }
+
+    const hashedInput = await hashPassword(password, cleanEmail);
+    const isMatch = found.password === hashedInput || found.password === password;
+
+    if (!isMatch) {
+      return { error: "Неверный email или пароль" };
+    }
+
+    // Auto-migrate plaintext password to hash in DB
+    if (found.password === password && found.password !== hashedInput) {
+      await supabase.from("mm_users").update({ password: hashedInput }).eq("id", found.id);
+    }
+
     const loggedIn: User = { id: found.id, name: found.name, email: found.email, provider: "email" };
     persistUser(loggedIn);
     await loadProfile(loggedIn);
@@ -156,18 +168,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Register ───────────────────────────────────────────────────────────────
   const register = useCallback(async (name: string, email: string, password: string): Promise<{ error?: string }> => {
-    const existing = await dbGetUser(email);
-    if (existing) return { error: "Этот email уже используется" };
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanName = name.trim();
+
+    if (!cleanEmail || !cleanName || !password) {
+      return { error: "Пожалуйста, заполните все поля" };
+    }
+
+    if (password.length < 6) {
+      return { error: "Пароль должен содержать не менее 6 символов" };
+    }
+
+    const existing = await dbGetUser(cleanEmail);
+    if (existing) return { error: "Этот email уже зарегистрирован в магазине" };
 
     const id = crypto.randomUUID();
-    const res = await dbCreateUser({ id, name, email, password });
+    const hashedPassword = await hashPassword(password, cleanEmail);
+
+    const res = await dbCreateUser({ id, name: cleanName, email: cleanEmail, password: hashedPassword });
     if (res.error) return { error: res.error };
 
     // Create an empty profile for quick checkout
-    const newProfile: UserProfile = { id, email, name, phone: "", city: "Ташкент", address: "" };
+    const newProfile: UserProfile = { id, email: cleanEmail, name: cleanName, phone: "", city: "Ташкент", address: "" };
     await dbCreateProfile(newProfile);
 
-    const loggedIn: User = { id, name, email, provider: "email" };
+    const loggedIn: User = { id, name: cleanName, email: cleanEmail, provider: "email" };
     persistUser(loggedIn);
     setUserProfile(newProfile);
     return {};

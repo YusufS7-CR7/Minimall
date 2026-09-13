@@ -130,12 +130,6 @@ export function OrdersProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, [syncOfflineOrders]);
 
-  // Load all orders once on mount (for admin panel)
-  useEffect(() => {
-    fetchAllOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const newOrdersCount = orders.filter((o) => o.status === "new").length;
 
   // ── Fetch user's own orders ────────────────────────────────────────────────

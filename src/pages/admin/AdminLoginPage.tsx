@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useAdminAuth, DEFAULT_SUPERADMIN } from "@/context/AdminAuthContext";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 export default function AdminLoginPage() {
@@ -42,11 +42,6 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handleFillSuperAdmin = () => {
-    setUsername(DEFAULT_SUPERADMIN.username);
-    setPassword(DEFAULT_SUPERADMIN.password);
-    setError(null);
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden font-sans selection:bg-red-500 selection:text-white">
@@ -86,30 +81,10 @@ export default function AdminLoginPage() {
 
         {/* Login Form Box */}
         <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
-          {/* Superadmin Credentials Helper Card */}
-          <div className="bg-gradient-to-r from-red-950/50 to-gray-800/50 border border-red-500/20 rounded-2xl p-3.5 text-xs text-gray-300 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-red-400 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
-                <span>👑</span> Главный Администратор
-              </span>
-              <button
-                type="button"
-                onClick={handleFillSuperAdmin}
-                className="text-[11px] font-semibold text-red-400 hover:text-red-300 underline underline-offset-2 transition-colors cursor-pointer"
-              >
-                Вставить в 1 клик
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] bg-black/40 rounded-xl p-2 border border-white/5 font-mono">
-              <div>
-                <span className="text-gray-500">Логин: </span>
-                <span className="text-white font-bold">{DEFAULT_SUPERADMIN.username}</span>
-              </div>
-              <div>
-                <span className="text-gray-500">Пароль: </span>
-                <span className="text-white font-bold">{DEFAULT_SUPERADMIN.password}</span>
-              </div>
-            </div>
+          {/* Secure Access Notice */}
+          <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-3 text-xs text-gray-400 flex items-center gap-2.5">
+            <span className="text-base">🔒</span>
+            <span>Панель защищена сквозным шифрованием. Вход разрешен только авторизованным администраторам.</span>
           </div>
 
           {/* Form */}

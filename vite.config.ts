@@ -15,6 +15,22 @@ export default defineConfig(({ mode }) => {
     build: {
       sourcemap: emitSourcemaps ? 'inline' : false,
       minify: !emitSourcemaps,
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+                return 'vendor-react'
+              }
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase'
+              }
+              return 'vendor-misc'
+            }
+          },
+        },
+      },
     },
     plugins: [
       react(),

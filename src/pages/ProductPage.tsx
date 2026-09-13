@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -72,14 +72,57 @@ export default function ProductPage() {
     (p) => p.category === product.category && p.id !== product.id
   ).slice(0, 4);
 
-  const [mainImage, setMainImage] = useState(product.image);
+  const allImages = useMemo(() => {
+    if (product?.images && product.images.length > 0) return product.images;
+    if (product?.image) return [product.image];
+    return [];
+  }, [product?.images, product?.image]);
+
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"specs" | "desc">("specs");
 
   useEffect(() => {
-    if (product) {
-      setMainImage(product.image);
+    setCurrentImgIndex(0);
+  }, [product?.id, product?.slug]);
+
+  const handlePrev = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentImgIndex((prev) => (prev > 0 ? prev - 1 : allImages.length - 1));
+  }, [allImages.length]);
+
+  const handleNext = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setCurrentImgIndex((prev) => (prev < allImages.length - 1 ? prev + 1 : 0));
+  }, [allImages.length]);
+
+  // Keyboard navigation for fullscreen lightbox
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsLightboxOpen(false);
+      if (e.key === "ArrowLeft") handlePrev();
+      if (e.key === "ArrowRight") handleNext();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isLightboxOpen, handlePrev, handleNext]);
+
+  // Touch swipe support for mobile
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) handleNext();
+      else handlePrev();
     }
-  }, [product?.id, product?.image]);
+    setTouchStartX(null);
+  };
 
   return (
     <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
@@ -105,33 +148,90 @@ export default function ProductPage() {
       </nav>
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-10 mb-8 sm:mb-12">
-        {/* Images */}
+        {/* Images Gallery */}
         <div>
-          <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm mb-3" style={{ height: "min(420px, 72vw)" }}>
+          <div
+            onClick={() => setIsLightboxOpen(true)}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="group relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm mb-3 cursor-zoom-in flex items-center justify-center select-none"
+            style={{ height: "min(420px, 72vw)" }}
+            title="Нажмите, чтобы открыть полную галерею"
+          >
             <img
-              src={mainImage}
-              alt={name}
-              className="w-full h-full object-cover"
+              src={allImages[currentImgIndex] || product.image}
+              alt={`${name} фото ${currentImgIndex + 1}`}
+              className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]"
               width={600}
               height={420}
             />
-          </div>
-          {(product.images?.length ?? 0) > 1 && (
-            <div className="flex gap-2 sm:gap-2.5 flex-wrap">
-              {product.images!.map((img, i) => (
+
+            {/* Gallery counter badge */}
+            {allImages.length > 1 && (
+              <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full pointer-events-none">
+                {currentImgIndex + 1} / {allImages.length}
+              </div>
+            )}
+
+            {/* Hint overlay on hover */}
+            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1.5">
+              <span>🔍</span>
+              <span>Открыть галерею</span>
+            </div>
+
+            {/* Navigation arrows on main photo */}
+            {allImages.length > 1 && (
+              <>
                 <button
-                  key={i}
                   type="button"
-                  onClick={() => setMainImage(img)}
-                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                    mainImage === img
-                      ? "border-red-600 shadow-sm ring-2 ring-red-500/20 scale-105"
-                      : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
-                  }`}
+                  onClick={handlePrev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+                  title="Предыдущее фото"
                 >
-                  <img src={img} alt={`${name} фото ${i + 1}`} className="w-full h-full object-cover" />
+                  ‹
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+                  title="Следующее фото"
+                >
+                  ›
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Thumbnails row */}
+          {allImages.length > 1 && (
+            <div className="flex gap-2 sm:gap-2.5 flex-wrap">
+              {allImages.map((img, i) => {
+                const isSelected = currentImgIndex === i;
+                const isCover = i === 0;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setCurrentImgIndex(i)}
+                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-white p-1 flex items-center justify-center ${
+                      isSelected
+                        ? "border-red-600 shadow-md ring-2 ring-red-500/30 scale-105"
+                        : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`${name} фото ${i + 1}`}
+                      className="w-full h-full object-contain"
+                    />
+                    {isCover && (
+                      <span className="absolute bottom-0 inset-x-0 bg-red-600 text-[8px] font-bold text-white text-center py-0.2 uppercase tracking-tighter">
+                        Обложка
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -312,6 +412,114 @@ export default function ProductPage() {
             ))}
           </div>
         </section>
+      )}
+      {/* Fullscreen Lightbox Gallery Modal */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6 text-white animate-fadeIn select-none"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Lightbox Top Header */}
+          <div
+            className="flex items-center justify-between gap-4 shrink-0 pb-3 border-b border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-bold text-white truncate">
+                {name}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span>Фото {currentImgIndex + 1} из {allImages.length}</span>
+                {currentImgIndex === 0 && (
+                  <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+                    Обложка
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg font-bold transition-colors cursor-pointer"
+                title="Закрыть (Esc)"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Lightbox Main Image & Arrows */}
+          <div
+            className="relative flex-1 flex items-center justify-center my-auto p-2"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {allImages.length > 1 && (
+              <button
+                type="button"
+                onClick={handlePrev}
+                className="absolute left-2 sm:left-4 z-10 w-12 h-12 rounded-full bg-black/50 hover:bg-red-600 text-white flex items-center justify-center text-3xl font-bold transition-all shadow-lg hover:scale-110 cursor-pointer border border-white/10"
+                title="Предыдущее фото (←)"
+              >
+                ‹
+              </button>
+            )}
+
+            <div className="max-w-full max-h-full flex items-center justify-center">
+              <img
+                src={allImages[currentImgIndex]}
+                alt={`${name} фото ${currentImgIndex + 1}`}
+                className="max-h-[72vh] sm:max-h-[78vh] max-w-[90vw] object-contain rounded-xl shadow-2xl transition-all duration-200"
+              />
+            </div>
+
+            {allImages.length > 1 && (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="absolute right-2 sm:right-4 z-10 w-12 h-12 rounded-full bg-black/50 hover:bg-red-600 text-white flex items-center justify-center text-3xl font-bold transition-all shadow-lg hover:scale-110 cursor-pointer border border-white/10"
+                title="Следующее фото (→)"
+              >
+                ›
+              </button>
+            )}
+          </div>
+
+          {/* Lightbox Bottom Filmstrip */}
+          <div
+            className="shrink-0 pt-3 border-t border-white/10 flex flex-col items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {allImages.length > 1 && (
+              <div className="flex gap-2 max-w-full overflow-x-auto pb-1 px-2">
+                {allImages.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setCurrentImgIndex(i)}
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-white/5 shrink-0 ${
+                      currentImgIndex === i
+                        ? "border-red-500 scale-110 shadow-lg ring-2 ring-red-500/50"
+                        : "border-white/20 hover:border-white/50 opacity-60 hover:opacity-100"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`Миниатюра ${i + 1}`}
+                      className="w-full h-full object-contain p-0.5"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-gray-400 text-center hidden sm:block">
+              Используйте клавиши ← → на клавиатуре для перелистывания, Esc для закрытия
+            </p>
+          </div>
+        </div>
       )}
     </main>
   );

@@ -7,7 +7,29 @@ import { createClient } from "@supabase/supabase-js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BOT_TOKEN = process.env.VITE_TELEGRAM_BOT_TOKEN || "8809570303:AAGL-2UCGPLoGrx7NBwX0ZzHraMyqSzWvNA";
+// Helper to load .env in Node.js without external dependencies
+function loadEnv() {
+  try {
+    const envPath = path.join(__dirname, "..", ".env");
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, "utf-8");
+      content.split("\n").forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+          const idx = trimmed.indexOf("=");
+          const k = trimmed.slice(0, idx).trim();
+          const v = trimmed.slice(idx + 1).trim();
+          if (!process.env[k]) process.env[k] = v;
+        }
+      });
+    }
+  } catch (e) {
+    console.warn("Could not read .env file:", e.message);
+  }
+}
+loadEnv();
+
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.VITE_TELEGRAM_BOT_TOKEN || "8809570303:AAGL-2UCGPLoGrx7NBwX0ZzHraMyqSzWvNA";
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || "https://pptastuhmpzdyjeyhfts.supabase.co";
 const SUPABASE_ANON_KEY =
   process.env.VITE_SUPABASE_ANON_KEY ||

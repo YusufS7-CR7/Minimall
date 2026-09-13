@@ -18,7 +18,7 @@ export function getTelegramSettings(): TelegramSettings {
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
-        botToken: parsed.botToken || (import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? ""),
+        botToken: parsed.botToken || "",
         chatId: parsed.chatId || (import.meta.env.VITE_TELEGRAM_CHAT_ID ?? ""),
         enabled: parsed.enabled !== undefined ? parsed.enabled : true,
       };
@@ -28,7 +28,7 @@ export function getTelegramSettings(): TelegramSettings {
   }
 
   return {
-    botToken: import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? "",
+    botToken: "",
     chatId: import.meta.env.VITE_TELEGRAM_CHAT_ID ?? "",
     enabled: true,
   };

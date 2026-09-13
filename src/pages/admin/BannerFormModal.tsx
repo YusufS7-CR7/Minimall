@@ -18,21 +18,19 @@ export default function BannerFormModal({
   const isEditing = !!slide;
 
   const [image, setImage] = useState("");
-  const [urlInput, setUrlInput] = useState("");
   const [link, setLink] = useState("/catalog");
   const [isActive, setIsActive] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (slide) {
       setImage(slide.image);
-      setUrlInput(slide.image.startsWith("data:") ? "" : slide.image);
       setLink(slide.link || "/catalog");
       setIsActive(slide.isActive);
     } else {
-      setImage("https://images.unsplash.com/photo-1504148455328-c376907d081c?w=1200&h=500&fit=crop&auto=format");
-      setUrlInput("");
+      setImage("");
       setLink("/catalog");
       setIsActive(true);
     }
@@ -40,13 +38,10 @@ export default function BannerFormModal({
 
   if (!isOpen) return null;
 
-  // Handle local file upload via Supabase Storage (with fallback)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      alert("Пожалуйста, выберите файл изображения (JPG, PNG, WEBP)");
+  // Process a selected File
+  const processFile = async (file: File) => {
+    if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|gif|svg|avif|bmp)$/i.test(file.name)) {
+      alert("Пожалуйста, выберите файл изображения (JPG, PNG, WEBP, GIF, SVG)");
       return;
     }
 
@@ -55,26 +50,50 @@ export default function BannerFormModal({
       const res = await uploadMediaFile(file, "banners");
       if (res.url) {
         setImage(res.url);
-        setUrlInput("");
       }
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       console.error("Banner upload error:", err);
+      alert("Ошибка при загрузке файла баннера. Попробуйте другой файл.");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleApplyUrl = () => {
-    if (urlInput.trim()) {
-      setImage(urlInput.trim());
+  // Handle local file upload via input
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  // Drag & drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      await processFile(file);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!image) {
-      alert("Пожалуйста, добавьте изображение баннера (с компьютера или по ссылке)");
+      alert("Пожалуйста, выберите файл изображения баннера с компьютера или устройства.");
       return;
     }
 
@@ -102,10 +121,10 @@ export default function BannerFormModal({
                 className="text-xl font-bold tracking-wide"
                 style={{ fontFamily: "Barlow Condensed, sans-serif" }}
               >
-                {isEditing ? "Редактирование слайда баннера" : "Добавление нового баннера в карусель"}
+                {isEditing ? "Редактирование баннера" : "Добавление нового баннера"}
               </h2>
               <p className="text-xs text-gray-400">
-                Баннер отображается в главной карусели на главной странице маркетплейса
+                Загрузите фото баннера с вашего устройства для главной карусели
               </p>
             </div>
           </div>
@@ -119,93 +138,113 @@ export default function BannerFormModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-6 flex-1 text-xs sm:text-sm">
-          {/* Image Upload / URL Section */}
+          {/* Image Upload Section — ONLY File Upload */}
           <div className="space-y-4 bg-gray-50 p-5 rounded-2xl border border-gray-200">
             <div className="flex items-center justify-between">
               <span className="font-bold text-gray-900 flex items-center gap-1.5 text-sm">
-                <span>📸</span> Изображение баннера <span className="text-red-500">*</span>
+                <span>📸</span> Фото баннера <span className="text-red-500">*</span>
               </span>
               <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-200">
-                1200 × 500 px (или 1920 × 800 px)
+                Рекомендуемый размер: 1200 × 500 px
               </span>
             </div>
 
-            <p className="text-xs text-gray-500">
-              Баннер отображается в главной карусели как чистое изображение без перекрывающих текстов.
-            </p>
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/*,image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/avif"
+              className="hidden"
+            />
 
-            {/* Upload buttons row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Option 1: File from Computer */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-700">
-                  Загрузить картинку с компьютера
-                </label>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-2.5 px-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer text-xs"
-                >
-                  {uploading ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Загрузка в облако...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>📁</span>
-                      <span>Выбрать файл на устройстве</span>
-                    </>
-                  )}
-                </button>
+            {!image ? (
+              /* Dropzone / Upload Box */
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => !uploading && fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-8 sm:p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-3 ${
+                  isDragging
+                    ? "border-red-500 bg-red-50/70 scale-[0.99]"
+                    : "border-gray-300 hover:border-red-500 bg-white hover:bg-red-50/20"
+                }`}
+              >
+                {uploading ? (
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="font-bold text-gray-700 text-sm">Загрузка изображения...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-3xl shadow-xs">
+                      📁
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm sm:text-base">
+                        Нажмите для выбора файла или перетащите сюда
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Поддерживаются все виды фото: <strong>PNG, JPG, JPEG, WEBP, GIF, SVG</strong>
+                      </p>
+                    </div>
+                    <span className="mt-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-colors shadow-sm inline-flex items-center gap-2">
+                      <span>Выбрать файл с устройства</span>
+                    </span>
+                  </>
+                )}
               </div>
-
-              {/* Option 2: Image URL */}
-              <div className="space-y-1.5">
-                <label className="block text-[11px] font-bold text-gray-700">
-                  Или вставить прямую ссылку (URL)
-                </label>
-                <div className="flex gap-1.5">
-                  <input
-                    type="url"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="flex-1 text-xs px-3 py-2 border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-red-500"
+            ) : (
+              /* Uploaded Image Preview with Replace / Remove Actions */
+              <div className="space-y-3">
+                <div className="relative rounded-2xl overflow-hidden border border-gray-300 shadow-sm bg-gray-900" style={{ height: 210 }}>
+                  <img
+                    src={image}
+                    alt="Предпросмотр баннера"
+                    className="w-full h-full object-cover"
                   />
-                  <button
-                    type="button"
-                    onClick={handleApplyUrl}
-                    className="bg-gray-800 hover:bg-gray-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors shrink-0 cursor-pointer"
-                  >
-                    Применить
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Live Banner Preview */}
-            {image && (
-              <div className="space-y-1.5 pt-2">
-                <div className="text-[11px] font-bold text-gray-500">Предпросмотр баннера:</div>
-                <div className="relative rounded-2xl overflow-hidden border border-gray-300 shadow-sm" style={{ height: 200 }}>
-                  <img src={image} alt="Предпросмотр баннера" className="w-full h-full object-cover" />
                   {link && (
-                    <div className="absolute bottom-4 left-4 z-10">
+                    <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
                       <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-red-600 text-white text-xs font-bold rounded-xl shadow-md">
                         <span>Подробнее</span>
                         <span>→</span>
                       </span>
                     </div>
                   )}
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white z-20">
+                      <span className="w-7 h-7 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs font-bold">Обновление файла...</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    Файл успешно выбран и готов к публикации
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <span>🔄</span>
+                      <span>Заменить файл</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => setImage("")}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      Удалить
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

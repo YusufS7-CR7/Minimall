@@ -108,7 +108,6 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
             <div className="text-left sm:text-right text-xs text-gray-600 space-y-0.5">
               <div className="font-bold text-gray-900">Служба поддержки & логистика:</div>
               <div>📞 +998 (97) 036 36 36</div>
-              <div>📞 +998 (71) 200 00 00</div>
               <div>Режим работы: 09:00 — 19:00</div>
             </div>
           </div>

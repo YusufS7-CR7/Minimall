@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useOrders } from "@/context/OrdersContext";
 import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -12,6 +12,10 @@ import TelegramSettingsModal from "./TelegramSettingsModal";
 export default function AdminOrdersPage() {
   const { orders, updateOrderStatus, deleteOrder, fetchAllOrders, loading } = useOrders();
   const { showToast } = useApp();
+
+  useEffect(() => {
+    fetchAllOrders();
+  }, [fetchAllOrders]);
 
   useDocumentMeta({
     title: "Управление заказами | Minimall Admin",

@@ -2,21 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { AdminUser, AdminPermission } from "@/data/adminTypes";
 import { ALL_ADMIN_PERMISSIONS } from "@/data/adminTypes";
 import { supabase } from "@/lib/supabase";
+import { hashPassword } from "@/utils/crypto";
 
 const SESSION_STORAGE_KEY = "minimall_admin_session";
-
-// Default primary superadmin credentials
-export const DEFAULT_SUPERADMIN: AdminUser = {
-  id: "superadmin-1",
-  username: "admin",
-  name: "Главный Администратор",
-  password: "admin123",
-  role: "superadmin",
-  isSuperAdmin: true,
-  permissions: ALL_ADMIN_PERMISSIONS.map((p) => p.id),
-  createdAt: "2026-01-01T00:00:00.000Z",
-  isActive: true,
-};
 
 // ─── DB row type (Supabase snake_case) ───────────────────────────────────────
 
@@ -24,7 +12,7 @@ interface DbAdmin {
   id: string;
   username: string;
   name: string;
-  password: string;
+  password?: string;
   role: string;
   is_super_admin: boolean;
   permissions: AdminPermission[];
@@ -38,7 +26,7 @@ function dbToAdmin(row: DbAdmin): AdminUser {
     id: row.id,
     username: row.username,
     name: row.name,
-    password: row.password,
+    password: "", // Never store or expose passwords in client state
     role: row.role as AdminUser["role"],
     isSuperAdmin: row.is_super_admin,
     permissions: row.permissions || [],
@@ -73,6 +61,7 @@ interface AdminAuthContextType {
   isSuperAdmin: boolean;
   loading: boolean;
   hasPermission: (perm: AdminPermission) => boolean;
+  fetchAdmins: () => Promise<AdminUser[]>;
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   createAdmin: (payload: CreateAdminPayload) => Promise<{ success: boolean; error?: string }>;
@@ -88,98 +77,80 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ── Fetch all admins from Supabase ─────────────────────────────────────────
-  const fetchAdmins = useCallback(async () => {
+  // ── Fetch all admins (accessible only for authenticated admins) ────────────
+  const fetchAdmins = useCallback(async (): Promise<AdminUser[]> => {
     const { data, error } = await supabase
       .from("mm_admins")
-      .select("*")
+      .select("id, username, name, role, is_super_admin, permissions, is_active, last_login_at, created_at")
       .order("created_at", { ascending: true });
 
     if (!error && data && data.length > 0) {
       const fetched = (data as DbAdmin[]).map(dbToAdmin);
       setAdmins(fetched);
       return fetched;
-    } else {
-      // If table is empty or error, seed the default superadmin
-      const { error: seedError } = await supabase.from("mm_admins").insert([{
-        id: DEFAULT_SUPERADMIN.id,
-        username: DEFAULT_SUPERADMIN.username,
-        name: DEFAULT_SUPERADMIN.name,
-        password: DEFAULT_SUPERADMIN.password,
-        role: DEFAULT_SUPERADMIN.role,
-        is_super_admin: true,
-        permissions: DEFAULT_SUPERADMIN.permissions,
-        is_active: true,
-      }]);
+    }
+    return [];
+  }, []);
 
-      if (seedError) {
-        console.error("Failed to seed superadmin:", seedError.message);
-        // Fallback to local default
-        setAdmins([DEFAULT_SUPERADMIN]);
-        return [DEFAULT_SUPERADMIN];
-      }
-
-      setAdmins([DEFAULT_SUPERADMIN]);
-      return [DEFAULT_SUPERADMIN];
+  // ── Logout ─────────────────────────────────────────────────────────────────
+  const logout = useCallback(() => {
+    setAdminUser(null);
+    setAdmins([]);
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (e) {
+      console.error("Failed to clear admin session:", e);
     }
   }, []);
 
-  // ── Initialize: fetch admins + restore session ─────────────────────────────
+  // ── Initialize: restore session safely without exposing other admins ───────
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      const fetchedAdmins = await fetchAdmins();
 
-      // Restore session
       try {
         const session = localStorage.getItem(SESSION_STORAGE_KEY);
-        if (session && fetchedAdmins) {
+        if (session) {
           const parsedSession: { id: string } = JSON.parse(session);
-          const match = fetchedAdmins.find((a) => a.id === parsedSession.id && a.isActive);
-          if (match) {
-            setAdminUser(match);
-          } else {
-            localStorage.removeItem(SESSION_STORAGE_KEY);
+          if (parsedSession?.id) {
+            const { data, error } = await supabase
+              .from("mm_admins")
+              .select("id, username, name, role, is_super_admin, permissions, is_active, last_login_at, created_at")
+              .eq("id", parsedSession.id)
+              .maybeSingle();
+
+            if (!error && data && data.is_active) {
+              const current = dbToAdmin(data as DbAdmin);
+              setAdminUser(current);
+            } else {
+              localStorage.removeItem(SESSION_STORAGE_KEY);
+            }
           }
         }
       } catch (e) {
         console.error("Failed to restore admin session:", e);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     init();
-  }, [fetchAdmins]);
+  }, []);
 
-  // Keep adminUser in sync with admins list
-  useEffect(() => {
-    if (adminUser) {
-      const updated = admins.find((a) => a.id === adminUser.id);
-      if (updated) {
-        if (!updated.isActive) {
-          logout();
-        } else if (JSON.stringify(updated) !== JSON.stringify(adminUser)) {
-          setAdminUser(updated);
-        }
-      } else if (admins.length > 0) {
-        // Admin was deleted while logged in
-        logout();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [admins]);
-
-  const hasPermission = (perm: AdminPermission): boolean => {
+  const hasPermission = useCallback((perm: AdminPermission): boolean => {
     if (!adminUser) return false;
     if (adminUser.isSuperAdmin) return true;
     return adminUser.permissions.includes(perm);
-  };
+  }, [adminUser]);
 
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const trimmedUsername = username.trim().toLowerCase();
+    if (!trimmedUsername || !password) {
+      return { success: false, error: "Заполните логин и пароль" };
+    }
 
+    // Query admin account by username
     const { data, error } = await supabase
       .from("mm_admins")
       .select("*")
@@ -187,50 +158,59 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
     if (error || !data) {
-      return { success: false, error: "Пользователь с таким логином не найден" };
+      return { success: false, error: "Неверный логин или пароль" };
     }
 
-    const target = dbToAdmin(data as DbAdmin);
-
-    if (!target.isActive) {
+    if (!data.is_active) {
       return { success: false, error: "Учетная запись администратора деактивирована" };
     }
 
-    if (target.password !== password) {
-      return { success: false, error: "Неверный пароль" };
+    // Compare password with cryptographic SHA-256 hash or legacy plaintext for upgrade
+    const hashedInput = await hashPassword(password);
+    const storedPassword = data.password || "";
+    const isMatch = storedPassword === hashedInput || storedPassword === password;
+
+    if (!isMatch) {
+      return { success: false, error: "Неверный логин или пароль" };
     }
 
-    // Update lastLoginAt
-    await supabase
-      .from("mm_admins")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("id", target.id);
+    const nowIso = new Date().toISOString();
+
+    // Auto-migrate legacy unhashed password to SHA-256 hash in database
+    if (storedPassword === password && storedPassword !== hashedInput) {
+      await supabase
+        .from("mm_admins")
+        .update({ password: hashedInput, last_login_at: nowIso })
+        .eq("id", data.id);
+    } else {
+      await supabase
+        .from("mm_admins")
+        .update({ last_login_at: nowIso })
+        .eq("id", data.id);
+    }
 
     const loggedIn: AdminUser = {
-      ...target,
-      lastLoginAt: new Date().toISOString(),
+      id: data.id,
+      username: data.username,
+      name: data.name,
+      password: "",
+      role: data.role as AdminUser["role"],
+      isSuperAdmin: data.is_super_admin,
+      permissions: data.permissions || [],
+      isActive: true,
+      lastLoginAt: nowIso,
+      createdAt: data.created_at,
     };
 
     setAdminUser(loggedIn);
-    setAdmins((prev) => prev.map((a) => (a.id === target.id ? loggedIn : a)));
 
     try {
-      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ id: target.id }));
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ id: data.id }));
     } catch (e) {
       console.error("Failed to persist admin session:", e);
     }
 
     return { success: true };
-  }, []);
-
-  // ── Logout ─────────────────────────────────────────────────────────────────
-  const logout = useCallback(() => {
-    setAdminUser(null);
-    try {
-      localStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch (e) {
-      console.error("Failed to clear admin session:", e);
-    }
   }, []);
 
   // ── Create admin ───────────────────────────────────────────────────────────
@@ -263,17 +243,20 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: "Пароль должен содержать не менее 4 символов" };
     }
 
+    const hashedPassword = await hashPassword(payload.password);
     const newId = `admin-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const nowIso = new Date().toISOString();
 
     const { error } = await supabase.from("mm_admins").insert([{
       id: newId,
       username: cleanUsername,
       name: payload.name.trim() || cleanUsername,
-      password: payload.password,
+      password: hashedPassword,
       role: payload.role || "admin",
       is_super_admin: false,
       permissions: payload.permissions || ["products_view"],
       is_active: true,
+      created_at: nowIso,
     }]);
 
     if (error) {
@@ -285,17 +268,17 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       id: newId,
       username: cleanUsername,
       name: payload.name.trim() || cleanUsername,
-      password: payload.password,
+      password: "",
       role: payload.role || "admin",
       isSuperAdmin: false,
       permissions: payload.permissions || ["products_view"],
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       isActive: true,
     };
 
     setAdmins((prev) => [...prev, newAdmin]);
     return { success: true };
-  }, [adminUser]);
+  }, [adminUser, hasPermission]);
 
   // ── Update admin ───────────────────────────────────────────────────────────
   const updateAdmin = useCallback(async (id: string, payload: UpdateAdminPayload): Promise<{ success: boolean; error?: string }> => {
@@ -303,7 +286,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: "У вас нет прав на редактирование администраторов" };
     }
 
-    const target = admins.find((a) => a.id === id);
+    const target = admins.find((a) => a.id === id) || (adminUser.id === id ? adminUser : null);
     if (!target) {
       return { success: false, error: "Администратор не найден" };
     }
@@ -314,7 +297,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     const dbPatch: Record<string, unknown> = {};
     if (payload.name !== undefined) dbPatch.name = payload.name.trim();
-    if (payload.password) dbPatch.password = payload.password;
+    if (payload.password) {
+      dbPatch.password = await hashPassword(payload.password);
+    }
     if (!target.isSuperAdmin) {
       if (payload.role) dbPatch.role = payload.role;
       if (payload.permissions) dbPatch.permissions = payload.permissions;
@@ -338,7 +323,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ...a,
           name: payload.name !== undefined ? payload.name.trim() : a.name,
-          password: payload.password ? payload.password : a.password,
+          password: "",
           role: a.isSuperAdmin ? "superadmin" : (payload.role || a.role),
           permissions: a.isSuperAdmin ? ALL_ADMIN_PERMISSIONS.map((p) => p.id) : (payload.permissions || a.permissions),
           isActive: a.isSuperAdmin ? true : (payload.isActive !== undefined ? payload.isActive : a.isActive),
@@ -346,8 +331,12 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
+    if (adminUser.id === id && payload.name !== undefined) {
+      setAdminUser((prev) => prev ? { ...prev, name: payload.name!.trim() } : null);
+    }
+
     return { success: true };
-  }, [adminUser, admins]);
+  }, [adminUser, admins, hasPermission]);
 
   // ── Delete admin ───────────────────────────────────────────────────────────
   const deleteAdmin = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
@@ -380,7 +369,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     setAdmins((prev) => prev.filter((a) => a.id !== id));
     return { success: true };
-  }, [adminUser, admins]);
+  }, [adminUser, admins, hasPermission]);
 
   // ── Toggle status ──────────────────────────────────────────────────────────
   const toggleAdminStatus = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
@@ -400,6 +389,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         isSuperAdmin: !!adminUser?.isSuperAdmin,
         loading,
         hasPermission,
+        fetchAdmins,
         login,
         logout,
         createAdmin,
