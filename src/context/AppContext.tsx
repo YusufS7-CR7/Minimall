@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Lang, Product, CartItem } from "@/data/types";
-import { setGoogleTranslateLanguage } from "@/utils/googleTranslate";
+import { clearGoogleTranslateCookies } from "@/utils/googleTranslate";
 
 // ─── Per-user localStorage helpers ───────────────────────────────────────────
 
@@ -149,13 +149,16 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
       localStorage.setItem("mm_lang", newLang);
     } catch {}
     document.documentElement.lang = newLang;
-    setGoogleTranslateLanguage(newLang);
+    document.documentElement.setAttribute("translate", "no");
+    document.documentElement.classList.add("notranslate");
   }, []);
 
-  // Sync Google Translate & html lang on mount
+  // Sync html lang on mount & clean up any legacy translate cookies
   useEffect(() => {
     document.documentElement.lang = lang;
-    setGoogleTranslateLanguage(lang);
+    document.documentElement.setAttribute("translate", "no");
+    document.documentElement.classList.add("notranslate");
+    clearGoogleTranslateCookies();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally run only once; setLang keeps subsequent ones in sync
 

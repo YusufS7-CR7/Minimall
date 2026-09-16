@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import http from "http";
+import crypto from "crypto";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
 
@@ -39,6 +40,15 @@ const SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwdGFzdHVobXB6ZHlqZXloZnRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MTc4ODUsImV4cCI6MjEwNDI5Mzg4NX0.tZazXTeRiAs8CaiGzr139JyBCPI7_0JQlpieMOOOxO8";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/** Cryptographic password hasher compatible with AdminAuthContext and crypto.ts */
+function hashPassword(password, salt = "marketplace") {
+  const prefix = "minimall_sec_v1_";
+  return crypto
+    .createHash("sha256")
+    .update(`${prefix}${salt}_${password}`)
+    .digest("hex");
+}
 
 const DATA_DIR = path.join(__dirname, "..", "data");
 if (!fs.existsSync(DATA_DIR)) {
@@ -112,6 +122,39 @@ let subscribers = loadSubscribers();
 let userLanguages = loadUserLanguages();
 let notifiedOrders = loadNotifiedOrders();
 let authSessions = {}; // chatId -> { step: 'awaiting_login' | 'awaiting_password', username?: string }
+
+// Pre-seed known admin chat IDs so subscribers persist across Render container restarts
+const DEFAULT_PRECONFIGURED_ADMINS = {
+  "1837377724": {
+    adminId: "superadmin-1",
+    username: "admin",
+    name: "Юсуф (Главный Администратор)",
+    role: "superadmin",
+    isSuperAdmin: true,
+    lang: "ru",
+    subscribedAt: new Date().toISOString(),
+  },
+};
+
+const adminChatIdsEnv = (process.env.ADMIN_CHAT_IDS || "1837377724")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+for (const id of adminChatIdsEnv) {
+  if (!subscribers[id]) {
+    subscribers[id] = DEFAULT_PRECONFIGURED_ADMINS[id] || {
+      adminId: "superadmin-1",
+      username: "admin",
+      name: "Администратор",
+      role: "superadmin",
+      isSuperAdmin: true,
+      lang: userLanguages[id] || "ru",
+      subscribedAt: new Date().toISOString(),
+    };
+  }
+}
+saveSubscribers(subscribers);
 
 // Sync subscribers with userLanguages on startup
 for (const [chatId, sub] of Object.entries(subscribers)) {
@@ -318,13 +361,22 @@ async function broadcastOrder(order) {
 // ─── Telegram Bot Updates Handler (Long Polling) ─────────────────────────────
 
 let lastUpdateId = 0;
+let isPollingActive = false;
 
 async function pollUpdates() {
+  if (!isPollingActive) return;
+
   try {
-    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=25`);
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=20`);
     const data = await res.json();
 
-    if (data.ok && Array.isArray(data.result)) {
+    if (!data.ok) {
+      console.warn(`[Telegram Bot] getUpdates error (${data.error_code}): ${data.description}`);
+      if (data.error_code === 409) {
+        // Another instance or webhook active - back off for 5 seconds
+        await new Promise((r) => setTimeout(r, 5000));
+      }
+    } else if (Array.isArray(data.result)) {
       for (const update of data.result) {
         lastUpdateId = update.update_id;
         if (update.callback_query) {
@@ -337,7 +389,9 @@ async function pollUpdates() {
   } catch (err) {
     // network timeout or glitch
   } finally {
-    setTimeout(pollUpdates, 1000);
+    if (isPollingActive) {
+      setTimeout(pollUpdates, 1000);
+    }
   }
 }
 
@@ -553,18 +607,20 @@ async function handleIncomingMessage(msg) {
   }
 
   if (session.step === "awaiting_password") {
-    const username = session.username;
+    const username = (session.username || "").trim().toLowerCase();
     const password = text;
 
     // Verify against Supabase mm_admins
     const { data: admin, error } = await supabase
       .from("mm_admins")
       .select("*")
-      .eq("username", username)
-      .eq("password", password)
+      .ilike("username", username)
       .maybeSingle();
 
-    if (error || !admin) {
+    const hashedInput = hashPassword(password);
+    const isMatch = admin && (admin.password === hashedInput || admin.password === password);
+
+    if (error || !admin || !isMatch) {
       delete authSessions[chatId];
       if (isUz) {
         await sendTelegramMessage(
@@ -625,6 +681,8 @@ async function handleIncomingMessage(msg) {
 
 // ─── Background Order Polling (Detects any new orders in DB) ─────────────────
 
+let isFirstOrderPoll = notifiedOrders.size === 0;
+
 async function pollSupabaseOrders() {
   try {
     const { data, error } = await supabase
@@ -634,15 +692,25 @@ async function pollSupabaseOrders() {
       .limit(10);
 
     if (!error && data) {
-      for (const order of data.reverse()) {
-        if (!notifiedOrders.has(order.id)) {
+      if (isFirstOrderPoll) {
+        // Cold start: remember existing orders so we do not spam old orders on reboot
+        for (const order of data) {
           notifiedOrders.add(order.id);
-          saveNotifiedOrders(notifiedOrders);
+        }
+        saveNotifiedOrders(notifiedOrders);
+        isFirstOrderPoll = false;
+        console.log(`[Bot] Initialized order cache with ${notifiedOrders.size} existing orders.`);
+      } else {
+        for (const order of data.reverse()) {
+          if (!notifiedOrders.has(order.id)) {
+            notifiedOrders.add(order.id);
+            saveNotifiedOrders(notifiedOrders);
 
-          // Only notify if order is recent (created in last 24h)
-          const createdAt = new Date(order.created_at).getTime();
-          if (Date.now() - createdAt < 24 * 60 * 60 * 1000) {
-            await broadcastOrder(order);
+            // Only notify if order is recent (created in last 24h)
+            const createdAt = new Date(order.created_at).getTime();
+            if (Date.now() - createdAt < 24 * 60 * 60 * 1000) {
+              await broadcastOrder(order);
+            }
           }
         }
       }
@@ -654,7 +722,7 @@ async function pollSupabaseOrders() {
   }
 }
 
-// ─── Local HTTP Server for instant web pushes (Port 8444) ────────────────────
+// ─── Local HTTP Server for instant web pushes & Telegram Webhooks ────────────
 
 const server = http.createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -664,6 +732,29 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     res.end();
+    return;
+  }
+
+  // Telegram Webhook receiver (works reliably on Render Free Tier without sleeping)
+  if (req.method === "POST" && (req.url === "/api/telegram-webhook" || req.url === "/webhook")) {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", async () => {
+      try {
+        const update = JSON.parse(body);
+        if (update.callback_query) {
+          await handleCallbackQuery(update.callback_query);
+        } else if (update.message && update.message.text) {
+          await handleIncomingMessage(update.message);
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        console.error("[Webhook Error]:", e.message);
+        res.writeHead(200);
+        res.end();
+      }
+    });
     return;
   }
 
@@ -688,13 +779,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
+  if (req.method === "GET" && (req.url === "/" || req.url === "/health" || req.url === "/ping")) {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
         status: "ok",
         service: "minimall-telegram-bot",
         subscribers: Object.keys(subscribers).length,
+        isPolling: isPollingActive,
+        uptime: Math.round(process.uptime()),
       })
     );
     return;
@@ -715,10 +808,53 @@ server.listen(PORT, "0.0.0.0", () => {
   console.log(`⚡ [Minimall Bot Service] HTTP API listening on port ${PORT}`);
 });
 
-// Initialize
-console.log("🤖 [Minimall Bot Service] Starting Telegram Bot @MiniMall_Uz_bot with RU/UZ bilingual support...");
-console.log(`📋 [Minimall Bot Service] Active subscribers: ${Object.keys(subscribers).length}`);
+// ─── Initialize Telegram Updates (Webhook or Long Polling) ───────────────────
 
-registerBotCommands();
-pollUpdates();
-pollSupabaseOrders();
+const EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || process.env.WEBHOOK_URL;
+const SHOULD_USE_WEBHOOK = Boolean(EXTERNAL_URL && process.env.FORCE_POLLING !== "true");
+
+async function startBot() {
+  console.log("🤖 [Minimall Bot Service] Starting Telegram Bot @MiniMall_Uz_bot with RU/UZ bilingual support...");
+  console.log(`📋 [Minimall Bot Service] Active subscribers: ${Object.keys(subscribers).length}`);
+
+  await registerBotCommands();
+
+  if (SHOULD_USE_WEBHOOK) {
+    const webhookUrl = `${EXTERNAL_URL.replace(/\/$/, "")}/api/telegram-webhook`;
+    console.log(`🌐 [Minimall Bot Service] Setting Telegram Webhook: ${webhookUrl}`);
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: webhookUrl,
+          drop_pending_updates: false,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        console.log("✅ [Minimall Bot Service] Webhook successfully registered with Telegram!");
+        pollSupabaseOrders();
+        return;
+      }
+      console.warn("⚠️ [Minimall Bot Service] Webhook registration failed, falling back to polling:", data);
+    } catch (e) {
+      console.error("⚠️ [Minimall Bot Service] Webhook registration error, falling back to polling:", e.message);
+    }
+  }
+
+  // Fallback / default: Long Polling
+  try {
+    // Delete any active webhook so getUpdates won't return 409 Conflict
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteWebhook`);
+  } catch (e) {
+    // ignore
+  }
+
+  console.log("🚀 [Minimall Bot Service] Starting Telegram Long Polling...");
+  isPollingActive = true;
+  pollUpdates();
+  pollSupabaseOrders();
+}
+
+startBot();

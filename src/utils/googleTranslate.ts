@@ -1,57 +1,31 @@
 /**
- * Google Translate website integration helper.
- * Manages the `googtrans` cookie and triggers the Google Translate DOM combo.
+ * Google Translate cleanup helper.
+ * Ensures legacy `googtrans` cookies and DOM artifacts are cleared.
  */
 
-export function setGoogleTranslateLanguage(targetLang: "uz" | "ru") {
+export function clearGoogleTranslateCookies() {
   if (typeof window === "undefined") return;
 
-  const pair = targetLang === "uz" ? "/auto/uz" : "/auto/ru";
-  const explicitPair = targetLang === "uz" ? "/ru/uz" : "/ru/ru";
-
-  // Set cookies for root path and domains
   const host = window.location.hostname;
-  const cookieOptions = [
-    `googtrans=${pair}; path=/;`,
-    `googtrans=${pair}; path=/; domain=${host};`,
-    `googtrans=${explicitPair}; path=/;`,
-    `googtrans=${explicitPair}; path=/; domain=${host};`,
+  const past = "Thu, 01 Jan 1970 00:00:00 UTC";
+  const clearList = [
+    `googtrans=; expires=${past}; path=/;`,
+    `googtrans=; expires=${past}; path=/; domain=${host};`,
   ];
 
   if (host.includes(".")) {
     const rootDomain = host.split(".").slice(-2).join(".");
-    cookieOptions.push(`googtrans=${pair}; path=/; domain=.${rootDomain};`);
-    cookieOptions.push(`googtrans=${explicitPair}; path=/; domain=.${rootDomain};`);
+    clearList.push(`googtrans=; expires=${past}; path=/; domain=.${rootDomain};`);
   }
 
-  cookieOptions.forEach((c) => {
+  clearList.forEach((c) => {
     document.cookie = c;
   });
+}
 
-  // Attempt to select the language from Google Translate select element
-  const triggerCombo = () => {
-    const combo = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-    if (combo) {
-      if (combo.value !== targetLang) {
-        combo.value = targetLang;
-        combo.dispatchEvent(new Event("change"));
-      }
-      return true;
-    }
-    return false;
-  };
-
-  // Try immediately
-  if (!triggerCombo()) {
-    // Retry periodically for up to 3 seconds until Google script initializes
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if (triggerCombo() || attempts > 15) {
-        clearInterval(interval);
-      }
-    }, 200);
-  }
+/** Kept for backwards compatibility if called */
+export function setGoogleTranslateLanguage(_targetLang?: "uz" | "ru") {
+  clearGoogleTranslateCookies();
 }
 
 /**

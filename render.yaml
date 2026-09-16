@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: minimall-telegram-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server/telegramBotService.js
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: TELEGRAM_BOT_TOKEN
+        value: 8809570303:AAGL-2UCGPLoGrx7NBwX0ZzHraMyqSzWvNA
+      - key: VITE_SUPABASE_URL
+        value: https://pptastuhmpzdyjeyhfts.supabase.co
+      - key: VITE_SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwdGFzdHVobXB6ZHlqZXloZnRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MTc4ODUsImV4cCI6MjEwNDI5Mzg4NX0.tZazXTeRiAs8CaiGzr139JyBCPI7_0JQlpieMOOOxO8
+      - key: ADMIN_CHAT_IDS
+        value: "1837377724"

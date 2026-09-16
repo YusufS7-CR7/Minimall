@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "format": "oxfmt",
     "test:systems": "node scripts/verifyAllSystems.js",
+    "start": "node server/telegramBotService.js",
     "bot": "node server/telegramBotService.js"
   },
   "dependencies": {
