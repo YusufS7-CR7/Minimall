@@ -688,6 +688,18 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        status: "ok",
+        service: "minimall-telegram-bot",
+        subscribers: Object.keys(subscribers).length,
+      })
+    );
+    return;
+  }
+
   if (req.method === "GET" && req.url === "/api/subscribers") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ count: Object.keys(subscribers).length, subscribers }));
@@ -698,8 +710,9 @@ const server = http.createServer(async (req, res) => {
   res.end();
 });
 
-server.listen(8444, "127.0.0.1", () => {
-  console.log("⚡ [Minimall Bot Service] Local HTTP API listening on http://127.0.0.1:8444");
+const PORT = Number(process.env.PORT) || 8444;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`⚡ [Minimall Bot Service] HTTP API listening on port ${PORT}`);
 });
 
 // Initialize

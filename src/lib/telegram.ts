@@ -95,15 +95,16 @@ ${itemsList}
  * Sends order notification to Telegram
  */
 export async function sendOrderTelegramNotification(order: Order): Promise<{ success: boolean; error?: string }> {
-  // 1. Notify local bot daemon (broadcasts to all admins logged into the bot)
+  // 1. Notify bot service (local or Render URL)
   try {
-    fetch("http://localhost:8444/api/notify-order", {
+    const botServiceUrl = (import.meta.env.VITE_BOT_SERVICE_URL || "http://localhost:8444").replace(/\/+$/, "");
+    fetch(`${botServiceUrl}/api/notify-order`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ order }),
     }).catch(() => {});
   } catch {
-    // daemon might not be running locally, safe ignore
+    // daemon might not be reachable directly, safe ignore (background DB poller handles it)
   }
 
   const settings = getTelegramSettings();
