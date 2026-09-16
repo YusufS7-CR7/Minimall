@@ -16,12 +16,12 @@ export default function CategoryNavBar({ lang }: CategoryNavBarProps) {
 
   return (
     <nav aria-label="Категории товаров" className="bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4">
-        <ul className="flex items-center gap-1 overflow-x-auto scrollbar-hide" role="list">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4">
+        <ul className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto scrollbar-hide" role="list">
           <li>
             <Link
               to="/catalog"
-              className={`inline-block whitespace-nowrap px-4 py-3 text-sm font-medium transition-all relative ${
+              className={`inline-block whitespace-nowrap px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-all relative ${
                 isCatalogRoot ? "text-red-600 font-semibold" : "text-gray-600 hover:text-red-500"
               }`}
             >
@@ -38,7 +38,7 @@ export default function CategoryNavBar({ lang }: CategoryNavBarProps) {
               <li key={c.key}>
                 <Link
                   to={`/catalog/${c.slug}`}
-                  className={`inline-block whitespace-nowrap px-4 py-3 text-sm font-medium transition-all relative ${
+                  className={`inline-block whitespace-nowrap px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium transition-all relative ${
                     isActive
                       ? "text-red-600 font-semibold"
                       : "text-gray-600 hover:text-red-500"

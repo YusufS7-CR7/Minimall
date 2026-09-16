@@ -12,7 +12,7 @@ export default function TopBar({ lang, onOpenInfo }: TopBarProps) {
   const { setLang } = useApp();
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 via-gray-900 to-red-950 text-white text-xs">
+    <div className="hidden sm:block bg-gradient-to-r from-gray-900 via-gray-900 to-red-950 text-white text-xs">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-9">
         <div className="flex items-center gap-4">
           {/* Language switcher */}

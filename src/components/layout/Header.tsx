@@ -17,7 +17,7 @@ interface HeaderProps {
 
 export default function Header({ lang }: HeaderProps) {
   const t = T[lang];
-  const { totalCartCount, favorites, showToast } = useApp();
+  const { totalCartCount, favorites, showToast, setLang } = useApp();
   const { user, openAuthModal, logout } = useAuth();
   const [search, setSearch] = useState("");
 
@@ -50,8 +50,22 @@ export default function Header({ lang }: HeaderProps) {
   return (
     <>
       <header className="bg-white sticky top-0 z-40 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4">
-          <div className="flex items-center gap-2 sm:gap-5 h-[60px] sm:h-[68px]">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-4">
+          <div className="flex items-center gap-1.5 sm:gap-5 h-[52px] sm:h-[68px]">
+
+            {/* Mobile Catalog button */}
+            <button
+              id="mobile-catalog-btn"
+              type="button"
+              onClick={() => setCatalogOpen((o) => !o)}
+              aria-expanded={catalogOpen}
+              aria-label={t.catalog}
+              className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-gray-700 hover:text-red-600 hover:bg-gray-100 transition-colors active:scale-95 shrink-0"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0 group" aria-label="Minimall — на главную">
@@ -59,7 +73,7 @@ export default function Header({ lang }: HeaderProps) {
                 <img
                   src={LOGO_DATA_URI}
                   alt="Minimall"
-                  className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  className="h-8 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   width={44}
                   height={44}
                 />
@@ -116,18 +130,31 @@ export default function Header({ lang }: HeaderProps) {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t.searchPlaceholder}
                 aria-label={t.searchPlaceholder}
-                className="flex-1 py-2 sm:py-2.5 px-3 sm:px-4 bg-transparent text-sm outline-none text-gray-800 placeholder-gray-400 min-w-0"
+                className="flex-1 py-1.5 sm:py-2.5 px-2.5 sm:px-4 bg-transparent text-xs sm:text-sm outline-none text-gray-800 placeholder-gray-400 min-w-0"
               />
               <button
                 type="submit"
                 aria-label="Найти"
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 transition-all shrink-0"
+                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-2.5 sm:px-4 py-1.5 sm:py-2.5 transition-all shrink-0"
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                 </svg>
               </button>
             </form>
+
+            {/* Mobile Language Switcher */}
+            <button
+              id="mobile-lang-btn"
+              type="button"
+              onClick={() => setLang(lang === "ru" ? "uz" : "ru")}
+              aria-label="Сменить язык"
+              title={lang === "ru" ? "O'zbek tiliga o'tish" : "Переключить на русский"}
+              className="md:hidden shrink-0 flex items-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 active:scale-95 rounded-xl text-xs font-bold text-gray-700 transition-all cursor-pointer"
+            >
+              <span className="text-sm leading-none">{lang === "ru" ? "🇷🇺" : "🇺🇿"}</span>
+              <span className="text-[10px] font-extrabold uppercase leading-none">{lang}</span>
+            </button>
 
             {/* ── Desktop-only actions ── */}
             <div className="hidden sm:flex items-center px-1">

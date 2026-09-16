@@ -138,7 +138,7 @@ function AppLayout() {
       <TopBar lang={lang} onOpenInfo={handleOpenInfo} />
       <Header lang={lang} />
       <CategoryNavBar lang={lang} />
-      <div className="flex-1">
+      <div className="flex-1 pb-16 md:pb-0">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CategoryPage />} />

@@ -75,21 +75,21 @@ export default function HomePage() {
       <DiscountProductsRow lang={lang} />
 
       {/* Full catalog grid */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <section className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div>
-            <h2 className="text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
               {lang === "ru" ? "Все товары" : "Barcha tovarlar"}
-              <span className="ml-2 text-lg text-gray-400 font-normal">
+              <span className="ml-2 text-base sm:text-lg text-gray-400 font-normal">
                 ({displayedProducts.length}{displayedProducts.length !== products.length ? ` из ${products.length}` : ""})
               </span>
             </h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 isPriceFiltered || isFilterOpen
                   ? "bg-red-600 text-white border-red-600 shadow-sm"
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
@@ -115,7 +115,7 @@ export default function HomePage() {
 
         {/* Collapsible Price Range Filter Card */}
         {isFilterOpen && (
-          <div className="mb-8 p-5 bg-white rounded-2xl border border-red-100 shadow-sm animate-fade-in max-w-xl">
+          <div className="mb-6 sm:mb-8 p-4 sm:p-5 bg-white rounded-2xl border border-red-100 shadow-sm animate-fade-in max-w-xl">
             <PriceRangeSlider
               min={0}
               max={20_000_000}
@@ -131,9 +131,9 @@ export default function HomePage() {
         )}
 
         {displayedProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-100 p-8 max-w-lg mx-auto shadow-xs">
-            <div className="text-5xl mb-4">{products.length === 0 ? "📦" : "🔍"}</div>
-            <p className="text-gray-900 text-lg font-black" style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.02em" }}>
+          <div className="flex flex-col items-center justify-center py-12 sm:py-16 text-center bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 max-w-lg mx-auto shadow-xs">
+            <div className="text-4xl sm:text-5xl mb-3 sm:mb-4">{products.length === 0 ? "📦" : "🔍"}</div>
+            <p className="text-gray-900 text-base sm:text-lg font-black" style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.02em" }}>
               {products.length === 0
                 ? lang === "ru"
                   ? "Витрина пополняется новыми товарами"
@@ -156,7 +156,7 @@ export default function HomePage() {
                 href="https://t.me/minimall_uzb"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+                className="mt-5 inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
               >
                 <span>💬</span>
                 <span>{lang === "ru" ? "Связаться с нами в Telegram" : "Telegram orqali bog'lanish"}</span>
@@ -172,7 +172,7 @@ export default function HomePage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
             {displayedProducts.map((p) => (
               <ProductCard key={p.id} product={p} lang={lang} />
             ))}
@@ -181,17 +181,17 @@ export default function HomePage() {
       </section>
 
       {/* Partners / Brands */}
-      <div className="border-y border-gray-200/60 bg-white py-10 px-4">
+      <div className="border-y border-gray-200/60 bg-white py-6 sm:py-10 px-3 sm:px-4">
         <div className="max-w-7xl mx-auto">
-          <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-400 mb-7">
+          <p className="text-center text-xs font-bold uppercase tracking-widest text-gray-400 mb-4 sm:mb-7">
             {lang === "ru" ? "Наши поставщики" : "Bizning yetkazib beruvchilar"}
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-10">
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
             {brands.map((b) => (
               <Link
                 key={b}
                 to={`/brand/${b.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                className="text-2xl font-black text-gray-300 hover:text-red-500 transition-all hover:scale-110 duration-300"
+                className="text-xl sm:text-2xl font-black text-gray-300 hover:text-red-500 transition-all hover:scale-110 duration-300"
                 style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.05em" }}
               >
                 {b}
@@ -228,25 +228,25 @@ function HeroSection({ lang }: { lang: string }) {
   }, [paused, total]);
 
   return (
-    <section aria-label="Главный баннер" className="max-w-7xl mx-auto px-4 pt-5 pb-2">
-      <div className="flex flex-col lg:flex-row gap-4 items-stretch" style={{ minHeight: 380 }}>
+    <section aria-label="Главный баннер" className="max-w-7xl mx-auto px-3 sm:px-4 pt-3 sm:pt-5 pb-2">
+      <div className="flex flex-col lg:flex-row gap-4 items-stretch">
         {/* Main News Carousel (70%) */}
         <div
-          className="w-full lg:flex-[7] relative rounded-2xl overflow-hidden bg-gray-900 min-h-[340px] sm:min-h-[380px] flex flex-col justify-center"
+          className="w-full lg:flex-[7] relative rounded-2xl overflow-hidden bg-gray-900 min-h-[210px] sm:min-h-[380px] flex flex-col justify-center"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
           {total === 0 ? (
-            <div className="relative w-full h-full min-h-[340px] sm:min-h-[380px] bg-gradient-to-br from-gray-950 via-gray-900 to-red-950/40 p-6 sm:p-9 flex flex-col justify-between overflow-hidden">
+            <div className="relative w-full h-full min-h-[210px] sm:min-h-[380px] bg-gradient-to-br from-gray-950 via-gray-900 to-red-950/40 p-4 sm:p-9 flex flex-col justify-between overflow-hidden">
               {/* Ambient background glows */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/15 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-600/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
               {/* Top badge bar */}
-              <div className="relative z-10 flex items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-2 bg-red-600/20 border border-red-500/40 px-3 py-1 rounded-full shadow-xs">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-red-300">
+              <div className="relative z-10 flex items-center justify-between gap-2 sm:gap-3">
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-red-600/20 border border-red-500/40 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-xs">
+                  <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-red-300">
                     {lang === "uz" ? "Minimall yangiliklari" : "Новости Minimall"}
                   </span>
                 </div>
@@ -257,16 +257,16 @@ function HeroSection({ lang }: { lang: string }) {
               </div>
 
               {/* Main Headline & Description */}
-              <div className="relative z-10 my-auto py-4">
+              <div className="relative z-10 my-auto py-2 sm:py-4">
                 <h2
-                  className="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight mb-3"
+                  className="text-lg sm:text-3xl lg:text-4xl font-black text-white leading-snug sm:leading-tight mb-1.5 sm:mb-3"
                   style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.02em" }}
                 >
                   {lang === "uz"
                     ? "Bu yerda do'konimizning yangiliklari va maxsus aksiyalari paydo bo'ladi!"
                     : "Здесь будут появляться новости и горячие акции нашего магазина!"}
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">
+                <p className="hidden sm:block text-xs sm:text-sm text-gray-300 max-w-xl leading-relaxed">
                   {lang === "uz"
                     ? "Biz siz uchun yetakchi jahon brendlarining original elektr asboblari va uskunalari bo'yicha eng yaxshi takliflarni tayyorlayapmiz. Yangiliklar va chegirmalarni kuzatib boring!"
                     : "Мы готовим для вас специальные предложения, сезонные скидки и новинки от ведущих мировых производителей электроинструмента. Следите за обновлениями!"}
@@ -274,35 +274,31 @@ function HeroSection({ lang }: { lang: string }) {
               </div>
 
               {/* Bottom Feature Badges & Action Links */}
-              <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-white/10">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs font-semibold text-gray-300">
-                  <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
+              <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 pt-2.5 sm:pt-3 border-t border-white/10">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[10px] sm:text-xs font-semibold text-gray-300">
+                  <span className="inline-flex items-center gap-1 bg-white/10 backdrop-blur-xs px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-white/10">
                     <span>⚡</span>
-                    <span>{lang === "uz" ? "Tezkor yetkazib berish" : "Быстрая доставка"}</span>
+                    <span>{lang === "uz" ? "Tezkor yetkazish" : "Быстрая доставка"}</span>
                   </span>
-                  <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
+                  <span className="inline-flex items-center gap-1 bg-white/10 backdrop-blur-xs px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border border-white/10">
                     <span>🛡️</span>
-                    <span>{lang === "uz" ? "Original kafolati" : "Гарантия оригинальности"}</span>
-                  </span>
-                  <span className="hidden md:inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-white/10">
-                    <span>💬</span>
-                    <span>{lang === "uz" ? "Ekspert maslahati" : "Консультация экспертов"}</span>
+                    <span>{lang === "uz" ? "Kafolat" : "Гарантия 100%"}</span>
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <a
                     href="https://t.me/minimall_uzb"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/20 transition-all active:scale-95"
+                    className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/10 hover:bg-white/20 text-white text-[11px] sm:text-xs font-bold rounded-xl border border-white/20 transition-all active:scale-95"
                   >
                     <span>✈️</span>
                     <span>Telegram</span>
                   </a>
                   <Link
                     to="/catalog"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all active:scale-95"
+                    className="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 bg-red-600 hover:bg-red-700 text-white text-[11px] sm:text-xs font-bold rounded-xl shadow-lg shadow-red-600/30 transition-all active:scale-95"
                   >
                     <span>{lang === "uz" ? "Katalog" : "Каталог"}</span>
                     <span>→</span>
@@ -336,10 +332,10 @@ function HeroSection({ lang }: { lang: string }) {
                   )}
 
                   {slide.link && (
-                    <div className="absolute bottom-6 left-6 z-10 pointer-events-auto">
+                    <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 z-10 pointer-events-auto">
                       <Link
                         to={slide.link}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
+                        className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-lg transition-all w-fit active:scale-95"
                       >
                         <span>{lang === "uz" ? "Batafsil" : "Подробнее"}</span>
                         <span>→</span>
@@ -354,23 +350,23 @@ function HeroSection({ lang }: { lang: string }) {
                   <button
                     onClick={() => setActive((a) => (a - 1 + total) % total)}
                     aria-label="Предыдущий слайд"
-                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
                     onClick={() => setActive((a) => (a + 1) % total)}
                     aria-label="Следующий слайд"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-10 h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
 
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
+                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-10">
                     {slides.map((_, i) => (
                       <button
                         key={i}
@@ -378,8 +374,8 @@ function HeroSection({ lang }: { lang: string }) {
                         aria-label={`Слайд ${i + 1}`}
                         className={`transition-all rounded-full cursor-pointer ${
                           i === active
-                            ? "bg-red-500 w-7 h-2.5 shadow-lg shadow-red-500/50"
-                            : "bg-white/40 hover:bg-white/60 w-2.5 h-2.5"
+                            ? "bg-red-500 w-5 sm:w-7 h-2 sm:h-2.5 shadow-lg shadow-red-500/50"
+                            : "bg-white/40 hover:bg-white/60 w-2 sm:w-2.5 h-2 sm:h-2.5"
                         }`}
                       />
                     ))}
@@ -390,8 +386,8 @@ function HeroSection({ lang }: { lang: string }) {
           )}
         </div>
 
-        {/* Sale Products Carousel (30%) */}
-        <div className="w-full lg:flex-[3] flex flex-col min-h-[360px] lg:min-h-0">
+        {/* Sale Products Carousel (30%) — desktop only */}
+        <div className="hidden lg:flex lg:flex-[3] flex-col min-h-[360px] lg:min-h-0">
           <SaleCarousel lang={lang} />
         </div>
       </div>
@@ -414,37 +410,36 @@ function CategoriesSection({ lang }: { lang: string }) {
   };
 
   return (
-    <section aria-labelledby="categories-heading" className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 id="categories-heading" className="text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+    <section aria-labelledby="categories-heading" className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex items-center justify-between mb-3 sm:mb-6">
+        <h2 id="categories-heading" className="text-xl sm:text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
           {lang === "ru" ? "Категории" : "Kategoriyalar"}
         </h2>
-        <Link to="/catalog" className="text-red-500 hover:text-red-600 text-sm font-semibold flex items-center gap-1 transition-colors group">
+        <Link to="/catalog" className="text-red-500 hover:text-red-600 text-xs sm:text-sm font-semibold flex items-center gap-1 transition-colors group">
           {lang === "ru" ? "Все категории" : "Barcha kategoriyalar"}
-          <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
         </Link>
       </div>
       <div className="relative">
-        <div ref={scrollRef} onScroll={checkScroll} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+        <div ref={scrollRef} onScroll={checkScroll} className="flex gap-2.5 sm:gap-4 overflow-x-auto scrollbar-hide pb-2">
           {categories.map((c) => {
             const label = lang === "ru" ? c.labelRu : c.labelUz;
             return (
               <Link
                 key={c.key}
                 to={`/catalog/${c.slug}`}
-                className="group flex flex-col items-center gap-2.5 shrink-0"
-                style={{ width: 130 }}
+                className="group flex flex-col items-center gap-1.5 sm:gap-2.5 shrink-0 w-[82px] sm:w-[130px]"
               >
-                <div className="w-[110px] h-[110px] rounded-2xl overflow-hidden border-2 border-gray-100 group-hover:border-red-400 transition-all bg-white shadow-sm group-hover:shadow-lg group-hover:shadow-red-100/50 group-hover:-translate-y-1 duration-300">
+                <div className="w-[72px] h-[72px] sm:w-[110px] sm:h-[110px] rounded-xl sm:rounded-2xl overflow-hidden border border-gray-100 sm:border-2 group-hover:border-red-400 transition-all bg-white shadow-xs group-hover:shadow-lg group-hover:shadow-red-100/50 group-hover:-translate-y-1 duration-300">
                   <img src={c.image} alt={label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" width={110} height={110} loading="lazy" />
                 </div>
-                <span className="text-xs font-semibold text-gray-700 group-hover:text-red-600 text-center leading-tight transition-colors">{label}</span>
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-700 group-hover:text-red-600 text-center leading-tight transition-colors line-clamp-2">{label}</span>
               </Link>
             );
           })}
         </div>
         {canScrollRight && (
-          <button onClick={() => scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" })} aria-label="Прокрутить вправо" className="absolute right-0 top-[55px] -translate-y-1/2 bg-white shadow-lg border border-gray-100 w-9 h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-all z-10">
+          <button onClick={() => scrollRef.current?.scrollBy({ left: 300, behavior: "smooth" })} aria-label="Прокрутить вправо" className="absolute right-0 top-[40px] sm:top-[55px] -translate-y-1/2 bg-white shadow-lg border border-gray-100 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:border-red-200 transition-all z-10">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         )}
@@ -458,20 +453,20 @@ function CategoriesSection({ lang }: { lang: string }) {
 function AdvantagesSection({ lang }: { lang: string }) {
   const t = T[lang as "ru" | "uz"];
   return (
-    <section aria-labelledby="advantages-heading" className="max-w-7xl mx-auto px-4 py-8">
-      <h2 id="advantages-heading" className="text-2xl font-extrabold text-gray-900 mb-6" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+    <section aria-labelledby="advantages-heading" className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <h2 id="advantages-heading" className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-3 sm:mb-6" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
         {t.advantages}
       </h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-2 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 sm:gap-3">
         {t.advantageItems.map((item, i) => (
-          <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4 hover:shadow-lg hover:border-red-100 hover:-translate-y-1 transition-all duration-300 group cursor-default">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-br ${ADVANTAGE_COLORS[i]} transition-transform group-hover:scale-110 duration-300`}>
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div key={i} className="w-[135px] sm:w-auto shrink-0 bg-white border border-gray-100 rounded-xl sm:rounded-2xl p-3 sm:p-4 hover:shadow-lg hover:border-red-100 hover:-translate-y-1 transition-all duration-300 group cursor-default">
+            <div className={`w-8 h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-3 bg-gradient-to-br ${ADVANTAGE_COLORS[i]} transition-transform group-hover:scale-110 duration-300`}>
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d={ADVANTAGE_ICONS[i]} />
               </svg>
             </div>
-            <h3 className="text-sm font-bold text-gray-900 mb-1 leading-snug">{item.title}</h3>
-            <p className="text-[11px] text-gray-500 leading-relaxed">{item.desc}</p>
+            <h3 className="text-xs sm:text-sm font-bold text-gray-900 mb-0.5 sm:mb-1 leading-snug line-clamp-1">{item.title}</h3>
+            <p className="text-[10px] sm:text-[11px] text-gray-500 leading-relaxed line-clamp-2">{item.desc}</p>
           </div>
         ))}
       </div>
@@ -498,38 +493,38 @@ function DiscountProductsRow({ lang }: { lang: string }) {
   };
 
   return (
-    <section aria-labelledby="discounts-heading" className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <h2 id="discounts-heading" className="text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+    <section aria-labelledby="discounts-heading" className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex items-center justify-between mb-3 sm:mb-6">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h2 id="discounts-heading" className="text-xl sm:text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
             {lang === "ru" ? "Товары со скидкой" : "Chegirmali tovarlar"}
           </h2>
-          <span className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider animate-pulse">Sale</span>
+          <span className="bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider animate-pulse">Sale</span>
         </div>
       </div>
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-3">
+      <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-3">
         {discountProducts.map((p) => (
-          <div key={p.id} className="shrink-0 bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 group hover:-translate-y-1" style={{ width: 230 }}>
-            <Link to={`/product/${p.slug}`} className="block relative bg-gradient-to-br from-gray-50 to-white overflow-hidden" style={{ height: 190 }}>
+          <div key={p.id} className="shrink-0 w-[180px] sm:w-[230px] bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 group hover:-translate-y-1">
+            <Link to={`/product/${p.slug}`} className="block relative bg-gradient-to-br from-gray-50 to-white overflow-hidden h-[145px] sm:h-[190px]">
               <img src={p.image} alt={lang === "ru" ? p.name : p.nameUz} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute top-2.5 left-2.5">
-                <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg shadow-sm">
+              <div className="absolute top-2 left-2">
+                <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
                   -{Math.round((1 - p.price / p.oldPrice!) * 100)}%
                 </span>
               </div>
             </Link>
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-gray-800 leading-snug mb-2 line-clamp-2">
+            <div className="p-3 sm:p-4">
+              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2">
                 <Link to={`/product/${p.slug}`} className="hover:text-red-600 transition-colors">
                   {lang === "ru" ? p.name : p.nameUz}
                 </Link>
               </h3>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-base font-extrabold text-gray-900">{formatPrice(p.price)}</span>
+              <div className="flex items-baseline gap-1.5 mb-0.5">
+                <span className="text-sm sm:text-base font-extrabold text-gray-900">{formatPrice(p.price)}</span>
               </div>
-              <div className="text-xs text-gray-400 line-through mb-2">{formatPrice(p.oldPrice!)}</div>
+              <div className="text-[10px] sm:text-xs text-gray-400 line-through mb-1.5">{formatPrice(p.oldPrice!)}</div>
               <StarRating rating={p.rating} />
-              <button onClick={() => handleAddToCart(p)} className="mt-3 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer">
+              <button onClick={() => handleAddToCart(p)} className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2 sm:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer">
                 {t.addToCart}
               </button>
             </div>
