@@ -9,7 +9,7 @@ import CatalogModal from "@/components/ui/CatalogModal";
 import FavoritesModal from "@/components/ui/FavoritesModal";
 import OrderHistoryModal from "@/components/ui/OrderHistoryModal";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import logoImg from "@/assets/logo.jpg";
+import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
 interface HeaderProps {
   lang: Lang;
@@ -57,14 +57,11 @@ export default function Header({ lang }: HeaderProps) {
             <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0 group" aria-label="Minimall — на главную">
               <div className="relative p-0.5 sm:p-1 bg-white rounded-xl shadow-xs border border-gray-100 group-hover:border-red-200 transition-all">
                 <img
-                  src={logoImg}
+                  src={LOGO_DATA_URI}
                   alt="Minimall"
                   className="h-9 sm:h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   width={44}
                   height={44}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/logo.jpg";
-                  }}
                 />
               </div>
               <div className="hidden sm:block">

@@ -4,7 +4,7 @@ import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
 import { formatPrice } from "@/utils/formatPrice";
 import { useApp } from "@/context/AppContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
-import logoImg from "@/assets/logo.jpg";
+import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
 interface OrderInvoiceModalProps {
   order: Order | null;
@@ -104,12 +104,9 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-6 border-b-2 border-gray-900">
             <div className="flex items-start gap-3">
               <img
-                src={logoImg}
+                src={LOGO_DATA_URI}
                 alt="Minimall"
                 className="w-12 h-12 rounded-xl object-contain border border-gray-200 p-0.5"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/logo.jpg";
-                }}
               />
               <div>
                 <h1 className="text-2xl font-black tracking-tight" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>

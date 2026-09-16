@@ -6,7 +6,7 @@ import { useOrders } from "@/context/OrdersContext";
 import { useBanners } from "@/context/BannersContext";
 import { useCategories } from "@/context/CategoriesContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
-import logoImg from "@/assets/logo.jpg";
+import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -48,12 +48,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Link to="/admin" className="flex items-center gap-1.5 sm:gap-2.5 group shrink-0">
               <img
-                src={logoImg}
+                src={LOGO_DATA_URI}
                 alt="Minimall"
                 className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain bg-white p-0.5 shrink-0"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/logo.jpg";
-                }}
               />
               <span
                 className="text-base sm:text-xl font-extrabold tracking-wide truncate"
