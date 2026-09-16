@@ -10,6 +10,7 @@ import { BannersProvider } from "@/context/BannersContext";
 import { CategoriesProvider } from "@/context/CategoriesContext";
 import { HelpCenterProvider } from "@/context/HelpCenterContext";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
+import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
 // Layout components
 import TopBar from "@/components/layout/TopBar";
@@ -72,6 +73,25 @@ function AppLayout() {
 
   const [infoModalOpen, setInfoModalOpen] = useState(false);
   const [infoModalSection, setInfoModalSection] = useState<InfoModalSection>("about");
+
+  useEffect(() => {
+    try {
+      const links = document.querySelectorAll<HTMLLinkElement>("link[rel*='icon']");
+      if (links && links.length > 0) {
+        links.forEach((link) => {
+          link.href = LOGO_DATA_URI;
+        });
+      } else {
+        const newLink = document.createElement("link");
+        newLink.rel = "icon";
+        newLink.type = "image/jpeg";
+        newLink.href = LOGO_DATA_URI;
+        document.head.appendChild(newLink);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleOpenInfo = (section: InfoModalSection) => {
     setInfoModalSection(section);
