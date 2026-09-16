@@ -5,11 +5,48 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import AdminUserModal from "./AdminUserModal";
+import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
+
+function translateAdminError(code: string, lang: string): string {
+  const ru: Record<string, string> = {
+    err_admin_username_exists: "Администратор с таким логином уже существует",
+    err_admin_password_short: "Пароль должен содержать не менее 4 символов",
+    err_admin_username_empty: "Логин не может быть пустым",
+    err_admin_username_short: "Логин должен содержать минимум 3 символа",
+    err_fields_required: "Пожалуйста, заполните все обязательные поля",
+    err_no_permission: "У вас нет прав на выполнение этого действия",
+    err_admin_not_found: "Администратор не найден",
+    err_superadmin_self_only: "Только Главный Администратор может изменять свой аккаунт",
+    err_cannot_delete_superadmin: "Главного Администратора нельзя удалить!",
+    err_cannot_delete_self: "Вы не можете удалить свою текущую учетную запись",
+    err_cannot_block_superadmin: "Нельзя заблокировать Главного Администратора",
+    err_invalid_credentials: "Неверный логин или пароль",
+    err_admin_inactive: "Учетная запись администратора деактивирована",
+  };
+  const uz: Record<string, string> = {
+    err_admin_username_exists: "Bu loginga ega administrator allaqachon mavjud",
+    err_admin_password_short: "Parol kamida 4 ta belgidan iborat bo'lishi kerak",
+    err_admin_username_empty: "Login bo'sh bo'lishi mumkin emas",
+    err_admin_username_short: "Login kamida 3 ta belgidan iborat bo'lishi kerak",
+    err_fields_required: "Iltimos, barcha majburiy maydonlarni to'ldiring",
+    err_no_permission: "Ushbu amalni bajarish uchun sizda ruxsat yo'q",
+    err_admin_not_found: "Administrator topilmadi",
+    err_superadmin_self_only: "Faqat Bosh Administrator o'z hisobini o'zgartirishi mumkin",
+    err_cannot_delete_superadmin: "Bosh Administratorni o'chirib bo'lmaydi!",
+    err_cannot_delete_self: "O'z hisobingizni o'chira olmaysiz",
+    err_cannot_block_superadmin: "Bosh Administratorni bloklab bo'lmaydi",
+    err_invalid_credentials: "Noto'g'ri login yoki parol",
+    err_admin_inactive: "Administrator hisobi faolsizlantirilgan",
+  };
+  const map = lang === "uz" ? uz : ru;
+  return map[code] ?? code;
+}
 
 // ── Superadmin own-password change form ───────────────────────────────────────
 function SuperAdminPasswordSection() {
   const { adminUser, updateAdmin } = useAdminAuth();
-  const { showToast } = useApp();
+  const { showToast, lang } = useApp();
+  const t = ADMIN_TRANSLATIONS[lang].users;
   const [newPassword, setNewPassword] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [saving, setSaving] = useState(false);
@@ -20,22 +57,30 @@ function SuperAdminPasswordSection() {
     e.preventDefault();
     setError(null);
     if (newPassword.length < 4) {
-      setError("Пароль должен содержать минимум 4 символа");
+      setError(
+        lang === "uz"
+          ? "Parol kamida 4 ta belgidan iborat bo'lishi kerak"
+          : "Пароль должен содержать минимум 4 символа"
+      );
       return;
     }
     if (newPassword !== confirmPwd) {
-      setError("Пароли не совпадают");
+      setError(lang === "uz" ? "Parollar mos kelmaydi" : "Пароли не совпадают");
       return;
     }
     setSaving(true);
     const res = await updateAdmin(adminUser!.id, { password: newPassword });
     setSaving(false);
     if (res.success) {
-      showToast("Пароль Главного Администратора успешно изменён!");
+      showToast(
+        lang === "uz"
+          ? "Bosh Administrator paroli muvaffaqiyatli o'zgartirildi!"
+          : "Пароль Главного Администратора успешно изменён!"
+      );
       setNewPassword("");
       setConfirmPwd("");
     } else {
-      setError(res.error || "Ошибка сохранения");
+      setError(res.error || (lang === "uz" ? "Saqlash xatosi" : "Ошибка сохранения"));
     }
   };
 
@@ -44,8 +89,8 @@ function SuperAdminPasswordSection() {
       <div className="px-6 py-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center gap-3">
         <span className="text-xl">👑</span>
         <div>
-          <h3 className="text-sm font-bold text-gray-900">Сменить мой пароль</h3>
-          <p className="text-xs text-gray-500">Только Главный Администратор может изменить свой собственный пароль</p>
+          <h3 className="text-sm font-bold text-gray-900">{t.superAdminPwdTitle}</h3>
+          <p className="text-xs text-gray-500">{t.superAdminPwdDesc}</p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="p-6">
@@ -56,13 +101,13 @@ function SuperAdminPasswordSection() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">Новый пароль *</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">{t.newPassword} *</label>
             <div className="relative">
               <input
                 type={showPwd ? "text" : "password"}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Минимум 4 символа"
+                placeholder={lang === "uz" ? "Kamida 4 ta belgi" : "Минимум 4 символа"}
                 className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors font-mono"
               />
               <button
@@ -75,12 +120,12 @@ function SuperAdminPasswordSection() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">Подтверждение пароля *</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">{t.confirmPassword} *</label>
             <input
               type={showPwd ? "text" : "password"}
               value={confirmPwd}
               onChange={(e) => setConfirmPwd(e.target.value)}
-              placeholder="Повторите пароль"
+              placeholder={lang === "uz" ? "Parolni takrorlang" : "Повторите пароль"}
               className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors font-mono"
             />
           </div>
@@ -92,9 +137,9 @@ function SuperAdminPasswordSection() {
             className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
           >
             {saving ? (
-              <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />Сохранение...</>
+              <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />{lang === "uz" ? "Saqlanmoqda..." : "Сохранение..."}</>
             ) : (
-              "🔐 Сохранить новый пароль"
+              `🔐 ${t.savePassword}`
             )}
           </button>
         </div>
@@ -115,11 +160,18 @@ export default function AdminUsersPage() {
     toggleAdminStatus,
     fetchAdmins,
   } = useAdminAuth();
-  const { showToast } = useApp();
+  const { showToast, lang } = useApp();
+  const t = ADMIN_TRANSLATIONS[lang].users;
 
   useDocumentMeta({
-    title: "Управление администраторами | Minimall Admin",
-    description: "Управление администраторами, логинами и правами доступа в админ-панели",
+    title:
+      lang === "uz"
+        ? "Administratorlarni boshqarish | Minimall Admin"
+        : "Управление администраторами | Minimall Admin",
+    description:
+      lang === "uz"
+        ? "Admin panelida administrator logini va kirish huquqlarini boshqarish"
+        : "Управление администраторами, логинами и правами доступа в админ-панели",
     noIndex: true,
   });
 
@@ -165,16 +217,29 @@ export default function AdminUsersPage() {
 
   const handleDelete = async (target: AdminUser) => {
     if (target.isSuperAdmin) {
-      alert("Главного администратора нельзя удалить!");
+      alert(
+        lang === "uz"
+          ? "Bosh administratorni o'chirib bo'lmaydi!"
+          : "Главного администратора нельзя удалить!"
+      );
       return;
     }
 
-    if (window.confirm(`Вы действительно хотите удалить администратора "${target.name}" (@${target.username})?`)) {
+    const confirmMsg =
+      lang === "uz"
+        ? `"${target.name}" (@${target.username}) administratorini o'chirmoqchimisiz?`
+        : `Вы действительно хотите удалить администратора "${target.name}" (@${target.username})?`;
+    if (window.confirm(confirmMsg)) {
       const res = await deleteAdmin(target.id);
       if (res.success) {
-        showToast(`Администратор "${target.name}" удален`);
+        showToast(
+          lang === "uz"
+            ? `"${target.name}" administratori o'chirildi`
+            : `Администратор "${target.name}" удален`
+        );
       } else {
-        alert(res.error || "Ошибка удаления");
+        const errorMsg = res.error ? translateAdminError(res.error, lang) : (lang === "uz" ? "O'chirish xatosi" : "Ошибка удаления");
+        alert(errorMsg);
       }
     }
   };
@@ -184,7 +249,11 @@ export default function AdminUsersPage() {
     const res = await toggleAdminStatus(target.id);
     if (res.success) {
       showToast(
-        target.isActive
+        lang === "uz"
+          ? target.isActive
+            ? `"${target.name}" hisobi bloklandi`
+            : `"${target.name}" hisobi faollashtirildi`
+          : target.isActive
           ? `Учетная запись "${target.name}" заблокирована`
           : `Учетная запись "${target.name}" активирована`
       );
@@ -206,7 +275,11 @@ export default function AdminUsersPage() {
         permissions: data.permissions,
       });
       if (res.success) {
-        showToast(`Данные администратора "${data.name}" успешно обновлены`);
+        showToast(
+          lang === "uz"
+            ? `"${data.name}" administrator ma'lumotlari muvaffaqiyatli yangilandi`
+            : `Данные администратора "${data.name}" успешно обновлены`
+        );
       }
       return res;
     } else {
@@ -218,7 +291,11 @@ export default function AdminUsersPage() {
         permissions: data.permissions,
       });
       if (res.success) {
-        showToast(`Новый администратор "${data.name}" успешно создан!`);
+        showToast(
+          lang === "uz"
+            ? `Yangi "${data.name}" administratori muvaffaqiyatli yaratildi!`
+            : `Новый администратор "${data.name}" успешно создан!`
+        );
       }
       return res;
     }
@@ -228,9 +305,13 @@ export default function AdminUsersPage() {
     return (
       <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xs text-center space-y-3">
         <div className="text-4xl">🔒</div>
-        <h2 className="text-lg font-bold text-gray-900">Доступ ограничен</h2>
+        <h2 className="text-lg font-bold text-gray-900">
+          {lang === "uz" ? "Kirish cheklangan" : "Доступ ограничен"}
+        </h2>
         <p className="text-xs text-gray-500 max-w-md mx-auto">
-          У вашей учетной записи нет разрешения на управление администраторами. Обратитесь к Главному Администратору системы для предоставления прав.
+          {lang === "uz"
+            ? "Sizning hisobingizda administratorlarni boshqarish huquqi yo'q. Huquqlarni olish uchun Bosh Administratorga murojaat qiling."
+            : "У вашей учетной записи нет разрешения на управление администраторами. Обратитесь к Главному Администратору системы для предоставления прав."}
         </p>
       </div>
     );
@@ -246,15 +327,13 @@ export default function AdminUsersPage() {
               className="text-2xl sm:text-3xl font-black text-gray-900"
               style={{ fontFamily: "Barlow Condensed, sans-serif" }}
             >
-              Администраторы и права доступа
+              {t.title}
             </h1>
             <span className="bg-red-50 text-red-700 text-xs font-bold px-2.5 py-0.5 rounded-full border border-red-200/60">
-              Доступ супервайзера
+              {lang === "uz" ? "Supervisor kirishi" : "Доступ супервайзера"}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Создавайте дополнительных администраторов, задавайте им персональные логины, пароли и гибкие права доступа
-          </p>
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{t.subtitle}</p>
         </div>
 
         <button
@@ -262,7 +341,7 @@ export default function AdminUsersPage() {
           className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
           <span className="text-base font-black">+</span>
-          <span>Добавить админа</span>
+          <span>{t.addBtn}</span>
         </button>
       </div>
 
@@ -270,7 +349,7 @@ export default function AdminUsersPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Всего администраторов
+            {lang === "uz" ? "Jami administratorlar" : "Всего администраторов"}
           </div>
           <div
             className="text-2xl sm:text-3xl font-black text-gray-900 mt-1"
@@ -278,12 +357,14 @@ export default function AdminUsersPage() {
           >
             {stats.total}
           </div>
-          <div className="text-[11px] text-gray-400 mt-1">зарегистрировано в системе</div>
+          <div className="text-[11px] text-gray-400 mt-1">
+            {lang === "uz" ? "tizimda ro'yxatdan o'tgan" : "зарегистрировано в системе"}
+          </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Главный администратор
+            {lang === "uz" ? "Bosh administrator" : "Главный администратор"}
           </div>
           <div
             className="text-xl sm:text-2xl font-black text-red-600 mt-1 truncate"
@@ -291,12 +372,14 @@ export default function AdminUsersPage() {
           >
             @{stats.superAdminLogin}
           </div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">полные права (SuperAdmin)</div>
+          <div className="text-[11px] text-emerald-600 font-medium mt-1">
+            {lang === "uz" ? "to'liq huquqlar (SuperAdmin)" : "полные права (SuperAdmin)"}
+          </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Активных аккаунтов
+            {lang === "uz" ? "Faol hisoblar" : "Активных аккаунтов"}
           </div>
           <div
             className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1"
@@ -304,7 +387,9 @@ export default function AdminUsersPage() {
           >
             {stats.active} / {stats.total}
           </div>
-          <div className="text-[11px] text-emerald-600/80 mt-1">имеют доступ к панели</div>
+          <div className="text-[11px] text-emerald-600/80 mt-1">
+            {lang === "uz" ? "panelga kirish huquqi bor" : "имеют доступ к панели"}
+          </div>
         </div>
       </div>
 
@@ -317,7 +402,11 @@ export default function AdminUsersPage() {
           <span className="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
           <input
             type="text"
-            placeholder="Поиск администратора по имени, логину или роли..."
+            placeholder={
+              lang === "uz"
+                ? "Administrator ism, login yoki rol bo'yicha qidirish..."
+                : "Поиск администратора по имени, логину или роли..."
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full text-xs sm:text-sm pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
@@ -328,7 +417,7 @@ export default function AdminUsersPage() {
             onClick={() => setSearchQuery("")}
             className="text-xs text-gray-400 hover:text-gray-600 px-2"
           >
-            Сбросить
+            {lang === "uz" ? "Tozalash" : "Сбросить"}
           </button>
         )}
       </div>
@@ -337,7 +426,7 @@ export default function AdminUsersPage() {
       <div className="md:hidden space-y-3">
         {filteredAdmins.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400 text-sm">
-            Администраторы не найдены
+            {lang === "uz" ? "Administratorlar topilmadi" : "Администраторы не найдены"}
           </div>
         ) : (
           filteredAdmins.map((target) => {
@@ -365,7 +454,7 @@ export default function AdminUsersPage() {
                         <span>{target.name}</span>
                         {isCurrent && (
                           <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">
-                            Вы
+                            {lang === "uz" ? "Siz" : "Вы"}
                           </span>
                         )}
                       </div>
@@ -375,7 +464,7 @@ export default function AdminUsersPage() {
 
                   {target.isSuperAdmin ? (
                     <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
-                      Бессрочно
+                      {lang === "uz" ? "Muddatsiz" : "Бессрочно"}
                     </span>
                   ) : (
                     <button
@@ -388,34 +477,34 @@ export default function AdminUsersPage() {
                       }`}
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${target.isActive ? "bg-emerald-500" : "bg-red-500"}`} />
-                      <span>{target.isActive ? "Активен" : "Блок"}</span>
+                      <span>{target.isActive ? (lang === "uz" ? "Faol" : "Активен") : (lang === "uz" ? "Blok" : "Блок")}</span>
                     </button>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">Роль:</span>
+                  <span className="text-xs text-gray-400">{lang === "uz" ? "Rol:" : "Роль:"}</span>
                   {target.isSuperAdmin ? (
                     <span className="inline-flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-amber-100 to-red-100 text-red-800 border border-red-200 px-2.5 py-0.5 rounded-full">
-                      👑 Главный Администратор
+                      👑 {lang === "uz" ? "Bosh Administrator" : "Главный Администратор"}
                     </span>
                   ) : target.role === "admin" ? (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 px-2.5 py-0.5 rounded-full">
-                      🛡️ Администратор
+                      🛡️ {lang === "uz" ? "Administrator" : "Администратор"}
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-0.5 rounded-full">
-                      💼 Контент-менеджер
+                      💼 {lang === "uz" ? "Kontent-menejer" : "Контент-менеджер"}
                     </span>
                   )}
                 </div>
 
                 {/* Permissions */}
                 <div className="pt-2 border-t border-gray-100">
-                  <div className="text-[11px] text-gray-400 font-semibold mb-1">Разрешения:</div>
+                  <div className="text-[11px] text-gray-400 font-semibold mb-1">{lang === "uz" ? "Ruxsatlar:" : "Разрешения:"}</div>
                   {target.isSuperAdmin ? (
                     <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                      ✨ Полный доступ ко всем разделам
+                      ✨ {lang === "uz" ? "Barcha bo'limlarga to'liq kirish" : "Полный доступ ко всем разделам"}
                     </span>
                   ) : (
                     <div className="flex flex-wrap gap-1">
@@ -439,9 +528,10 @@ export default function AdminUsersPage() {
                   <button
                     onClick={() => handleOpenEdit(target)}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 transition-colors cursor-pointer"
+                    title={lang === "uz" ? "Huquqlar va parolni tahrirlash" : "Редактировать права и пароль"}
                   >
                     <span>✏️</span>
-                    <span>Редактировать права / пароль</span>
+                    <span>{lang === "uz" ? "Tahrirlash" : "Редактировать"}</span>
                   </button>
                   {!target.isSuperAdmin && (
                     <button
@@ -452,7 +542,7 @@ export default function AdminUsersPage() {
                           ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                           : "bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer border border-red-200"
                       }`}
-                      title={isCurrent ? "Нельзя удалить себя" : "Удалить"}
+                      title={isCurrent ? (lang === "uz" ? "O'zingizni o'chirib bo'lmaydi" : "Нельзя удалить себя") : (lang === "uz" ? "O'chirish" : "Удалить")}
                     >
                       🗑️
                     </button>
@@ -470,18 +560,18 @@ export default function AdminUsersPage() {
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                <th className="py-3 px-4">Администратор / Логин</th>
-                <th className="py-3 px-4">Роль</th>
-                <th className="py-3 px-4">Разрешения в панели</th>
-                <th className="py-3 px-4 text-center">Статус</th>
-                <th className="py-3 px-4 text-right">Действия</th>
+                <th className="py-3 px-4">{lang === "uz" ? "Administrator / Login" : "Администратор / Логин"}</th>
+                <th className="py-3 px-4">{lang === "uz" ? "Rol" : "Роль"}</th>
+                <th className="py-3 px-4">{lang === "uz" ? "Paneldagi ruxsatlar" : "Разрешения в панели"}</th>
+                <th className="py-3 px-4 text-center">{lang === "uz" ? "Holat" : "Статус"}</th>
+                <th className="py-3 px-4 text-right">{lang === "uz" ? "Amallar" : "Действия"}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredAdmins.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-gray-400 text-sm">
-                    Администраторы не найдены
+                    {lang === "uz" ? "Administratorlar topilmadi" : "Администраторы не найдены"}
                   </td>
                 </tr>
               ) : (
@@ -511,7 +601,7 @@ export default function AdminUsersPage() {
                               <span>{target.name}</span>
                               {isCurrent && (
                                 <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.2 rounded">
-                                  Вы
+                                  {lang === "uz" ? "Siz" : "Вы"}
                                 </span>
                               )}
                             </div>
@@ -526,15 +616,15 @@ export default function AdminUsersPage() {
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         {target.isSuperAdmin ? (
                           <span className="inline-flex items-center gap-1 text-xs font-bold bg-gradient-to-r from-amber-100 to-red-100 text-red-800 border border-red-200 px-2.5 py-1 rounded-full">
-                            <span>👑</span> Главный Администратор
+                            <span>👑</span> {lang === "uz" ? "Bosh Administrator" : "Главный Администратор"}
                           </span>
                         ) : target.role === "admin" ? (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 px-2.5 py-1 rounded-full">
-                            <span>🛡️</span> Администратор
+                            <span>🛡️</span> {lang === "uz" ? "Administrator" : "Администратор"}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 rounded-full">
-                            <span>💼</span> Контент-менеджер
+                            <span>💼</span> {lang === "uz" ? "Kontent-menejer" : "Контент-менеджер"}
                           </span>
                         )}
                       </td>
@@ -543,7 +633,7 @@ export default function AdminUsersPage() {
                       <td className="py-3.5 px-4">
                         {target.isSuperAdmin ? (
                           <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
-                            ✨ Полный неограниченный доступ (Все права)
+                            ✨ {lang === "uz" ? "To'liq cheklanmagan kirish (Barcha huquqlar)" : "Полный неограниченный доступ (Все права)"}
                           </span>
                         ) : (
                           <div className="flex flex-wrap gap-1 max-w-md">
@@ -566,7 +656,7 @@ export default function AdminUsersPage() {
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         {target.isSuperAdmin ? (
                           <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                            Бессрочно активен
+                            {lang === "uz" ? "Muddatsiz faol" : "Бессрочно активен"}
                           </span>
                         ) : (
                           <button
@@ -577,14 +667,14 @@ export default function AdminUsersPage() {
                                 ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
                                 : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                             }`}
-                            title="Нажмите, чтобы изменить статус активности"
+                            title={lang === "uz" ? "Faollik holatini o'zgartirish uchun bosing" : "Нажмите, чтобы изменить статус активности"}
                           >
                             <span
                               className={`w-1.5 h-1.5 rounded-full ${
                                 target.isActive ? "bg-emerald-500" : "bg-red-500"
                               }`}
                             />
-                            <span>{target.isActive ? "Активен" : "Заблокирован"}</span>
+                            <span>{target.isActive ? (lang === "uz" ? "Faol" : "Активен") : (lang === "uz" ? "Bloklangan" : "Заблокирован")}</span>
                           </button>
                         )}
                       </td>
@@ -596,7 +686,7 @@ export default function AdminUsersPage() {
                           <button
                             onClick={() => handleOpenEdit(target)}
                             className="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                            title="Редактировать права или пароль"
+                            title={lang === "uz" ? "Huquqlar yoki parolni tahrirlash" : "Редактировать права или пароль"}
                           >
                             ✏️
                           </button>
@@ -611,7 +701,7 @@ export default function AdminUsersPage() {
                                   ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                                   : "bg-red-50 hover:bg-red-100 text-red-600 cursor-pointer"
                               }`}
-                              title={isCurrent ? "Нельзя удалить себя" : "Удалить администратора"}
+                              title={isCurrent ? (lang === "uz" ? "O'zingizni o'chirib bo'lmaydi" : "Нельзя удалить себя") : (lang === "uz" ? "Administratorni o'chirish" : "Удалить администратора")}
                             >
                               🗑️
                             </button>
@@ -628,7 +718,7 @@ export default function AdminUsersPage() {
 
         {/* Footer */}
         <div className="bg-gray-50/60 border-t border-gray-100 px-4 py-3 text-xs text-gray-400 flex items-center justify-between">
-          <span>Всего учетных записей: {admins.length}</span>
+          <span>{lang === "uz" ? `Jami hisoblar: ${admins.length}` : `Всего учетных записей: ${admins.length}`}</span>
           <span className="font-mono text-[11px]">Minimall Role-Based Access Control (RBAC)</span>
         </div>
       </div>
@@ -638,6 +728,7 @@ export default function AdminUsersPage() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         adminToEdit={editingAdmin}
+        lang={lang}
         onSave={handleSave}
       />
     </div>

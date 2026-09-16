@@ -3,10 +3,46 @@ import type { AdminUser, AdminPermission } from "@/data/adminTypes";
 import { ALL_ADMIN_PERMISSIONS } from "@/data/adminTypes";
 import CustomSelect from "@/components/ui/CustomSelect";
 
+function translateAdminError(code: string, lang: string): string {
+  const ru: Record<string, string> = {
+    err_admin_username_exists: "Администратор с таким логином уже существует",
+    err_admin_password_short: "Пароль должен содержать не менее 4 символов",
+    err_admin_username_empty: "Логин не может быть пустым",
+    err_admin_username_short: "Логин должен содержать минимум 3 символа",
+    err_fields_required: "Пожалуйста, заполните все обязательные поля",
+    err_no_permission: "У вас нет прав на выполнение этого действия",
+    err_admin_not_found: "Администратор не найден",
+    err_superadmin_self_only: "Только Главный Администратор может изменять свой аккаунт",
+    err_cannot_delete_superadmin: "Главного Администратора нельзя удалить",
+    err_cannot_delete_self: "Вы не можете удалить свою текущую учетную запись",
+    err_cannot_block_superadmin: "Нельзя заблокировать Главного Администратора",
+    err_invalid_credentials: "Неверный логин или пароль",
+    err_admin_inactive: "Учетная запись администратора деактивирована",
+  };
+  const uz: Record<string, string> = {
+    err_admin_username_exists: "Bu loginga ega administrator allaqachon mavjud",
+    err_admin_password_short: "Parol kamida 4 ta belgidan iborat bo'lishi kerak",
+    err_admin_username_empty: "Login bo'sh bo'lishi mumkin emas",
+    err_admin_username_short: "Login kamida 3 ta belgidan iborat bo'lishi kerak",
+    err_fields_required: "Iltimos, barcha majburiy maydonlarni to'ldiring",
+    err_no_permission: "Ushbu amalni bajarish uchun sizda ruxsat yo'q",
+    err_admin_not_found: "Administrator topilmadi",
+    err_superadmin_self_only: "Faqat Bosh Administrator o'z hisobini o'zgartirishi mumkin",
+    err_cannot_delete_superadmin: "Bosh Administratorni o'chirib bo'lmaydi",
+    err_cannot_delete_self: "O'z hisobingizni o'chira olmaysiz",
+    err_cannot_block_superadmin: "Bosh Administratorni bloklab bo'lmaydi",
+    err_invalid_credentials: "Noto'g'ri login yoki parol",
+    err_admin_inactive: "Administrator hisobi faolsizlantirilgan",
+  };
+  const map = lang === "uz" ? uz : ru;
+  return map[code] ?? code;
+}
+
 interface AdminUserModalProps {
   isOpen: boolean;
   onClose: () => void;
   adminToEdit: AdminUser | null;
+  lang: string;
   onSave: (data: {
     username: string;
     name: string;
@@ -20,6 +56,7 @@ export default function AdminUserModal({
   isOpen,
   onClose,
   adminToEdit,
+  lang,
   onSave,
 }: AdminUserModalProps) {
   const isEditing = !!adminToEdit;
@@ -84,22 +121,22 @@ export default function AdminUserModal({
     setError(null);
 
     if (!isEditing && !username.trim()) {
-      setError("Укажите логин для входа");
+      setError(lang === "uz" ? "Kirish uchun loginni kiriting" : "Укажите логин для входа");
       return;
     }
 
     if (!name.trim()) {
-      setError("Укажите имя администратора");
+      setError(lang === "uz" ? "Administrator nomini kiriting" : "Укажите имя администратора");
       return;
     }
 
     if (!isEditing && (!password || password.length < 4)) {
-      setError("Пароль должен содержать минимум 4 символа");
+      setError(lang === "uz" ? "Parol kamida 4 ta belgidan iborat bo'lishi kerak" : "Пароль должен содержать минимум 4 символа");
       return;
     }
 
     if (permissions.length === 0 && !isSuperAdmin) {
-      setError("Выберите хотя бы одно разрешение для администратора");
+      setError(lang === "uz" ? "Administrator uchun kamida bitta ruxsat tanlang" : "Выберите хотя бы одно разрешение для администратора");
       return;
     }
 
@@ -114,12 +151,12 @@ export default function AdminUserModal({
       });
 
       if (!res.success) {
-        setError(res.error || "Ошибка сохранения");
+        setError(translateAdminError(res.error || "err_save", lang));
       } else {
         onClose();
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Неизвестная ошибка сохранения");
+      setError(lang === "uz" ? "Saqlashda noma'lum xato" : "Неизвестная ошибка сохранения");
     } finally {
       setSaving(false);
     }

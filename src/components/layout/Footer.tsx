@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { T } from "@/data/translations";
-import { CATEGORIES } from "@/data/categories";
+import { useCategories } from "@/context/CategoriesContext";
 import { BRANDS } from "@/data/products";
 import type { Lang } from "@/data/types";
 import type { InfoModalSection } from "@/components/ui/InfoModal";
@@ -20,6 +20,7 @@ const SOCIAL = [
 ];
 
 export default function Footer({ lang, onOpenInfo }: FooterProps) {
+  const { categories } = useCategories();
   const t = T[lang];
   const [copied, setCopied] = useState(false);
 
@@ -32,7 +33,7 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
   };
 
   return (
-    <footer className="bg-gray-950 text-white mb-16 md:mb-0">
+    <footer className="bg-gray-950 text-white pb-20 md:pb-6">
       {/* Store Location Map Section in Footer */}
       <div className="border-t border-white/5 bg-gray-950">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
@@ -202,7 +203,7 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">{t.catalog}</h3>
               <ul className="space-y-2.5">
-                {CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <li key={c.key}>
                     <Link
                       to={`/catalog/${c.slug}`}

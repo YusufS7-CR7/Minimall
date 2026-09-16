@@ -7,6 +7,8 @@ import { AuthProvider } from "@/context/AuthContext";
 import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 import { OrdersProvider } from "@/context/OrdersContext";
 import { BannersProvider } from "@/context/BannersContext";
+import { CategoriesProvider } from "@/context/CategoriesContext";
+import { HelpCenterProvider } from "@/context/HelpCenterContext";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
 
 // Layout components
@@ -31,6 +33,8 @@ import NotFoundPage from "@/pages/NotFoundPage";
 // Admin Pages (Code-split for fast customer load times)
 const AdminLayout = lazy(() => import("@/pages/admin/AdminLayout"));
 const AdminProductsPage = lazy(() => import("@/pages/admin/AdminProductsPage"));
+const AdminCategoriesPage = lazy(() => import("@/pages/admin/AdminCategoriesPage"));
+const AdminHelpPage = lazy(() => import("@/pages/admin/AdminHelpPage"));
 const AdminUsersPage = lazy(() => import("@/pages/admin/AdminUsersPage"));
 const AdminOrdersPage = lazy(() => import("@/pages/admin/AdminOrdersPage"));
 const AdminBannersPage = lazy(() => import("@/pages/admin/AdminBannersPage"));
@@ -93,6 +97,8 @@ function AppLayout() {
             <Routes>
               <Route path="/admin" element={<AdminProductsPage />} />
               <Route path="/admin/products" element={<AdminProductsPage />} />
+              <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+              <Route path="/admin/help" element={<AdminHelpPage />} />
               <Route path="/admin/banners" element={<AdminBannersPage />} />
               <Route path="/admin/orders" element={<AdminOrdersPage />} />
               <Route path="/admin/admins" element={<AdminUsersPage />} />
@@ -112,8 +118,7 @@ function AppLayout() {
       <TopBar lang={lang} onOpenInfo={handleOpenInfo} />
       <Header lang={lang} />
       <CategoryNavBar lang={lang} />
-      {/* pb-16 on mobile to clear the sticky bottom nav */}
-      <div className="flex-1 pb-16 md:pb-0">
+      <div className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/catalog" element={<CategoryPage />} />
@@ -146,15 +151,19 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <AppContextBridge>
-          <ProductsProvider>
-            <BannersProvider>
-              <OrdersProvider>
-                <AdminAuthProvider>
-                  <AppLayout />
-                </AdminAuthProvider>
-              </OrdersProvider>
-            </BannersProvider>
-          </ProductsProvider>
+          <CategoriesProvider>
+            <HelpCenterProvider>
+              <ProductsProvider>
+                <BannersProvider>
+                  <OrdersProvider>
+                    <AdminAuthProvider>
+                      <AppLayout />
+                    </AdminAuthProvider>
+                  </OrdersProvider>
+                </BannersProvider>
+              </ProductsProvider>
+            </HelpCenterProvider>
+          </CategoriesProvider>
         </AppContextBridge>
       </AuthProvider>
     </ErrorBoundary>

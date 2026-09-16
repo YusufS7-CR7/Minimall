@@ -53,15 +53,15 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
     e.preventDefault();
 
     if (!name.trim()) {
-      showToast("Пожалуйста, укажите ваше имя");
+      showToast(lang === "ru" ? "Пожалуйста, укажите ваше имя" : "Iltimos, ismingizni kiriting");
       return;
     }
     if (phone.trim().length < 9) {
-      showToast("Пожалуйста, укажите контактный номер телефона");
+      showToast(lang === "ru" ? "Пожалуйста, укажите контактный номер телефона" : "Iltimos, telefon raqamingizni kiriting");
       return;
     }
     if (!address.trim()) {
-      showToast("Укажите адрес доставки");
+      showToast(lang === "ru" ? "Укажите адрес доставки" : "Yetkazib berish manzilini kiriting");
       return;
     }
 
@@ -106,7 +106,11 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
       clearCart();
       setCompletedOrderId(res.orderId);
     } else {
-      showToast("Ошибка при оформлении заказа. Попробуйте ещё раз.");
+      showToast(
+        lang === "ru"
+          ? "Ошибка при оформлении заказа. Попробуйте ещё раз."
+          : "Buyurtma berishda xatolik yuz berdi. Qayta urinib ko'ring."
+      );
     }
   };
 
@@ -240,14 +244,14 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
             {/* Name */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                Ваше имя и фамилия <span className="text-red-500">*</span>
+                {lang === "ru" ? "Ваше имя и фамилия" : "Ism va familiyangiz"} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="например, Азиз Каримов"
+                placeholder={lang === "ru" ? "например, Азиз Каримов" : "masalan, Aziz Karimov"}
                 className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors"
               />
             </div>
@@ -255,7 +259,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
             {/* Phone */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                Контактный телефон <span className="text-red-500">*</span>
+                {lang === "ru" ? "Контактный телефон" : "Aloqa telefoni"} <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -271,33 +275,33 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Город / Регион
+                  {lang === "ru" ? "Город / Регион" : "Shahar / Viloyat"}
                 </label>
                 <CustomSelect
                   value={city}
                   onChange={(val) => setCity(val)}
                   options={[
-                    { value: "Ташкент", label: "Ташкент", icon: "🏙️" },
-                    { value: "Ташкентская область", label: "Ташкентская обл.", icon: "🏞️" },
-                    { value: "Самарканд", label: "Самарканд", icon: "🕌" },
-                    { value: "Бухара", label: "Бухара", icon: "🏛️" },
-                    { value: "Андижан", label: "Андижан", icon: "🌄" },
-                    { value: "Фергана", label: "Фергана", icon: "🌳" },
-                    { value: "Наманган", label: "Наманган", icon: "🌺" },
-                    { value: "Другой регион", label: "Другой регион", icon: "📦" },
+                    { value: "Ташкент", label: lang === "ru" ? "Ташкент" : "Toshkent", icon: "🏙️" },
+                    { value: "Ташкентская область", label: lang === "ru" ? "Ташкентская обл." : "Toshkent vil.", icon: "🏞️" },
+                    { value: "Самарканд", label: lang === "ru" ? "Самарканд" : "Samarqand", icon: "🕌" },
+                    { value: "Бухара", label: lang === "ru" ? "Бухара" : "Buxoro", icon: "🏛️" },
+                    { value: "Андижан", label: lang === "ru" ? "Андижан" : "Andijon", icon: "🌄" },
+                    { value: "Фергана", label: lang === "ru" ? "Фергана" : "Farg'ona", icon: "🌳" },
+                    { value: "Наманган", label: lang === "ru" ? "Наманган" : "Namangan", icon: "🌺" },
+                    { value: "Другой регион", label: lang === "ru" ? "Другой регион" : "Boshqa hudud", icon: "📦" },
                   ]}
                 />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Адрес доставки <span className="text-red-500">*</span>
+                  {lang === "ru" ? "Адрес доставки" : "Yetkazib berish manzili"} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Улица, дом, квартира или ориентир"
+                  placeholder={lang === "ru" ? "Улица, дом, квартира или ориентир" : "Ko'cha, uy, xonadon yoki mo'ljal"}
                   className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors"
                 />
               </div>
@@ -306,14 +310,22 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
             {/* Payment Method */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Способ оплаты
+                {lang === "ru" ? "Способ оплаты" : "To'lov usuli"}
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: "cash", label: "Наличными курьеру", icon: "💵" },
+                  {
+                    id: "cash",
+                    label: lang === "ru" ? "Наличными курьеру" : "Kuryerga naqd pul",
+                    icon: "💵",
+                  },
                   { id: "click", label: "Click", icon: "📱" },
                   { id: "payme", label: "Payme", icon: "💳" },
-                  { id: "bank_transfer", label: "Перевод (для юр. лиц)", icon: "🏢" },
+                  {
+                    id: "bank_transfer",
+                    label: lang === "ru" ? "Перевод (для юр. лиц)" : "O'tkazma (yuridik shaxslar)",
+                    icon: "🏢",
+                  },
                 ].map((m) => (
                   <label
                     key={m.id}
@@ -340,13 +352,17 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
             {/* Comment */}
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
-                Комментарий к заказу (необязательно)
+                {lang === "ru" ? "Комментарий к заказу (необязательно)" : "Buyurtmaga izoh (ixtiyoriy)"}
               </label>
               <input
                 type="text"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="Время доставки, код домофона, пожелания..."
+                placeholder={
+                  lang === "ru"
+                    ? "Время доставки, код домофона, пожелания..."
+                    : "Yetkazish vaqti, domofon kodi, istaklar..."
+                }
                 className="w-full text-xs px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors"
               />
             </div>
@@ -386,11 +402,15 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                 {isSubmitting ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Отправка заказа...</span>
+                    <span>{lang === "ru" ? "Отправка заказа..." : "Buyurtma yuborilmoqda..."}</span>
                   </>
                 ) : (
                   <>
-                    <span>Подтвердить заказ на {formatPrice(totalCartPrice)}</span>
+                    <span>
+                      {lang === "ru"
+                        ? `Подтвердить заказ на ${formatPrice(totalCartPrice)}`
+                        : `Buyurtmani tasdiqlash (${formatPrice(totalCartPrice)})`}
+                    </span>
                     <span>→</span>
                   </>
                 )}

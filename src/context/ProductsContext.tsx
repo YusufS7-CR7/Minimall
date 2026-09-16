@@ -20,6 +20,7 @@ interface DbProduct {
   name_uz: string;
   brand: string;
   category: string;
+  subcategory?: string | null;
   price: number;
   old_price: number | null;
   image: string;
@@ -37,6 +38,13 @@ interface DbProduct {
 }
 
 function dbToProduct(row: DbProduct): Product {
+  const specs = row.specs ?? {};
+  const subcategory =
+    row.subcategory ||
+    (specs as Record<string, any>)?._subcategory ||
+    (specs as Record<string, any>)?.subcategory ||
+    undefined;
+
   return {
     id: row.id,
     slug: row.slug,
@@ -44,6 +52,7 @@ function dbToProduct(row: DbProduct): Product {
     nameUz: row.name_uz,
     brand: row.brand,
     category: row.category,
+    subcategory,
     price: row.price,
     oldPrice: row.old_price ?? undefined,
     image: row.image,
@@ -53,7 +62,7 @@ function dbToProduct(row: DbProduct): Product {
     type: row.type,
     descRu: row.desc_ru ?? "",
     descUz: row.desc_uz ?? "",
-    specs: row.specs ?? {},
+    specs,
     badge: row.badge ?? undefined,
     inStock: row.in_stock,
     rating: row.rating ?? undefined,
@@ -61,6 +70,10 @@ function dbToProduct(row: DbProduct): Product {
 }
 
 function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, "id" | "created_at"> & { id?: number } {
+  const specs = {
+    ...(p.specs ?? {}),
+    ...(p.subcategory ? { _subcategory: p.subcategory } : {}),
+  };
   return {
     ...(p.id ? { id: p.id } : {}),
     slug: p.slug,
@@ -77,7 +90,7 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
     type: p.type,
     desc_ru: p.descRu ?? null,
     desc_uz: p.descUz ?? null,
-    specs: p.specs ?? {},
+    specs,
     badge: p.badge ?? null,
     in_stock: p.inStock ?? true,
     rating: p.rating ?? null,
@@ -232,7 +245,21 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       if (patch.type !== undefined) dbPatch.type = patch.type;
       if (patch.descRu !== undefined) dbPatch.desc_ru = patch.descRu;
       if (patch.descUz !== undefined) dbPatch.desc_uz = patch.descUz;
-      if (patch.specs !== undefined) dbPatch.specs = patch.specs;
+      if (patch.specs !== undefined || patch.subcategory !== undefined) {
+        const currentProd = products.find((p) => p.id === id);
+        const mergedSpecs: Record<string, any> = {
+          ...(currentProd?.specs || {}),
+          ...(patch.specs || {}),
+        };
+        if (patch.subcategory !== undefined) {
+          if (patch.subcategory) {
+            mergedSpecs._subcategory = patch.subcategory;
+          } else {
+            delete mergedSpecs._subcategory;
+          }
+        }
+        dbPatch.specs = mergedSpecs;
+      }
       if (patch.badge !== undefined) dbPatch.badge = patch.badge;
       if (patch.inStock !== undefined) dbPatch.in_stock = patch.inStock;
       if (patch.rating !== undefined) dbPatch.rating = patch.rating;

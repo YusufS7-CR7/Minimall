@@ -81,8 +81,8 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
               </span>
             )}
           </div>
-          <div className="absolute top-2 right-10 sm:right-11">
-            <span className={`text-[9px] sm:text-[10px] font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full backdrop-blur-sm ${product.inStock ? "bg-green-100/90 text-green-700" : "bg-gray-100/90 text-gray-500"}`}>
+          <div className="absolute bottom-2 left-2 z-10 pointer-events-none">
+            <span className={`text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg backdrop-blur-md shadow-2xs ${product.inStock ? "bg-emerald-600/90 text-white" : "bg-gray-900/85 text-gray-200"}`}>
               {product.inStock ? t.inStock : t.outOfStock}
             </span>
           </div>

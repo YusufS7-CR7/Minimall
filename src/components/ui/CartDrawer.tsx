@@ -33,7 +33,7 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
               {totalCartCount}
             </span>
           </div>
-          <button onClick={onClose} aria-label="Закрыть корзину" className="text-gray-400 hover:text-gray-700">
+          <button onClick={onClose} aria-label={lang === "ru" ? "Закрыть корзину" : "Savatni yopish"} className="text-gray-400 hover:text-gray-700">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -69,7 +69,7 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
                   <div className="flex items-center gap-2 mt-2.5">
                     <button
                       onClick={() => updateCartCount(item.product.id, -1)}
-                      aria-label="Уменьшить количество"
+                      aria-label={lang === "ru" ? "Уменьшить количество" : "Miqdorni kamaytirish"}
                       className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-100 active:scale-95 cursor-pointer"
                     >
                       -
@@ -77,16 +77,16 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
                     <span className="text-xs font-extrabold text-gray-800 min-w-[20px] text-center">{item.count}</span>
                     <button
                       onClick={() => updateCartCount(item.product.id, 1)}
-                      aria-label="Увеличить количество"
+                      aria-label={lang === "ru" ? "Увеличить количество" : "Miqdorni oshirish"}
                       className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-100 active:scale-95 cursor-pointer"
                     >
                       +
                     </button>
                     <button
                       onClick={() => updateCartCount(item.product.id, -item.count)}
-                      aria-label="Удалить товар"
+                      aria-label={lang === "ru" ? "Удалить товар" : "Tovarni o'chirish"}
                       className="w-8 h-8 ml-auto text-gray-400 hover:text-red-600 flex items-center justify-center text-xs rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                      title="Удалить из корзины"
+                      title={lang === "ru" ? "Удалить из корзины" : "Savatdan o'chirish"}
                     >
                       🗑️
                     </button>

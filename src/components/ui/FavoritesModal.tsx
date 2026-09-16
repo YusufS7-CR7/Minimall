@@ -128,7 +128,9 @@ export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps)
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
-                        {p.inStock ? "В наличии" : "Нет на складе"}
+                        {p.inStock
+                          ? lang === "ru" ? "В наличии" : "Mavjud"
+                          : lang === "ru" ? "Нет на складе" : "Mavjud emas"}
                       </span>
                     </div>
                   </div>
@@ -145,13 +147,13 @@ export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps)
                       }`}
                     >
                       <span>🛒</span>
-                      <span className="hidden sm:inline">В корзину</span>
+                      <span className="hidden sm:inline">{lang === "ru" ? "В корзину" : "Savatga"}</span>
                     </button>
 
                     <button
                       onClick={() => removeFavorite(p.id)}
                       className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                      title="Удалить из избранного"
+                      title={lang === "ru" ? "Удалить из избранного" : "Sevimlilardan o'chirish"}
                     >
                       ✕
                     </button>
@@ -166,14 +168,16 @@ export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps)
         {favoriteProducts.length > 0 && (
           <div className="border-t border-gray-100 p-4 bg-gray-50/70 flex items-center justify-between">
             <span className="text-xs text-gray-500">
-              Позиций: {favoriteProducts.length}
+              {lang === "ru"
+                ? `Позиций: ${favoriteProducts.length}`
+                : `Tovarlar soni: ${favoriteProducts.length}`}
             </span>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleAddAllToCart}
                 className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
               >
-                Добавить все в корзину
+                {lang === "ru" ? "Добавить все в корзину" : "Barchasini savatga qo'shish"}
               </button>
             </div>
           </div>

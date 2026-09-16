@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { T } from "@/data/translations";
-import { CATEGORIES } from "@/data/categories";
+import { useCategories } from "@/context/CategoriesContext";
 import ProductCard from "@/components/ui/ProductCard";
 import StarRating from "@/components/ui/StarRating";
 import PriceRangeSlider from "@/components/ui/PriceRangeSlider";
@@ -402,6 +402,7 @@ function HeroSection({ lang }: { lang: string }) {
 // ─── Categories Section ────────────────────────────────────────────────────────
 
 function CategoriesSection({ lang }: { lang: string }) {
+  const { categories } = useCategories();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
@@ -425,7 +426,7 @@ function CategoriesSection({ lang }: { lang: string }) {
       </div>
       <div className="relative">
         <div ref={scrollRef} onScroll={checkScroll} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
-          {CATEGORIES.map((c) => {
+          {categories.map((c) => {
             const label = lang === "ru" ? c.labelRu : c.labelUz;
             return (
               <Link

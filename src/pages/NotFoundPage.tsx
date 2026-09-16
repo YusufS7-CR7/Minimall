@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
+import { useCategories } from "@/context/CategoriesContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import { CATEGORIES } from "@/data/categories";
 
 export default function NotFoundPage() {
   const { lang } = useApp();
+  const { categories } = useCategories();
 
   useDocumentMeta({
     title: lang === "ru" ? "Страница не найдена (404) — Minimall" : "Sahifa topilmadi (404) — Minimall",
@@ -60,7 +61,7 @@ export default function NotFoundPage() {
               {lang === "ru" ? "Популярные категории:" : "Ommabop kategoriyalar:"}
             </h2>
             <div className="flex flex-wrap justify-center gap-2">
-              {CATEGORIES.slice(0, 6).map((cat) => (
+              {categories.slice(0, 6).map((cat) => (
                 <Link
                   key={cat.slug}
                   to={`/catalog/${cat.slug}`}

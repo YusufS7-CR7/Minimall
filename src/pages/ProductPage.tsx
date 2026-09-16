@@ -176,7 +176,7 @@ export default function ProductPage() {
             {/* Hint overlay on hover */}
             <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1.5">
               <span>🔍</span>
-              <span>Открыть галерею</span>
+              <span>{lang === "uz" ? "Galereyani ochish" : "Открыть галерею"}</span>
             </div>
 
             {/* Navigation arrows on main photo */}
@@ -186,7 +186,7 @@ export default function ProductPage() {
                   type="button"
                   onClick={handlePrev}
                   className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
-                  title="Предыдущее фото"
+                  title={lang === "uz" ? "Oldingi rasm" : "Предыдущее фото"}
                 >
                   ‹
                 </button>
@@ -194,7 +194,7 @@ export default function ProductPage() {
                   type="button"
                   onClick={handleNext}
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
-                  title="Следующее фото"
+                  title={lang === "uz" ? "Keyingi rasm" : "Следующее фото"}
                 >
                   ›
                 </button>
@@ -221,12 +221,12 @@ export default function ProductPage() {
                   >
                     <img
                       src={img}
-                      alt={`${name} фото ${i + 1}`}
+                      alt={`${name} foto ${i + 1}`}
                       className="w-full h-full object-contain"
                     />
                     {isCover && (
                       <span className="absolute bottom-0 inset-x-0 bg-red-600 text-[8px] font-bold text-white text-center py-0.2 uppercase tracking-tighter">
-                        Обложка
+                        {lang === "uz" ? "Muqova" : "Обложка"}
                       </span>
                     )}
                   </button>
@@ -429,10 +429,14 @@ export default function ProductPage() {
                 {name}
               </h3>
               <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span>Фото {currentImgIndex + 1} из {allImages.length}</span>
+                <span>
+                  {lang === "uz"
+                    ? `${currentImgIndex + 1} / ${allImages.length} rasm`
+                    : `Фото ${currentImgIndex + 1} из ${allImages.length}`}
+                </span>
                 {currentImgIndex === 0 && (
                   <span className="bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">
-                    Обложка
+                    {lang === "uz" ? "Muqova" : "Обложка"}
                   </span>
                 )}
               </div>
@@ -443,7 +447,7 @@ export default function ProductPage() {
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
                 className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg font-bold transition-colors cursor-pointer"
-                title="Закрыть (Esc)"
+                title={lang === "uz" ? "Yopish (Esc)" : "Закрыть (Esc)"}
               >
                 ✕
               </button>
@@ -462,7 +466,7 @@ export default function ProductPage() {
                 type="button"
                 onClick={handlePrev}
                 className="absolute left-2 sm:left-4 z-10 w-12 h-12 rounded-full bg-black/50 hover:bg-red-600 text-white flex items-center justify-center text-3xl font-bold transition-all shadow-lg hover:scale-110 cursor-pointer border border-white/10"
-                title="Предыдущее фото (←)"
+                title={lang === "uz" ? "Oldingi rasm (←)" : "Предыдущее фото (←)"}
               >
                 ‹
               </button>
@@ -471,7 +475,7 @@ export default function ProductPage() {
             <div className="max-w-full max-h-full flex items-center justify-center">
               <img
                 src={allImages[currentImgIndex]}
-                alt={`${name} фото ${currentImgIndex + 1}`}
+                alt={`${name} photo ${currentImgIndex + 1}`}
                 className="max-h-[72vh] sm:max-h-[78vh] max-w-[90vw] object-contain rounded-xl shadow-2xl transition-all duration-200"
               />
             </div>
@@ -481,7 +485,7 @@ export default function ProductPage() {
                 type="button"
                 onClick={handleNext}
                 className="absolute right-2 sm:right-4 z-10 w-12 h-12 rounded-full bg-black/50 hover:bg-red-600 text-white flex items-center justify-center text-3xl font-bold transition-all shadow-lg hover:scale-110 cursor-pointer border border-white/10"
-                title="Следующее фото (→)"
+                title={lang === "uz" ? "Keyingi rasm (→)" : "Следующее фото (→)"}
               >
                 ›
               </button>
@@ -508,7 +512,7 @@ export default function ProductPage() {
                   >
                     <img
                       src={img}
-                      alt={`Миниатюра ${i + 1}`}
+                      alt={`Thumbnail ${i + 1}`}
                       className="w-full h-full object-contain p-0.5"
                     />
                   </button>
@@ -516,7 +520,9 @@ export default function ProductPage() {
               </div>
             )}
             <p className="text-[11px] text-gray-400 text-center hidden sm:block">
-              Используйте клавиши ← → на клавиатуре для перелистывания, Esc для закрытия
+              {lang === "uz"
+                ? "Rasmlarni ko'rish uchun ← → tugmalaridan, chiqish uchun Esc tugmasidan foydalaning"
+                : "Используйте клавиши ← → на клавиатуре для перелистывания, Esc для закрытия"}
             </p>
           </div>
         </div>

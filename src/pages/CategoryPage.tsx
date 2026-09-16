@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, useSearchParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useProducts } from "@/context/ProductsContext";
+import { useCategories } from "@/context/CategoriesContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
-import { getCategoryBySlug } from "@/data/categories";
 import { T } from "@/data/translations";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductFilters, {
@@ -15,8 +15,12 @@ import CustomSelect from "@/components/ui/CustomSelect";
 
 export default function CategoryPage() {
   const { slug } = useParams<{ slug?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const subSlug = searchParams.get("sub");
+
   const { lang } = useApp();
   const { products: allProducts, brands } = useProducts();
+  const { getCategoryBySlug } = useCategories();
   const t = T[lang];
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
@@ -28,9 +32,63 @@ export default function CategoryPage() {
   // Redirect invalid slugs to 404
   if (slug && !category) return <Navigate to="/404" replace />;
 
-  const baseProducts = slug
-    ? allProducts.filter((p) => p.category === category!.key)
-    : allProducts;
+  // Active subcategory if ?sub= is present in URL
+  const activeSubcategory = useMemo(() => {
+    if (!category || !subSlug) return undefined;
+    const cleanSub = subSlug.toLowerCase().trim();
+    return category.subcategories?.find(
+      (s) => s.slug.toLowerCase() === cleanSub || s.key.toLowerCase() === cleanSub
+    );
+  }, [category, subSlug]);
+
+  const subLabel = activeSubcategory
+    ? lang === "ru"
+      ? activeSubcategory.labelRu
+      : activeSubcategory.labelUz
+    : undefined;
+
+  // Select / clear subcategory
+  const handleSelectSubcategory = (subKeyOrSlug?: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (subKeyOrSlug) {
+      newParams.set("sub", subKeyOrSlug);
+    } else {
+      newParams.delete("sub");
+    }
+    setSearchParams(newParams);
+  };
+
+  // Base products filtered by category and subcategory
+  const baseProducts = useMemo(() => {
+    let prods = slug
+      ? allProducts.filter((p) => p.category === category!.key)
+      : allProducts;
+
+    if (activeSubcategory) {
+      prods = prods.filter((p) => {
+        // Direct match with subcategory key or slug
+        if (p.subcategory) {
+          return (
+            p.subcategory === activeSubcategory.key ||
+            p.subcategory === activeSubcategory.slug
+          );
+        }
+        // Fallback for older products added before subcategory field:
+        // match name by root keyword (e.g. "лобзик" in name for lobziki)
+        const subRu = activeSubcategory.labelRu.toLowerCase();
+        const cleanName = subRu.replace(
+          /^(аккумуляторные|настольные|ручной|ручные|электрический|электрические)\s+/i,
+          ""
+        );
+        const root = cleanName.split(" ")[0].replace(/[ыиаоеь]$/i, "");
+        if (root.length >= 3 && p.name.toLowerCase().includes(root)) {
+          return true;
+        }
+        return false;
+      });
+    }
+    return prods;
+  }, [allProducts, slug, category, activeSubcategory]);
 
   const categoryLabel = category
     ? lang === "ru"
@@ -70,20 +128,28 @@ export default function CategoryPage() {
   }, [baseProducts, filters, sortBy]);
 
   useDocumentMeta({
-    title: category
+    title: activeSubcategory
+      ? `${subLabel} — купить в Ташкенте | Minimall`
+      : category
       ? `${categoryLabel} — купить в Ташкенте | Minimall`
       : "Весь каталог инструментов | Minimall",
-    description: category
+    description: activeSubcategory
+      ? `Купить ${subLabel?.toLowerCase()} в Ташкенте. ${baseProducts.length} товаров в наличии. Доставка по Узбекистану, официальная гарантия — mini-mall.uz`
+      : category
       ? `Купить ${categoryLabel.toLowerCase()} в Ташкенте. ${baseProducts.length} товаров в наличии. Доставка по Узбекистану, официальная гарантия — mini-mall.uz`
       : "Весь каталог профессионального инструмента на mini-mall.uz. Bosch, Makita, DeWalt, Milwaukee и другие бренды.",
-    canonical: category
+    canonical: activeSubcategory
+      ? `https://mini-mall.uz/catalog/${slug}?sub=${activeSubcategory.slug}`
+      : category
       ? `https://mini-mall.uz/catalog/${slug}`
       : "https://mini-mall.uz/catalog",
     structuredData: {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      name: categoryLabel,
-      url: category
+      name: subLabel || categoryLabel,
+      url: activeSubcategory
+        ? `https://mini-mall.uz/catalog/${slug}?sub=${activeSubcategory.slug}`
+        : category
         ? `https://mini-mall.uz/catalog/${slug}`
         : "https://mini-mall.uz/catalog",
       numberOfItems: filteredProducts.length,
@@ -102,7 +168,21 @@ export default function CategoryPage() {
             {category && (
               <>
                 <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-                <li className="text-gray-800 font-medium" aria-current="page">{categoryLabel}</li>
+                {activeSubcategory ? (
+                  <>
+                    <li>
+                      <Link to={`/catalog/${category.slug}`} className="hover:text-red-500 transition-colors">
+                        {categoryLabel}
+                      </Link>
+                    </li>
+                    <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+                    <li className="text-gray-800 font-medium" aria-current="page">
+                      {subLabel}
+                    </li>
+                  </>
+                ) : (
+                  <li className="text-gray-800 font-medium" aria-current="page">{categoryLabel}</li>
+                )}
               </>
             )}
           </ol>
@@ -120,10 +200,24 @@ export default function CategoryPage() {
       </div>
 
       {/* Heading */}
-      <div className="flex items-center justify-between mb-4 sm:mb-8">
+      <div className="flex items-center justify-between mb-3 sm:mb-6">
         <div>
+          {activeSubcategory && (
+            <div className="flex items-center gap-2 mb-1.5">
+              <Link
+                to={`/catalog/${category?.slug}`}
+                className="text-xs font-semibold text-red-600 hover:underline inline-flex items-center gap-1"
+              >
+                <span>← {categoryLabel}</span>
+              </Link>
+              <span className="text-gray-300">•</span>
+              <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+                {lang === "ru" ? "Подкатегория" : "Kichik bo'lim"}
+              </span>
+            </div>
+          )}
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-            {categoryLabel}
+            {subLabel || categoryLabel}
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1">
             {filteredProducts.length === baseProducts.length
@@ -143,6 +237,46 @@ export default function CategoryPage() {
           />
         )}
       </div>
+
+      {/* Subcategory Pills / Chips Carousel */}
+      {category && category.subcategories && category.subcategories.length > 0 && (
+        <div className="mb-5 overflow-x-auto pb-2 scrollbar-thin -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div className="flex items-center gap-2 min-w-max">
+            <button
+              type="button"
+              onClick={() => handleSelectSubcategory()}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                !activeSubcategory
+                  ? "bg-red-600 text-white shadow-sm"
+                  : "bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-200"
+              }`}
+            >
+              {lang === "ru" ? "Все товары" : "Barcha tovarlar"}
+            </button>
+            {category.subcategories.map((sub) => {
+              const isActive =
+                activeSubcategory?.key === sub.key ||
+                activeSubcategory?.slug === sub.slug;
+              const label = lang === "ru" ? sub.labelRu : sub.labelUz;
+
+              return (
+                <button
+                  key={sub.key}
+                  type="button"
+                  onClick={() => handleSelectSubcategory(sub.slug)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isActive
+                      ? "bg-red-600 text-white shadow-sm"
+                      : "bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 border border-gray-200"
+                  }`}
+                >
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Layout with Filters Sidebar */}
       <div className="lg:flex lg:gap-8 items-start">
@@ -186,6 +320,26 @@ export default function CategoryPage() {
             </div>
           </div>
 
+          {/* Active Subcategory Pill if selected */}
+          {activeSubcategory && (
+            <div className="mb-3 flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500 font-medium">
+                {lang === "ru" ? "Подкатегория:" : "Kichik bo'lim:"}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs bg-red-50 text-red-700 font-bold px-3 py-1 rounded-xl border border-red-200 shadow-2xs">
+                <span>📁 {subLabel}</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSubcategory()}
+                  className="hover:text-red-900 ml-1 text-sm font-black cursor-pointer leading-none"
+                  title={lang === "ru" ? "Сбросить подкатегорию" : "Bo'limni tozalash"}
+                >
+                  ×
+                </button>
+              </span>
+            </div>
+          )}
+
           {/* Active filter badges */}
           <ActiveFilterBar
             filters={filters}
@@ -199,20 +353,41 @@ export default function CategoryPage() {
             <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-100 p-8">
               <div className="text-5xl mb-4">🔍</div>
               <p className="text-gray-800 text-lg font-bold">
-                {lang === "ru" ? "Товары не найдены" : "Tovarlar topilmadi"}
+                {activeSubcategory
+                  ? lang === "ru"
+                    ? `В подкатегории «${subLabel}» товары не найдены`
+                    : `«${subLabel}» bo'limida tovarlar topilmadi`
+                  : lang === "ru"
+                  ? "Товары не найдены"
+                  : "Tovarlar topilmadi"}
               </p>
               <p className="text-gray-400 text-sm mt-1 max-w-md">
-                {lang === "ru"
+                {activeSubcategory
+                  ? lang === "ru"
+                    ? `Попробуйте сбросить фильтры или посмотреть все товары в разделе «${categoryLabel}»`
+                    : `Filtrlarni tozalang yoki «${categoryLabel}» bo'limidagi barcha tovarlarni ko'ring`
+                  : lang === "ru"
                   ? "Попробуйте расширить диапазон цен или сбросить активные фильтры"
                   : "Narx oralig'ini kengaytiring yoki faol filtrlarni tozalang"}
               </p>
-              <button
-                type="button"
-                onClick={() => setFilters(DEFAULT_FILTER_STATE)}
-                className="mt-5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
-              >
-                {t.resetFilters}
-              </button>
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-5">
+                {activeSubcategory && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSubcategory()}
+                    className="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-md cursor-pointer"
+                  >
+                    {lang === "ru" ? `Все товары «${categoryLabel}»` : `Barcha «${categoryLabel}»`}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setFilters(DEFAULT_FILTER_STATE)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-5 py-2.5 rounded-xl transition-all cursor-pointer"
+                >
+                  {t.resetFilters}
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">

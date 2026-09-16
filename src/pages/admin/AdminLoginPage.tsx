@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 
 export default function AdminLoginPage() {
   const { login } = useAdminAuth();
+  const { lang, setLang } = useApp();
+  const t = ADMIN_TRANSLATIONS[lang].login;
 
   useDocumentMeta({
-    title: "Вход в панель управления | Minimall Admin",
-    description: "Авторизация администратора маркетплейса mini-mall.uz",
+    title: lang === "uz" ? "Boshqaruv paneliga kirish | Minimall Admin" : "Вход в панель управления | Minimall Admin",
+    description: lang === "uz" ? "mini-mall.uz marketpleysi administratorini avtorizatsiya qilish" : "Авторизация администратора маркетплейса mini-mall.uz",
     noIndex: true,
   });
 
@@ -23,12 +27,12 @@ export default function AdminLoginPage() {
     setError(null);
 
     if (!username.trim()) {
-      setError("Пожалуйста, введите логин");
+      setError(t.errUsername);
       return;
     }
 
     if (!password) {
-      setError("Пожалуйста, введите пароль");
+      setError(t.errPassword);
       return;
     }
 
@@ -38,10 +42,17 @@ export default function AdminLoginPage() {
     setIsLoading(false);
 
     if (!res.success) {
-      setError(res.error || "Неверный логин или пароль");
+      if (res.error === "err_admin_inactive") {
+        setError(
+          lang === "uz"
+            ? "Administrator hisobi faolsizlantirilgan"
+            : "Учетная запись администратора деактивирована"
+        );
+      } else {
+        setError(t.errAuth);
+      }
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden font-sans selection:bg-red-500 selection:text-white">
@@ -70,21 +81,56 @@ export default function AdminLoginPage() {
                 minimall<span className="text-red-500">.admin</span>
               </div>
               <div className="text-[10px] uppercase font-bold tracking-widest text-red-400">
-                Панель управления
+                {t.tagline}
               </div>
             </div>
           </Link>
           <p className="text-xs text-gray-400">
-            Безопасный доступ к управлению маркетплейсом и каталогом
+            {t.subtitle}
           </p>
         </div>
 
         {/* Login Form Box */}
         <div className="bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
+          {/* Header row with Language Switcher */}
+          <div className="flex items-center justify-between pb-2 border-b border-gray-800">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+              {lang === "uz" ? "Tilni tanlash" : "Выбор языка"}
+            </span>
+            <div className="flex items-center gap-1 bg-gray-950/80 border border-gray-800 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setLang("uz")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  lang === "uz"
+                    ? "bg-red-600 text-white shadow-xs"
+                    : "text-gray-400 hover:text-white"
+                }`}
+                title="O'zbek tiliga o'tkazish"
+              >
+                <span>🇺🇿</span>
+                <span>UZ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLang("ru")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  lang === "ru"
+                    ? "bg-red-600 text-white shadow-xs"
+                    : "text-gray-400 hover:text-white"
+                }`}
+                title="Переключить на русский язык"
+              >
+                <span>🇷🇺</span>
+                <span>RU</span>
+              </button>
+            </div>
+          </div>
+
           {/* Secure Access Notice */}
           <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-3 text-xs text-gray-400 flex items-center gap-2.5">
             <span className="text-base">🔒</span>
-            <span>Панель защищена сквозным шифрованием. Вход разрешен только авторизованным администраторам.</span>
+            <span>{t.notice}</span>
           </div>
 
           {/* Form */}
@@ -99,7 +145,7 @@ export default function AdminLoginPage() {
             {/* Username */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-gray-300">
-                Логин администратора
+                {t.username}
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-3 text-gray-500 text-sm">👤</span>
@@ -118,7 +164,7 @@ export default function AdminLoginPage() {
             {/* Password */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-gray-300">
-                Пароль
+                {t.password}
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-3 text-gray-500 text-sm">🔒</span>
@@ -135,7 +181,7 @@ export default function AdminLoginPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-200 text-xs cursor-pointer"
                 >
-                  {showPassword ? "Скрыть" : "Показать"}
+                  {showPassword ? (lang === "uz" ? "Yashirish" : "Скрыть") : (lang === "uz" ? "Ko'rsatish" : "Показать")}
                 </button>
               </div>
             </div>
@@ -149,11 +195,11 @@ export default function AdminLoginPage() {
               {isLoading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Вход...</span>
+                  <span>{lang === "uz" ? "Kirilmoqda..." : "Вход..."}</span>
                 </>
               ) : (
                 <>
-                  <span>Войти в панель</span>
+                  <span>{t.submit}</span>
                   <span>→</span>
                 </>
               )}
@@ -168,7 +214,7 @@ export default function AdminLoginPage() {
             className="text-xs text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1.5"
           >
             <span>←</span>
-            <span>Вернуться на главную витрину маркетплейса</span>
+            <span>{t.toStore}</span>
           </Link>
         </div>
       </div>

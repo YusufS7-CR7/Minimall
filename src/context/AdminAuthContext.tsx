@@ -147,7 +147,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     const trimmedUsername = username.trim().toLowerCase();
     if (!trimmedUsername || !password) {
-      return { success: false, error: "Заполните логин и пароль" };
+      return { success: false, error: "err_fields_required" };
     }
 
     // Query admin account by username
@@ -158,11 +158,11 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
     if (error || !data) {
-      return { success: false, error: "Неверный логин или пароль" };
+      return { success: false, error: "err_invalid_credentials" };
     }
 
     if (!data.is_active) {
-      return { success: false, error: "Учетная запись администратора деактивирована" };
+      return { success: false, error: "err_admin_inactive" };
     }
 
     // Compare password with cryptographic SHA-256 hash or legacy plaintext for upgrade
@@ -171,7 +171,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const isMatch = storedPassword === hashedInput || storedPassword === password;
 
     if (!isMatch) {
-      return { success: false, error: "Неверный логин или пароль" };
+      return { success: false, error: "err_invalid_credentials" };
     }
 
     const nowIso = new Date().toISOString();
@@ -216,16 +216,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   // ── Create admin ───────────────────────────────────────────────────────────
   const createAdmin = useCallback(async (payload: CreateAdminPayload): Promise<{ success: boolean; error?: string }> => {
     if (!adminUser || (!adminUser.isSuperAdmin && !hasPermission("admins_manage"))) {
-      return { success: false, error: "У вас нет прав на создание администраторов" };
+      return { success: false, error: "err_no_permission" };
     }
 
     const cleanUsername = payload.username.trim().toLowerCase();
     if (!cleanUsername) {
-      return { success: false, error: "Логин не может быть пустым" };
+      return { success: false, error: "err_admin_username_empty" };
     }
 
     if (cleanUsername.length < 3) {
-      return { success: false, error: "Логин должен содержать минимум 3 символа" };
+      return { success: false, error: "err_admin_username_short" };
     }
 
     // Check uniqueness in DB
@@ -236,11 +236,11 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       .maybeSingle();
 
     if (existing) {
-      return { success: false, error: "Администратор с таким логином уже существует" };
+      return { success: false, error: "err_admin_username_exists" };
     }
 
     if (!payload.password || payload.password.length < 4) {
-      return { success: false, error: "Пароль должен содержать не менее 4 символов" };
+      return { success: false, error: "err_admin_password_short" };
     }
 
     const hashedPassword = await hashPassword(payload.password);
@@ -283,16 +283,16 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   // ── Update admin ───────────────────────────────────────────────────────────
   const updateAdmin = useCallback(async (id: string, payload: UpdateAdminPayload): Promise<{ success: boolean; error?: string }> => {
     if (!adminUser || (!adminUser.isSuperAdmin && !hasPermission("admins_manage"))) {
-      return { success: false, error: "У вас нет прав на редактирование администраторов" };
+      return { success: false, error: "err_no_permission" };
     }
 
     const target = admins.find((a) => a.id === id) || (adminUser.id === id ? adminUser : null);
     if (!target) {
-      return { success: false, error: "Администратор не найден" };
+      return { success: false, error: "err_admin_not_found" };
     }
 
     if (target.isSuperAdmin && !adminUser.isSuperAdmin) {
-      return { success: false, error: "Только Главный Администратор может изменять свой аккаунт" };
+      return { success: false, error: "err_superadmin_self_only" };
     }
 
     const dbPatch: Record<string, unknown> = {};
@@ -341,20 +341,20 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   // ── Delete admin ───────────────────────────────────────────────────────────
   const deleteAdmin = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
     if (!adminUser || (!adminUser.isSuperAdmin && !hasPermission("admins_manage"))) {
-      return { success: false, error: "У вас нет прав на удаление администраторов" };
+      return { success: false, error: "err_no_permission" };
     }
 
     const target = admins.find((a) => a.id === id);
     if (!target) {
-      return { success: false, error: "Администратор не найден" };
+      return { success: false, error: "err_admin_not_found" };
     }
 
     if (target.isSuperAdmin) {
-      return { success: false, error: "Главного Администратора нельзя удалить!" };
+      return { success: false, error: "err_cannot_delete_superadmin" };
     }
 
     if (target.id === adminUser.id) {
-      return { success: false, error: "Вы не можете удалить свою текущую учетную запись" };
+      return { success: false, error: "err_cannot_delete_self" };
     }
 
     const { error } = await supabase
@@ -374,8 +374,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   // ── Toggle status ──────────────────────────────────────────────────────────
   const toggleAdminStatus = useCallback(async (id: string): Promise<{ success: boolean; error?: string }> => {
     const target = admins.find((a) => a.id === id);
-    if (!target) return { success: false, error: "Не найден" };
-    if (target.isSuperAdmin) return { success: false, error: "Нельзя заблокировать Главного Администратора" };
+    if (!target) return { success: false, error: "err_admin_not_found" };
+    if (target.isSuperAdmin) return { success: false, error: "err_cannot_block_superadmin" };
 
     return updateAdmin(id, { isActive: !target.isActive });
   }, [admins, updateAdmin]);

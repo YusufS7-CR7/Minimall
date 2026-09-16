@@ -24,6 +24,7 @@ export default function Header({ lang }: HeaderProps) {
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -76,16 +77,30 @@ export default function Header({ lang }: HeaderProps) {
             </Link>
 
             {/* Catalog Button — desktop only */}
-            <Link
+            <button
               id="catalog-toggle"
-              to="/catalog"
-              className="hidden md:flex items-center gap-2.5 font-bold text-sm px-5 py-2.5 rounded-xl transition-all shrink-0 shadow-md active:scale-[0.97] bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-red-200 hover:shadow-red-300"
+              type="button"
+              onClick={() => setCatalogOpen((o) => !o)}
+              aria-expanded={catalogOpen}
+              aria-haspopup="dialog"
+              aria-label={t.catalog}
+              className={`hidden md:flex items-center gap-2.5 font-bold text-sm px-5 py-2.5 rounded-xl transition-all shrink-0 shadow-md active:scale-[0.97] ${
+                catalogOpen
+                  ? "bg-gradient-to-r from-red-700 to-red-600 text-white shadow-red-300 scale-[0.97]"
+                  : "bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-red-200 hover:shadow-red-300"
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+              {catalogOpen ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
               {t.catalog}
-            </Link>
+            </button>
 
             {/* Search — takes all remaining space, smaller on mobile */}
             <form
@@ -185,9 +200,9 @@ export default function Header({ lang }: HeaderProps) {
                       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       {lang === "ru" ? "Мои заказы" : "Mening buyurtmalarim"}
                     </button>
-                    <button id="logout-btn" onClick={() => { logout(); setUserMenuOpen(false); showToast("Вы вышли из аккаунта"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                    <button id="logout-btn" onClick={() => { logout(); setUserMenuOpen(false); showToast(lang === "ru" ? "Вы вышли из аккаунта" : "Akkauntdan chiqdingiz"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
                       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                      Выйти из аккаунта
+                      {lang === "ru" ? "Выйти из аккаунта" : "Akkauntdan chiqish"}
                     </button>
                   </div>
                 )}
@@ -218,7 +233,7 @@ export default function Header({ lang }: HeaderProps) {
       </header>
 
       {/* Catalog mega-menu */}
-      <CatalogModal id="catalog-modal" lang={lang} open={false} onClose={() => {}} />
+      <CatalogModal id="catalog-modal" lang={lang} open={catalogOpen} onClose={() => setCatalogOpen(false)} />
 
       {/* Cart drawer */}
       <CartDrawer lang={lang} open={cartOpen} onClose={() => setCartOpen(false)} />

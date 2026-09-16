@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useApp } from "@/context/AppContext";
 
 // ─── Eye / EyeOff icons ───────────────────────────────────────────────────────
 function EyeIcon({ off }: { off?: boolean }) {
@@ -72,9 +73,28 @@ function Field({ id, label, type = "text", value, onChange, placeholder, require
   );
 }
 
+// ─── Auth error code → bilingual message ──────────────────────────────────────
+function translateAuthError(code: string, lang: string): string {
+  const ru: Record<string, string> = {
+    err_invalid_credentials: "Неверный email или пароль",
+    err_fill_all_fields: "Пожалуйста, заполните все поля",
+    err_password_too_short: "Пароль должен содержать не менее 6 символов",
+    err_email_exists: "Этот email уже зарегистрирован в магазине",
+  };
+  const uz: Record<string, string> = {
+    err_invalid_credentials: "Email yoki parol noto'g'ri",
+    err_fill_all_fields: "Iltimos, barcha maydonlarni to'ldiring",
+    err_password_too_short: "Parol kamida 6 ta belgidan iborat bo'lishi kerak",
+    err_email_exists: "Bu email allaqachon ro'yxatdan o'tirilgan",
+  };
+  const map = lang === "uz" ? uz : ru;
+  return map[code] ?? code;
+}
+
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 export default function AuthModal() {
   const { isAuthModalOpen, authTab, setAuthTab, closeAuthModal, login, register } = useAuth();
+  const { lang } = useApp();
 
   // Form state
   const [name, setName] = useState("");
@@ -120,11 +140,15 @@ export default function AuthModal() {
     e.preventDefault();
     setError(null);
     if (authTab === "register" && password !== confirmPassword) {
-      setError("Пароли не совпадают");
+      setError(lang === "ru" ? "Пароли не совпадают" : "Parollar mos kelmadi");
       return;
     }
     if (password.length < 6) {
-      setError("Пароль должен содержать не менее 6 символов");
+      setError(
+        lang === "ru"
+          ? "Пароль должен содержать не менее 6 символов"
+          : "Parol kamida 6 ta belgidan iborat bo'lishi kerak"
+      );
       return;
     }
     setLoading(true);
@@ -132,7 +156,7 @@ export default function AuthModal() {
       ? await login(email, password)
       : await register(name, email, password);
     setLoading(false);
-    if (result.error) { setError(result.error); return; }
+    if (result.error) { setError(translateAuthError(result.error, lang)); return; }
     setSuccess(true);
     setTimeout(() => { closeAuthModal(); }, 800);
   }
@@ -148,22 +172,26 @@ export default function AuthModal() {
       onClick={(e) => { if (e.target === overlayRef.current) closeAuthModal(); }}
       role="dialog"
       aria-modal="true"
-      aria-label={isLogin ? "Вход в аккаунт" : "Регистрация"}
+      aria-label={
+        isLogin
+          ? lang === "ru" ? "Вход в аккаунт" : "Akkauntga kirish"
+          : lang === "ru" ? "Регистрация" : "Ro'yxatdan o'tish"
+      }
     >
       {/* Card */}
       <div
-        className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden"
+        className="relative w-full max-w-md max-h-[92vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden"
         style={{ animation: "authSlideIn 0.28s cubic-bezier(.22,1,.36,1)" }}
       >
         {/* Decorative top bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-red-500 via-rose-400 to-red-600" />
+        <div className="h-1 w-full bg-gradient-to-r from-red-500 via-rose-400 to-red-600 shrink-0" />
 
-        <div className="px-8 pt-8 pb-10">
+        <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-8 sm:pb-10 overflow-y-auto">
           {/* Close button */}
           <button
             onClick={closeAuthModal}
             className="absolute top-5 right-5 text-gray-400 hover:text-gray-700 transition rounded-full p-1 hover:bg-gray-100"
-            aria-label="Закрыть"
+            aria-label={lang === "ru" ? "Закрыть" : "Yopish"}
           >
             <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -176,7 +204,9 @@ export default function AuthModal() {
               MINIMALL
             </span>
             <span className="text-xs font-semibold text-gray-400 border border-gray-200 rounded px-1.5 py-0.5">
-              {isLogin ? "Вход" : "Регистрация"}
+              {isLogin
+                ? lang === "ru" ? "Вход" : "Kirish"
+                : lang === "ru" ? "Регистрация" : "Ro'yxatdan o'tish"}
             </span>
           </div>
 
@@ -193,7 +223,9 @@ export default function AuthModal() {
                 }`}
                 id={`auth-tab-${t}`}
               >
-                {t === "login" ? "Войти" : "Регистрация"}
+                {t === "login"
+                  ? lang === "ru" ? "Войти" : "Kirish"
+                  : lang === "ru" ? "Регистрация" : "Ro'yxatdan o'tish"}
               </button>
             ))}
           </div>
@@ -207,7 +239,9 @@ export default function AuthModal() {
                 </svg>
               </div>
               <p className="text-base font-semibold text-gray-800">
-                {isLogin ? "Добро пожаловать!" : "Аккаунт создан!"}
+                {isLogin
+                  ? lang === "ru" ? "Добро пожаловать!" : "Xush kelibsiz!"
+                  : lang === "ru" ? "Аккаунт создан!" : "Akkaunt yaratildi!"}
               </p>
             </div>
           )}
@@ -218,17 +252,17 @@ export default function AuthModal() {
               {!isLogin && (
                 <Field
                   id="auth-name"
-                  label="Имя"
+                  label={lang === "ru" ? "Имя" : "Ism"}
                   value={name}
                   onChange={setName}
-                  placeholder="Ваше имя"
+                  placeholder={lang === "ru" ? "Ваше имя" : "Ismingiz"}
                   required
                   autoComplete="name"
                 />
               )}
               <Field
                 id="auth-email"
-                label="Email"
+                label={lang === "ru" ? "Email" : "Elektron pochta"}
                 type="email"
                 value={email}
                 onChange={setEmail}
@@ -238,10 +272,10 @@ export default function AuthModal() {
               />
               <Field
                 id="auth-password"
-                label="Пароль"
+                label={lang === "ru" ? "Пароль" : "Parol"}
                 value={password}
                 onChange={setPassword}
-                placeholder="Минимум 6 символов"
+                placeholder={lang === "ru" ? "Минимум 6 символов" : "Kamida 6 ta belgi"}
                 required
                 autoComplete={isLogin ? "current-password" : "new-password"}
                 isPassword
@@ -249,10 +283,10 @@ export default function AuthModal() {
               {!isLogin && (
                 <Field
                   id="auth-confirm"
-                  label="Подтверждение пароля"
+                  label={lang === "ru" ? "Подтверждение пароля" : "Parolni tasdiqlash"}
                   value={confirmPassword}
                   onChange={setConfirmPassword}
-                  placeholder="Повторите пароль"
+                  placeholder={lang === "ru" ? "Повторите пароль" : "Parolni qayta kiriting"}
                   required
                   autoComplete="new-password"
                   isPassword
@@ -273,7 +307,7 @@ export default function AuthModal() {
               {isLogin && (
                 <div className="text-right">
                   <button type="button" className="text-xs text-red-500 hover:text-red-700 transition font-medium">
-                    Забыли пароль?
+                    {lang === "ru" ? "Забыли пароль?" : "Parolni unutdingizmi?"}
                   </button>
                 </div>
               )}
@@ -287,10 +321,10 @@ export default function AuthModal() {
               >
                 {loading ? <Spinner /> : null}
                 {loading
-                  ? "Загрузка..."
+                  ? lang === "ru" ? "Загрузка..." : "Yuklanmoqda..."
                   : isLogin
-                  ? "Войти в аккаунт"
-                  : "Создать аккаунт"}
+                  ? lang === "ru" ? "Войти в аккаунт" : "Akkauntga kirish"
+                  : lang === "ru" ? "Создать аккаунт" : "Akkaunt yaratish"}
               </button>
             </form>
           )}
@@ -298,13 +332,17 @@ export default function AuthModal() {
           {/* Switch tab hint */}
           {!success && (
             <p className="mt-6 text-center text-xs text-gray-500">
-              {isLogin ? "Нет аккаунта?" : "Уже есть аккаунт?"}{" "}
+              {isLogin
+                ? lang === "ru" ? "Нет аккаунта?" : "Akkauntingiz yo'qmi?"
+                : lang === "ru" ? "Уже есть аккаунт?" : "Akkauntingiz bormi?"}{" "}
               <button
                 type="button"
                 onClick={() => setAuthTab(isLogin ? "register" : "login")}
                 className="text-red-600 font-semibold hover:text-red-700 transition"
               >
-                {isLogin ? "Зарегистрироваться" : "Войти"}
+                {isLogin
+                  ? lang === "ru" ? "Зарегистрироваться" : "Ro'yxatdan o'tish"
+                  : lang === "ru" ? "Войти" : "Kirish"}
               </button>
             </p>
           )}

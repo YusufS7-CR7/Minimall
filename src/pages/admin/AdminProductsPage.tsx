@@ -1,20 +1,23 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import type { Product } from "@/data/types";
-import { CATEGORIES } from "@/data/categories";
+import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
 import CustomSelect from "@/components/ui/CustomSelect";
-
 import { formatPrice } from "@/utils/formatPrice";
+import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 
 export default function AdminProductsPage() {
   const { products, deleteProduct, updateProduct, addProduct, brands } = useProducts();
-  const { showToast } = useApp();
+  const { categories } = useCategories();
+  const { lang, showToast } = useApp();
   const { isSuperAdmin, hasPermission } = useAdminAuth();
+
+  const t = ADMIN_TRANSLATIONS[lang].products;
 
   const canView = isSuperAdmin || hasPermission("products_view");
   const canCreate = isSuperAdmin || hasPermission("products_create");
@@ -22,8 +25,8 @@ export default function AdminProductsPage() {
   const canDelete = isSuperAdmin || hasPermission("products_delete");
 
   useDocumentMeta({
-    title: "Панель управления товарами | Minimall Admin",
-    description: "Управление каталогом товаров маркетплейса mini-mall.uz",
+    title: lang === "uz" ? "Tovarlar katalogi | Minimall Admin" : "Панель управления товарами | Minimall Admin",
+    description: lang === "uz" ? "mini-mall.uz tovarlar katalogini boshqarish" : "Управление каталогом товаров маркетплейса mini-mall.uz",
     noIndex: true,
   });
 
@@ -90,19 +93,20 @@ export default function AdminProductsPage() {
   };
 
   const handleDelete = (id: number, name: string) => {
-    if (window.confirm(`Вы уверены, что хотите удалить товар "${name}"?`)) {
+    if (window.confirm(`${t.deleteConfirm} "${name}"?`)) {
       deleteProduct(id);
-      showToast(`Товар "${name}" удален`);
+      showToast(`${name} ${t.deletedToast}`);
     }
   };
 
   const handleToggleStock = (product: Product) => {
     const nextStatus = !product.inStock;
     updateProduct(product.id, { inStock: nextStatus });
+    const pName = lang === "uz" ? product.nameUz || product.name : product.name;
     showToast(
       nextStatus
-        ? `"${product.name}" теперь в наличии`
-        : `"${product.name}" отмечен как "Нет в наличии"`
+        ? lang === "uz" ? `"${pName}" endi mavjud` : `"${product.name}" теперь в наличии`
+        : lang === "uz" ? `"${pName}" mavjud emas deb belgilandi` : `"${product.name}" отмечен как "Нет в наличии"`
     );
   };
 
@@ -114,7 +118,8 @@ export default function AdminProductsPage() {
       slug: `${product.slug}-copy`,
     });
     if (duplicated) {
-      showToast(`Создана копия товара: "${duplicated.name}"`);
+      const pName = lang === "uz" ? duplicated.nameUz || duplicated.name : duplicated.name;
+      showToast(lang === "uz" ? `Tovar nusxasi yaratildi: "${pName}"` : `Создана копия товара: "${duplicated.name}"`);
     }
   };
 
@@ -122,9 +127,13 @@ export default function AdminProductsPage() {
     return (
       <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-xs text-center space-y-3">
         <div className="text-4xl">🔒</div>
-        <h2 className="text-lg font-bold text-gray-900">Доступ ограничен</h2>
+        <h2 className="text-lg font-bold text-gray-900">
+          {lang === "uz" ? "Ruxsat cheklangan" : "Доступ ограничен"}
+        </h2>
         <p className="text-xs text-gray-500 max-w-md mx-auto">
-          У вашей учетной записи нет разрешения на просмотр каталога товаров. Обратитесь к Главному Администратору для получения прав.
+          {lang === "uz"
+            ? "Hisobingizda tovarlar katalogini ko'rish huquqi yo'q. Huquq olish uchun Bosh Administratorga murojaat qiling."
+            : "У вашей учетной записи нет разрешения на просмотр каталога товаров. Обратитесь к Главному Администратору для получения прав."}
         </p>
       </div>
     );
@@ -139,10 +148,10 @@ export default function AdminProductsPage() {
             className="text-2xl sm:text-3xl font-black text-gray-900"
             style={{ fontFamily: "Barlow Condensed, sans-serif" }}
           >
-            Товары каталога
+            {t.title}
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Добавляйте новые товары, редактируйте цены, параметры и управляйте складскими остатками
+            {t.subtitle}
           </p>
         </div>
         {canCreate && (
@@ -151,7 +160,7 @@ export default function AdminProductsPage() {
             className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             <span className="text-base font-black">+</span>
-            <span>Добавить товар</span>
+            <span>{t.addBtn}</span>
           </button>
         )}
       </div>
@@ -160,7 +169,7 @@ export default function AdminProductsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Всего товаров
+            {t.statTotal}
           </div>
           <div
             className="text-2xl sm:text-3xl font-black text-gray-900 mt-1"
@@ -168,12 +177,14 @@ export default function AdminProductsPage() {
           >
             {stats.total}
           </div>
-          <div className="text-[11px] text-gray-400 mt-1">активных позиций</div>
+          <div className="text-[11px] text-gray-400 mt-1">
+            {lang === "uz" ? "faol tovarlar" : "активных позиций"}
+          </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            В наличии
+            {t.statInStock}
           </div>
           <div
             className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1"
@@ -181,12 +192,14 @@ export default function AdminProductsPage() {
           >
             {stats.inStock}
           </div>
-          <div className="text-[11px] text-emerald-600/80 mt-1">готовы к отгрузке</div>
+          <div className="text-[11px] text-emerald-600/80 mt-1">
+            {lang === "uz" ? "jo'natishga tayyor" : "готовы к отгрузке"}
+          </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Нет на складе
+            {t.statOutOfStock}
           </div>
           <div
             className="text-2xl sm:text-3xl font-black text-amber-600 mt-1"
@@ -194,12 +207,14 @@ export default function AdminProductsPage() {
           >
             {stats.outOfStock}
           </div>
-          <div className="text-[11px] text-amber-600/80 mt-1">требуют пополнения</div>
+          <div className="text-[11px] text-amber-600/80 mt-1">
+            {lang === "uz" ? "to'ldirish talab etiladi" : "требуют пополнения"}
+          </div>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Стоимость каталога
+            {t.statValue}
           </div>
           <div
             className="text-xl sm:text-2xl font-black text-gray-900 mt-1 truncate"
@@ -208,18 +223,20 @@ export default function AdminProductsPage() {
           >
             {formatPrice(stats.totalCatalogValue)}
           </div>
-          <div className="text-[11px] text-gray-400 mt-1">суммарная стоимость</div>
+          <div className="text-[11px] text-gray-400 mt-1">
+            {lang === "uz" ? "jami qiymat" : "суммарная стоимость"}
+          </div>
         </div>
       </div>
 
       {/* Filters & Search Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col md:flex-row items-center gap-3">
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex flex-col md:flex-row items-stretch md:items-center gap-3">
         {/* Search */}
         <div className="relative w-full md:flex-1">
           <span className="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
           <input
             type="text"
-            placeholder="Поиск по названию, бренду, артикулу или slug..."
+            placeholder={t.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full text-xs sm:text-sm pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
@@ -227,7 +244,7 @@ export default function AdminProductsPage() {
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-2 text-xs text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-2 text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
             >
               ✕
             </button>
@@ -240,10 +257,10 @@ export default function AdminProductsPage() {
             value={selectedCategory}
             onChange={(val) => setSelectedCategory(val)}
             options={[
-              { value: "all", label: "Все категории" },
-              ...CATEGORIES.map((c) => ({
+              { value: "all", label: t.allCategories },
+              ...categories.map((c) => ({
                 value: c.key,
-                label: c.labelRu,
+                label: lang === "uz" ? c.labelUz || c.labelRu : c.labelRu,
                 icon: c.icon,
               })),
             ]}
@@ -256,8 +273,8 @@ export default function AdminProductsPage() {
             value={selectedBrand}
             onChange={(val) => setSelectedBrand(val)}
             options={[
-              { value: "all", label: "Все бренды" },
-              { value: "Без бренда", label: "Без бренда", icon: "🏷️" },
+              { value: "all", label: t.allBrands },
+              { value: "Без бренда", label: lang === "uz" ? "Brendsiz" : "Без бренда", icon: "🏷️" },
               ...brands.filter((b) => b !== "Без бренда").map((b) => ({
                 value: b,
                 label: b,
@@ -272,9 +289,9 @@ export default function AdminProductsPage() {
             value={stockFilter}
             onChange={(val) => setStockFilter(val as "all" | "in" | "out")}
             options={[
-              { value: "all", label: "Любой статус" },
-              { value: "in", label: "В наличии", icon: "🟢" },
-              { value: "out", label: "Нет в наличии", icon: "🔴" },
+              { value: "all", label: t.allStatuses },
+              { value: "in", label: t.statusInStock, icon: "🟢" },
+              { value: "out", label: t.statusOutOfStock, icon: "🔴" },
             ]}
           />
         </div>
@@ -286,23 +303,26 @@ export default function AdminProductsPage() {
           <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-400">
             <div className="text-3xl mb-2">{products.length === 0 ? "📦" : "🔍"}</div>
             <div className="text-sm font-bold text-gray-800">
-              {products.length === 0 ? "Каталог пока пуст" : "Товары не найдены"}
+              {t.emptyTitle}
             </div>
             <div className="text-xs text-gray-500 mt-1 max-w-xs mx-auto">
-              {products.length === 0
-                ? "Нажмите кнопку «+ Добавить товар» выше, чтобы создать первую позицию."
-                : "Попробуйте изменить параметры поиска или фильтров"}
+              {t.emptyDesc}
             </div>
           </div>
         ) : (
           filteredProducts.map((p) => {
-            const cat = CATEGORIES.find((c) => c.key === p.category);
+            const cat = categories.find((c) => c.key === p.category);
+            const pName = lang === "uz" ? p.nameUz || p.name : p.name;
+            const catLabel = lang === "uz" ? cat?.labelUz || cat?.labelRu || p.category : cat?.labelRu || p.category;
+            const sub = cat?.subcategories?.find((s) => s.key === p.subcategory || s.slug === p.subcategory);
+            const subLabel = lang === "uz" ? sub?.labelUz || sub?.labelRu || p.subcategory : sub?.labelRu || p.subcategory;
+
             return (
               <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-xs flex flex-col gap-3">
                 <div className="flex items-start gap-3">
                   <img
                     src={p.image}
-                    alt={p.name}
+                    alt={pName}
                     className="w-16 h-16 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src =
@@ -314,8 +334,15 @@ export default function AdminProductsPage() {
                       <span className="text-[11px] font-bold text-red-600 uppercase tracking-wider">{p.brand}</span>
                       <span className="font-mono text-[10px] text-gray-400">#{p.id}</span>
                     </div>
-                    <h4 className="font-bold text-gray-900 text-xs line-clamp-2 leading-snug mt-0.5">{p.name}</h4>
-                    <div className="text-[11px] text-gray-400 mt-0.5">{cat?.labelRu || p.category}</div>
+                    <h4 className="font-bold text-gray-900 text-xs line-clamp-2 leading-snug mt-0.5">{pName}</h4>
+                    <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span>{catLabel}</span>
+                      {p.subcategory && (
+                        <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.2 rounded font-medium border border-red-100">
+                          {subLabel}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -338,50 +365,49 @@ export default function AdminProductsPage() {
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${p.inStock ? "bg-emerald-500" : "bg-amber-500"}`} />
-                    <span>{p.inStock ? "В наличии" : "Нет на складе"}</span>
+                    <span>{p.inStock ? t.inStockBadge : t.outOfStockBadge}</span>
                   </button>
                 </div>
 
                 {/* Mobile action bar */}
-                <div className="grid grid-cols-4 gap-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
                   <Link
                     to={`/product/${p.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200"
-                    title="Смотреть"
+                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200"
+                    title={lang === "uz" ? "Do'konda ko'rish" : "Смотреть"}
                   >
                     <span>👁️</span>
-                    <span className="text-[10px]">Витрина</span>
                   </Link>
                   {canEdit && (
                     <button
                       onClick={() => handleOpenEdit(p)}
-                      className="flex items-center justify-center gap-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 cursor-pointer"
-                      title="Редактировать"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 cursor-pointer"
+                      title={t.edit}
                     >
                       <span>✏️</span>
-                      <span className="text-[10px]">Изменить</span>
+                      <span className="text-[10px]">{t.edit}</span>
                     </button>
                   )}
                   {canEdit && (
                     <button
                       onClick={() => handleDuplicate(p)}
-                      className="flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 cursor-pointer"
-                      title="Копия"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 cursor-pointer"
+                      title={lang === "uz" ? "Nusxa olish" : "Копия"}
                     >
                       <span>📄</span>
-                      <span className="text-[10px]">Копия</span>
+                      <span className="text-[10px]">{lang === "uz" ? "Nusxa" : "Копия"}</span>
                     </button>
                   )}
                   {canDelete && (
                     <button
-                      onClick={() => handleDelete(p.id, p.name)}
-                      className="flex items-center justify-center gap-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 cursor-pointer"
-                      title="Удалить"
+                      onClick={() => handleDelete(p.id, pName)}
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 cursor-pointer"
+                      title={t.delete}
                     >
                       <span>🗑️</span>
-                      <span className="text-[10px]">Удалить</span>
+                      <span className="text-[10px]">{t.delete}</span>
                     </button>
                   )}
                 </div>
@@ -397,11 +423,11 @@ export default function AdminProductsPage() {
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Товар</th>
-                <th className="py-3 px-4">Категория / Бренд</th>
-                <th className="py-3 px-4">Цена</th>
-                <th className="py-3 px-4">Наличие</th>
-                <th className="py-3 px-4 text-right">Действия</th>
+                <th className="py-3 px-4">{t.colProduct}</th>
+                <th className="py-3 px-4">{t.colCategory} / {t.allBrands.replace("Все ", "").replace("Barcha ", "")}</th>
+                <th className="py-3 px-4">{t.colPrice}</th>
+                <th className="py-3 px-4">{t.colStatus}</th>
+                <th className="py-3 px-4 text-right">{t.colActions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -410,18 +436,21 @@ export default function AdminProductsPage() {
                   <td colSpan={5} className="py-12 text-center text-gray-400">
                     <div className="text-3xl mb-2">{products.length === 0 ? "📦" : "🔍"}</div>
                     <div className="text-sm font-bold text-gray-800">
-                      {products.length === 0 ? "Каталог пока пуст" : "Товары не найдены"}
+                      {t.emptyTitle}
                     </div>
                     <div className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-                      {products.length === 0
-                        ? "Нажмите кнопку «+ Добавить товар» выше, чтобы создать первую позицию."
-                        : "Попробуйте изменить параметры поиска или фильтров"}
+                      {t.emptyDesc}
                     </div>
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => {
-                  const cat = CATEGORIES.find((c) => c.key === p.category);
+                  const cat = categories.find((c) => c.key === p.category);
+                  const pName = lang === "uz" ? p.nameUz || p.name : p.name;
+                  const catLabel = lang === "uz" ? cat?.labelUz || cat?.labelRu || p.category : cat?.labelRu || p.category;
+                  const sub = cat?.subcategories?.find((s) => s.key === p.subcategory || s.slug === p.subcategory);
+                  const subLabel = lang === "uz" ? sub?.labelUz || sub?.labelRu || p.subcategory : sub?.labelRu || p.subcategory;
+
                   return (
                     <tr
                       key={p.id}
@@ -432,7 +461,7 @@ export default function AdminProductsPage() {
                         <div className="flex items-center gap-3">
                           <img
                             src={p.image}
-                            alt={p.name}
+                            alt={pName}
                             className="w-12 h-12 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src =
@@ -441,7 +470,7 @@ export default function AdminProductsPage() {
                           />
                           <div className="min-w-0">
                             <div className="font-semibold text-gray-900 line-clamp-1 text-xs sm:text-sm">
-                              {p.name}
+                              {pName}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="font-mono text-[11px] text-gray-400">
@@ -465,8 +494,13 @@ export default function AdminProductsPage() {
                         <div className="text-xs font-medium text-gray-900">
                           {p.brand}
                         </div>
-                        <div className="text-[11px] text-gray-400">
-                          {cat?.labelRu || p.category}
+                        <div className="text-[11px] text-gray-400 flex items-center gap-1.5 flex-wrap">
+                          <span>{catLabel}</span>
+                          {p.subcategory && (
+                            <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded-md font-medium border border-red-100">
+                              {subLabel}
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -494,14 +528,14 @@ export default function AdminProductsPage() {
                               ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
                               : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
                           }`}
-                          title={canEdit ? "Нажмите, чтобы переключить статус наличия" : "Статус наличия"}
+                          title={canEdit ? (lang === "uz" ? "Mavjudlik holatini o'zgartirish uchun bosing" : "Нажмите, чтобы переключить статус наличия") : t.colStatus}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
                               p.inStock ? "bg-emerald-500" : "bg-amber-500"
                             }`}
                           />
-                          <span>{p.inStock ? "В наличии" : "Нет на складе"}</span>
+                          <span>{p.inStock ? t.inStockBadge : t.outOfStockBadge}</span>
                         </button>
                       </td>
 
@@ -514,7 +548,7 @@ export default function AdminProductsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors"
-                            title="Открыть страницу товара на витрине"
+                            title={lang === "uz" ? "Do'konda tovar sahifasini ochish" : "Открыть страницу товара на витрине"}
                           >
                             👁️
                           </Link>
@@ -524,7 +558,7 @@ export default function AdminProductsPage() {
                             <button
                               onClick={() => handleOpenEdit(p)}
                               className="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                              title="Редактировать товар"
+                              title={t.edit}
                             >
                               ✏️
                             </button>
@@ -535,7 +569,7 @@ export default function AdminProductsPage() {
                             <button
                               onClick={() => handleDuplicate(p)}
                               className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                              title="Сделать копию товара"
+                              title={lang === "uz" ? "Nusxa yaratish" : "Сделать копию товара"}
                             >
                               📄
                             </button>
@@ -544,9 +578,9 @@ export default function AdminProductsPage() {
                           {/* Delete */}
                           {canDelete && (
                             <button
-                              onClick={() => handleDelete(p.id, p.name)}
+                              onClick={() => handleDelete(p.id, pName)}
                               className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
-                              title="Удалить товар"
+                              title={t.delete}
                             >
                               🗑️
                             </button>
@@ -564,7 +598,9 @@ export default function AdminProductsPage() {
         {/* Table footer / count */}
         <div className="bg-gray-50/60 border-t border-gray-100 px-4 py-3 text-xs text-gray-400 flex items-center justify-between">
           <span>
-            Показано {filteredProducts.length} из {products.length} товаров
+            {lang === "uz"
+              ? `${products.length} tadan ${filteredProducts.length} ta tovar ko'rsatildi`
+              : `Показано ${filteredProducts.length} из ${products.length} товаров`}
           </span>
           <span className="font-mono text-[11px]">Minimall Catalog v1</span>
         </div>
@@ -576,10 +612,11 @@ export default function AdminProductsPage() {
         onClose={() => setModalOpen(false)}
         productToEdit={editingProduct}
         onSuccess={(saved) => {
+          const sName = lang === "uz" ? saved.nameUz || saved.name : saved.name;
           showToast(
             editingProduct
-              ? `Изменения товара "${saved.name}" сохранены`
-              : `Новый товар "${saved.name}" успешно добавлен в каталог!`
+              ? lang === "uz" ? `"${sName}" tovaridagi o'zgarishlar saqlandi` : `Изменения товара "${saved.name}" сохранены`
+              : lang === "uz" ? `Yangi "${sName}" tovari katalogga muvaffaqiyatli qo'shildi!` : `Новый товар "${saved.name}" успешно добавлен в каталог!`
           );
         }}
       />

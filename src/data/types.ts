@@ -2,6 +2,13 @@
 
 export type Lang = "ru" | "uz";
 
+export interface SubcategoryDef {
+  key: string;
+  slug: string;
+  labelRu: string;
+  labelUz: string;
+}
+
 export interface Product {
   id: number;
   /** Slug used in URLs — auto-generated from name, must be unique */
@@ -11,6 +18,8 @@ export interface Product {
   brand: string;
   /** Category key (matches CategoryDef.key) */
   category: string;
+  /** Subcategory key (optional, matches SubcategoryDef.key within the category) */
+  subcategory?: string;
   price: number;
   oldPrice?: number;
   image: string;
@@ -34,6 +43,7 @@ export interface CategoryDef {
   image: string;
   labelRu: string;
   labelUz: string;
+  subcategories?: SubcategoryDef[];
 }
 
 export interface CartItem {

@@ -4,6 +4,8 @@ import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useOrders } from "@/context/OrdersContext";
 import { useBanners } from "@/context/BannersContext";
+import { useCategories } from "@/context/CategoriesContext";
+import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -11,16 +13,19 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { products } = useProducts();
-  const { showToast } = useApp();
+  const { categories } = useCategories();
+  const { lang, setLang, showToast } = useApp();
   const { adminUser, admins, logout, isSuperAdmin, hasPermission } = useAdminAuth();
   const { orders, newOrdersCount } = useOrders();
   const { slides } = useBanners();
   const location = useLocation();
 
+  const t = ADMIN_TRANSLATIONS[lang].nav;
+
   const handleLogout = () => {
-    if (window.confirm("Выйти из панели администратора?")) {
+    if (window.confirm(t.logoutConfirm)) {
       logout();
-      showToast("Вы успешно вышли из панели управления");
+      showToast(t.logoutSuccess);
     }
   };
 
@@ -30,6 +35,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const isOrdersActive = location.pathname.startsWith("/admin/orders");
   const isAdminsActive = location.pathname.startsWith("/admin/admins");
   const isBannersActive = location.pathname.startsWith("/admin/banners");
+  const isCategoriesActive = location.pathname.startsWith("/admin/categories");
+  const isHelpActive = location.pathname.startsWith("/admin/help");
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -37,15 +44,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <header className="bg-gray-900 text-white border-b border-gray-800 sticky top-0 z-30 shadow-md">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 flex items-center justify-between h-14 sm:h-16">
           {/* Brand + Status */}
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link to="/admin" className="flex items-center gap-2 sm:gap-2.5 group">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+            <Link to="/admin" className="flex items-center gap-1.5 sm:gap-2.5 group shrink-0">
               <img
                 src="/logo.jpg"
                 alt="Minimall"
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain bg-white p-0.5"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain bg-white p-0.5 shrink-0"
               />
               <span
-                className="text-lg sm:text-xl font-extrabold tracking-wide"
+                className="text-base sm:text-xl font-extrabold tracking-wide truncate"
                 style={{ fontFamily: "Barlow Condensed, sans-serif" }}
               >
                 minimall<span className="text-red-500">.admin</span>
@@ -53,12 +60,44 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Link>
             <span className="hidden lg:inline-flex items-center gap-1.5 bg-red-950/60 border border-red-500/30 text-red-400 text-xs px-2.5 py-0.5 rounded-full font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-              Панель управления маркетплейсом
+              {t.tagline}
             </span>
           </div>
 
           {/* User Profile & Actions */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Language Switcher */}
+            <div className="flex items-center gap-1 bg-gray-800/90 border border-gray-700/80 p-1 rounded-xl">
+              <button
+                id="admin-lang-uz-btn"
+                type="button"
+                onClick={() => setLang("uz")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  lang === "uz"
+                    ? "bg-red-600 text-white shadow-xs"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                }`}
+                title="O'zbek tiliga o'tkazish"
+              >
+                <span>🇺🇿</span>
+                <span>UZ</span>
+              </button>
+              <button
+                id="admin-lang-ru-btn"
+                type="button"
+                onClick={() => setLang("ru")}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  lang === "ru"
+                    ? "bg-red-600 text-white shadow-xs"
+                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                }`}
+                title="Переключить на русский язык"
+              >
+                <span>🇷🇺</span>
+                <span>RU</span>
+              </button>
+            </div>
+
             {/* Logged in admin pill — desktop only */}
             {adminUser && (
               <div className="hidden sm:flex items-center gap-2 bg-gray-800/80 border border-gray-700/80 px-3 py-1.5 rounded-xl">
@@ -74,10 +113,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   </div>
                   <div className="text-[10px] text-red-400 font-medium">
                     {adminUser.isSuperAdmin
-                      ? "Главный Администратор"
+                      ? t.superAdmin
                       : adminUser.role === "manager"
-                      ? "Контент-менеджер"
-                      : "Администратор"}
+                      ? t.manager
+                      : t.admin}
                   </div>
                 </div>
               </div>
@@ -88,17 +127,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 px-2.5 sm:px-3.5 py-2 rounded-xl transition-all shadow-md shadow-red-600/20"
             >
               <span>←</span>
-              <span className="hidden sm:inline">В магазин</span>
+              <span className="hidden sm:inline">{t.toStore}</span>
             </Link>
 
             {/* Logout button */}
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-1 text-xs font-semibold text-gray-300 hover:text-red-400 bg-white/5 hover:bg-red-500/10 px-2.5 py-2 rounded-xl border border-white/10 transition-colors cursor-pointer"
-              title="Выйти из админки"
+              title={t.logout}
             >
               <span>🚪</span>
-              <span className="hidden sm:inline">Выйти</span>
+              <span className="hidden sm:inline">{t.logout}</span>
             </button>
           </div>
         </div>
@@ -118,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 }`}
               >
                 <span>📦</span>
-                <span>Товары</span>
+                <span>{t.productsShort}</span>
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${isProductsActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}>
                   {products.length}
                 </span>
@@ -131,7 +170,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   }`}
                 >
                   <span>👥</span>
-                  <span>Админы</span>
+                  <span>{t.adminsShort}</span>
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${isAdminsActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}>
                     {admins.length}
                   </span>
@@ -144,7 +183,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 }`}
               >
                 <span>🛒</span>
-                <span>Заказы</span>
+                <span>{t.orders}</span>
                 {newOrdersCount > 0 && (
                   <span className="text-xs bg-red-600 text-white font-black px-1.5 py-0.5 rounded-full animate-pulse">
                     +{newOrdersCount}
@@ -161,10 +200,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 }`}
               >
                 <span>⚡</span>
-                <span>Баннеры</span>
+                <span>{t.bannersShort}</span>
                 <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${isBannersActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}>
                   {slides.length}
                 </span>
+              </Link>
+              <Link
+                to="/admin/categories"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-sm transition-colors whitespace-nowrap ${
+                  isCategoriesActive ? "bg-red-600 text-white shadow-sm" : "bg-white border border-gray-100 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>🗂️</span>
+                <span>{t.categoriesShort}</span>
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${isCategoriesActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}>
+                  {categories.length}
+                </span>
+              </Link>
+              <Link
+                to="/admin/help"
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold text-sm transition-colors whitespace-nowrap ${
+                  isHelpActive ? "bg-red-600 text-white shadow-sm" : "bg-white border border-gray-100 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>ℹ️</span>
+                <span>{t.helpShort}</span>
               </Link>
             </nav>
           </div>
@@ -172,7 +232,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {/* Desktop: vertical sidebar */}
           <div className="hidden md:block bg-white rounded-2xl border border-gray-100 p-4 shadow-xs">
             <div className="text-[11px] font-bold uppercase tracking-wider text-gray-400 px-3 mb-2">
-              Управление
+              {t.management}
             </div>
             <nav className="space-y-1">
               <Link
@@ -183,7 +243,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               >
                 <div className="flex items-center gap-2.5">
                   <span>📦</span>
-                  <span>Товары каталога</span>
+                  <span>{t.products}</span>
                 </div>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isProductsActive ? "bg-red-200/60 text-red-800" : "bg-gray-100 text-gray-600"}`}>
                   {products.length}
@@ -199,7 +259,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 >
                   <div className="flex items-center gap-2.5">
                     <span>👥</span>
-                    <span>Администраторы</span>
+                    <span>{t.admins}</span>
                   </div>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isAdminsActive ? "bg-red-200/60 text-red-800" : "bg-gray-100 text-gray-600"}`}>
                     {admins.length}
@@ -215,7 +275,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               >
                 <div className="flex items-center gap-2.5">
                   <span>🛒</span>
-                  <span>Заказы</span>
+                  <span>{t.orders}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   {newOrdersCount > 0 && (
@@ -237,10 +297,40 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               >
                 <div className="flex items-center gap-2.5">
                   <span>⚡</span>
-                  <span>Баннеры карусели</span>
+                  <span>{t.banners}</span>
                 </div>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isBannersActive ? "bg-red-200/60 text-red-800" : "bg-gray-100 text-gray-600"}`}>
                   {slides.length}
+                </span>
+              </Link>
+
+              <Link
+                to="/admin/categories"
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                  isCategoriesActive ? "bg-red-50 text-red-700 font-bold" : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span>🗂️</span>
+                  <span>{t.categories}</span>
+                </div>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isCategoriesActive ? "bg-red-200/60 text-red-800" : "bg-gray-100 text-gray-600"}`}>
+                  {categories.length}
+                </span>
+              </Link>
+
+              <Link
+                to="/admin/help"
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                  isHelpActive ? "bg-red-50 text-red-700 font-bold" : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span>ℹ️</span>
+                  <span>{t.help}</span>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isHelpActive ? "bg-red-200/60 text-red-800" : "bg-gray-100 text-gray-600"}`}>
+                  {t.helpSectionsCount}
                 </span>
               </Link>
             </nav>
@@ -250,14 +340,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="hidden md:block bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-4 shadow-sm border border-gray-800 text-xs space-y-2.5">
             <div className="font-bold flex items-center gap-1.5 text-gray-200">
               <span>🚀</span>
-              <span>Minimall RBAC v1</span>
+              <span>{t.systemTitle}</span>
             </div>
             <p className="text-gray-400 leading-relaxed text-[11px]">
-              Разграничение прав доступа администраторов активно. Данные защищены и привязаны к локальной сессии.
+              {t.systemDesc}
             </p>
             <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-gray-400">
-              <span>Текущий статус:</span>
-              <span className="text-emerald-400 font-medium">Авторизован</span>
+              <span>{t.statusLabel}</span>
+              <span className="text-emerald-400 font-medium">{t.authorized}</span>
             </div>
           </div>
         </aside>

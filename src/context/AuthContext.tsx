@@ -145,14 +145,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cleanEmail = email.trim().toLowerCase();
     const found = await dbGetUser(cleanEmail);
     if (!found) {
-      return { error: "Неверный email или пароль" };
+      return { error: "err_invalid_credentials" };
     }
 
     const hashedInput = await hashPassword(password, cleanEmail);
     const isMatch = found.password === hashedInput || found.password === password;
 
     if (!isMatch) {
-      return { error: "Неверный email или пароль" };
+      return { error: "err_invalid_credentials" };
     }
 
     // Auto-migrate plaintext password to hash in DB
@@ -172,15 +172,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cleanName = name.trim();
 
     if (!cleanEmail || !cleanName || !password) {
-      return { error: "Пожалуйста, заполните все поля" };
+      return { error: "err_fill_all_fields" };
     }
 
     if (password.length < 6) {
-      return { error: "Пароль должен содержать не менее 6 символов" };
+      return { error: "err_password_too_short" };
     }
 
     const existing = await dbGetUser(cleanEmail);
-    if (existing) return { error: "Этот email уже зарегистрирован в магазине" };
+    if (existing) return { error: "err_email_exists" };
 
     const id = crypto.randomUUID();
     const hashedPassword = await hashPassword(password, cleanEmail);

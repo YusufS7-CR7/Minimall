@@ -4,6 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import type { Order, OrderStatus } from "@/data/orderTypes";
 import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
+import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { formatPrice } from "@/utils/formatPrice";
 import CustomSelect from "@/components/ui/CustomSelect";
 import OrderInvoiceModal from "./OrderInvoiceModal";
@@ -11,15 +12,16 @@ import TelegramSettingsModal from "./TelegramSettingsModal";
 
 export default function AdminOrdersPage() {
   const { orders, updateOrderStatus, deleteOrder, fetchAllOrders, loading } = useOrders();
-  const { showToast } = useApp();
+  const { showToast, lang } = useApp();
+  const t = ADMIN_TRANSLATIONS[lang].orders;
 
   useEffect(() => {
     fetchAllOrders();
   }, [fetchAllOrders]);
 
   useDocumentMeta({
-    title: "Управление заказами | Minimall Admin",
-    description: "Просмотр и обработка заказов интернет-магазина mini-mall.uz",
+    title: lang === "uz" ? "Buyurtmalarni boshqarish | Minimall Admin" : "Управление заказами | Minimall Admin",
+    description: lang === "uz" ? "mini-mall.uz internet do'koni buyurtmalarini ko'rish va boshqarish" : "Просмотр и обработка заказов интернет-магазина mini-mall.uz",
     noIndex: true,
   });
 
@@ -79,20 +81,30 @@ export default function AdminOrdersPage() {
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     await updateOrderStatus(orderId, newStatus);
-    showToast(`Статус заказа ${orderId} обновлён: ${ORDER_STATUS_LABELS[newStatus].ru}`);
+    showToast(
+      lang === "uz"
+        ? `${orderId} buyurtma holati yangilandi: ${ORDER_STATUS_LABELS[newStatus].uz}`
+        : `Статус заказа ${orderId} обновлён: ${ORDER_STATUS_LABELS[newStatus].ru}`
+    );
   };
 
   const handleDelete = async (orderId: string) => {
-    if (window.confirm(`Удалить заказ ${orderId}? Это действие необратимо.`)) {
+    if (
+      window.confirm(
+        lang === "uz"
+          ? `${orderId} buyurtmani o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.`
+          : `Удалить заказ ${orderId}? Это действие необратимо.`
+      )
+    ) {
       await deleteOrder(orderId);
-      showToast(`Заказ ${orderId} удалён`);
+      showToast(lang === "uz" ? `${orderId} buyurtma o'chirildi` : `Заказ ${orderId} удалён`);
     }
   };
 
   const formatDate = (iso: string) => {
     try {
       const d = new Date(iso);
-      return d.toLocaleString("ru-RU", {
+      return d.toLocaleString(lang === "uz" ? "uz-UZ" : "ru-RU", {
         day: "numeric",
         month: "short",
         hour: "2-digit",
@@ -106,36 +118,53 @@ export default function AdminOrdersPage() {
   // Export orders to Excel CSV with UTF-8 BOM
   const handleExportCsv = () => {
     if (filteredOrders.length === 0) {
-      showToast("Нет заказов для экспорта");
+      showToast(lang === "uz" ? "Eksport uchun buyurtmalar yo'q" : "Нет заказов для экспорта");
       return;
     }
 
-    const headers = [
-      "№ Заказа",
-      "Дата оформления",
-      "ФИО Покупателя",
-      "Телефон",
-      "Город",
-      "Адрес",
-      "Способ оплаты",
-      "Сумма (сум)",
-      "Статус",
-      "Комментарий",
-      "Состав заказа",
-    ];
+    const headers =
+      lang === "uz"
+        ? [
+            "Buyurtma №",
+            "Sana",
+            "Mijoz F.I.Sh.",
+            "Telefon",
+            "Shahar",
+            "Manzil",
+            "To'lov usuli",
+            "Summa (so'm)",
+            "Holat",
+            "Izoh",
+            "Buyurtma tarkibi",
+          ]
+        : [
+            "№ Заказа",
+            "Дата оформления",
+            "ФИО Покупателя",
+            "Телефон",
+            "Город",
+            "Адрес",
+            "Способ оплаты",
+            "Сумма (сум)",
+            "Статус",
+            "Комментарий",
+            "Состав заказа",
+          ];
 
     const rows = filteredOrders.map((o) => {
-      const itemsStr = o.items.map((i) => `${i.name} (${i.count} шт. x ${i.price} сум)`).join(" | ");
+      const itemsStr = o.items
+        .map((i) => `${i.name} (${i.count} ${lang === "uz" ? "dona" : "шт."} x ${i.price} ${lang === "uz" ? "so'm" : "сум"})`)
+        .join(" | ");
       return [
         o.id,
-        new Date(o.createdAt).toLocaleString("ru-RU"),
+        new Date(o.createdAt).toLocaleString(lang === "uz" ? "uz-UZ" : "ru-RU"),
         `"${o.customer.name.replace(/"/g, '""')}"`,
         `"${o.customer.phone}"`,
         `"${o.customer.city.replace(/"/g, '""')}"`,
         `"${o.customer.address.replace(/"/g, '""')}"`,
         o.customer.paymentMethod,
         o.totalAmount,
-        ORDER_STATUS_LABELS[o.status]?.ru || o.status,
+        ORDER_STATUS_LABELS[o.status]?.[lang] || o.status,
         `"${(o.customer.comment || "").replace(/"/g, '""')}"`,
         `"${itemsStr.replace(/"/g, '""')}"`,
       ].join(";");
@@ -152,7 +181,7 @@ export default function AdminOrdersPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast("Файл заказов CSV успешно скачан");
+    showToast(lang === "uz" ? "Buyurtmalar CSV fayli muvaffaqiyatli yuklab olindi" : "Файл заказов CSV успешно скачан");
   };
 
   return (
@@ -165,16 +194,16 @@ export default function AdminOrdersPage() {
               className="text-2xl sm:text-3xl font-black text-gray-900"
               style={{ fontFamily: "Barlow Condensed, sans-serif" }}
             >
-              Заказы покупателей
+              {t.title}
             </h1>
             {stats.newCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-black px-2.5 py-0.5 rounded-full animate-pulse shadow-xs">
-                +{stats.newCount} новых
+                +{stats.newCount} {lang === "uz" ? "yangi" : "новых"}
               </span>
             )}
           </div>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            Все заказы, оформленные покупателями на сайте, поступают сюда в реальном времени
+            {t.subtitle}
           </p>
         </div>
 
@@ -184,20 +213,20 @@ export default function AdminOrdersPage() {
           <button
             onClick={() => setIsTelegramModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-sky-800 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl transition-colors cursor-pointer"
-            title="Настройка Telegram-бота для мгновенных оповещений"
+            title={t.tgSettingsBtn}
           >
             <span>✈️</span>
-            <span>Telegram бот</span>
+            <span>{t.tgSettingsBtn}</span>
           </button>
 
           {/* Export CSV */}
           <button
             onClick={handleExportCsv}
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-            title="Скачать заказы в Excel / CSV"
+            title={lang === "uz" ? "Buyurtmalarni Excel / CSV formatida yuklash" : "Скачать заказы в Excel / CSV"}
           >
             <span>📥</span>
-            <span>Экспорт в CSV</span>
+            <span>{lang === "uz" ? "CSV eksport" : "Экспорт в CSV"}</span>
           </button>
 
           {/* Refresh button */}
@@ -211,7 +240,7 @@ export default function AdminOrdersPage() {
             ) : (
               <span>🔄</span>
             )}
-            <span>Обновить</span>
+            <span>{lang === "uz" ? "Yangilash" : "Обновить"}</span>
           </button>
         </div>
       </div>
@@ -219,24 +248,24 @@ export default function AdminOrdersPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Всего заказов</div>
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.statTotal}</div>
           <div className="text-2xl sm:text-3xl font-black text-gray-900 mt-1" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>{stats.total}</div>
-          <div className="text-[11px] text-gray-400 mt-1">за все время</div>
+          <div className="text-[11px] text-gray-400 mt-1">{lang === "uz" ? "barcha vaqt davomida" : "за все время"}</div>
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Новые</div>
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.statNew}</div>
           <div className="text-2xl sm:text-3xl font-black text-blue-600 mt-1" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>{stats.newCount}</div>
-          <div className="text-[11px] text-blue-600/80 mt-1">требуют подтверждения</div>
+          <div className="text-[11px] text-blue-600/80 mt-1">{lang === "uz" ? "tasdiqlash kutilmoqda" : "требуют подтверждения"}</div>
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">В доставке</div>
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.statInProgress}</div>
           <div className="text-2xl sm:text-3xl font-black text-purple-600 mt-1" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>{stats.inProgress}</div>
-          <div className="text-[11px] text-purple-600/80 mt-1">активные отгрузки</div>
+          <div className="text-[11px] text-purple-600/80 mt-1">{lang === "uz" ? "faol jo'natmalar" : "активные отгрузки"}</div>
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
-          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Сумма</div>
+          <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.statRevenue}</div>
           <div className="text-lg sm:text-2xl font-black text-gray-900 mt-1 truncate" style={{ fontFamily: "Barlow Condensed, sans-serif" }} title={formatPrice(stats.totalValue)}>{formatPrice(stats.totalValue)}</div>
-          <div className="text-[11px] text-gray-400 mt-1">общий оборот</div>
+          <div className="text-[11px] text-gray-400 mt-1">{lang === "uz" ? "umumiy aylanma" : "общий оборот"}</div>
         </div>
       </div>
 
@@ -246,7 +275,7 @@ export default function AdminOrdersPage() {
           <span className="absolute left-3.5 top-2.5 text-gray-400 text-sm">🔍</span>
           <input
             type="text"
-            placeholder="Поиск по номеру заказа, имени, телефону, городу..."
+            placeholder={t.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full text-xs sm:text-sm pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
@@ -261,7 +290,7 @@ export default function AdminOrdersPage() {
               dateFilter === "all" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            Все даты
+            {t.dateAll}
           </button>
           <button
             onClick={() => setDateFilter("today")}
@@ -269,7 +298,7 @@ export default function AdminOrdersPage() {
               dateFilter === "today" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            Сегодня
+            {t.dateToday}
           </button>
           <button
             onClick={() => setDateFilter("week")}
@@ -277,7 +306,7 @@ export default function AdminOrdersPage() {
               dateFilter === "week" ? "bg-white text-gray-900 shadow-xs" : "text-gray-500 hover:text-gray-900"
             }`}
           >
-            7 дней
+            {t.dateWeek}
           </button>
         </div>
 
@@ -287,12 +316,12 @@ export default function AdminOrdersPage() {
             value={selectedStatus}
             onChange={(val) => setSelectedStatus(val)}
             options={[
-              { value: "all", label: "Все статусы" },
-              { value: "new", label: "Новые", icon: "🔵" },
-              { value: "processing", label: "В обработке", icon: "🟡" },
-              { value: "shipping", label: "В доставке", icon: "🟣" },
-              { value: "completed", label: "Выполненные", icon: "🟢" },
-              { value: "cancelled", label: "Отмененные", icon: "🔴" },
+              { value: "all", label: t.allStatuses },
+              { value: "new", label: ORDER_STATUS_LABELS.new[lang], icon: "🔵" },
+              { value: "processing", label: ORDER_STATUS_LABELS.processing[lang], icon: "🟡" },
+              { value: "shipping", label: ORDER_STATUS_LABELS.shipping[lang], icon: "🟣" },
+              { value: "completed", label: ORDER_STATUS_LABELS.completed[lang], icon: "🟢" },
+              { value: "cancelled", label: ORDER_STATUS_LABELS.cancelled[lang], icon: "🔴" },
             ]}
           />
         </div>
@@ -303,7 +332,7 @@ export default function AdminOrdersPage() {
         {filteredOrders.length === 0 ? (
           <div className="bg-white rounded-3xl p-12 text-center text-gray-400 border border-gray-100 shadow-xs">
             <div className="text-4xl mb-2">🛒</div>
-            <p className="text-sm font-semibold">Заказы не найдены</p>
+            <p className="text-sm font-semibold">{lang === "uz" ? "Buyurtmalar topilmadi" : "Заказы не найдены"}</p>
           </div>
         ) : (
           filteredOrders.map((order) => {
@@ -315,8 +344,8 @@ export default function AdminOrdersPage() {
                 className="bg-white rounded-3xl border border-gray-100 shadow-xs p-5 sm:p-6 transition-all hover:shadow-md space-y-4"
               >
                 {/* Header row */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 pb-3 border-b border-gray-100">
-                  <div className="flex items-center justify-between sm:justify-start gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+                  <div className="flex items-center justify-between gap-3">
                     <span className="text-base font-black font-mono text-gray-900 bg-gray-100 px-2.5 py-1 rounded-xl">
                       {order.id}
                     </span>
@@ -327,19 +356,19 @@ export default function AdminOrdersPage() {
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Status dropdown */}
-                    <div className="flex items-center gap-1.5 flex-1 sm:flex-none">
-                      <span className="text-xs text-gray-400 font-medium shrink-0">Статус:</span>
-                      <div className="flex-1 sm:flex-none sm:w-36">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-gray-400 font-medium shrink-0">{lang === "uz" ? "Holat:" : "Статус:"}</span>
+                      <div className="w-36">
                         <CustomSelect
                           value={order.status}
                           onChange={(val) => handleStatusChange(order.id, val as OrderStatus)}
                           size="sm"
                           options={[
-                            { value: "new", label: "Новый", icon: "🔵" },
-                            { value: "processing", label: "В обработке", icon: "🟡" },
-                            { value: "shipping", label: "В доставке", icon: "🟣" },
-                            { value: "completed", label: "Выполнен", icon: "🟢" },
-                            { value: "cancelled", label: "Отменен", icon: "🔴" },
+                            { value: "new", label: ORDER_STATUS_LABELS.new[lang], icon: "🔵" },
+                            { value: "processing", label: ORDER_STATUS_LABELS.processing[lang], icon: "🟡" },
+                            { value: "shipping", label: ORDER_STATUS_LABELS.shipping[lang], icon: "🟣" },
+                            { value: "completed", label: ORDER_STATUS_LABELS.completed[lang], icon: "🟢" },
+                            { value: "cancelled", label: ORDER_STATUS_LABELS.cancelled[lang], icon: "🔴" },
                           ]}
                         />
                       </div>
@@ -349,17 +378,17 @@ export default function AdminOrdersPage() {
                     <button
                       onClick={() => setInvoiceOrder(order)}
                       className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer shrink-0"
-                      title="Открыть товарный чек / накладную для печати"
+                      title={t.printInvoice}
                     >
                       <span>🖨️</span>
-                      <span className="hidden sm:inline">Чек</span>
+                      <span className="hidden sm:inline">{lang === "uz" ? "Chek" : "Чек"}</span>
                     </button>
 
                     {/* Delete Order Button */}
                     <button
                       onClick={() => handleDelete(order.id)}
                       className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-red-50 text-gray-400 hover:text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer shrink-0"
-                      title="Удалить заказ"
+                      title={t.deleteOrder}
                     >
                       🗑️
                     </button>
@@ -390,7 +419,7 @@ export default function AdminOrdersPage() {
                           target="_blank"
                           rel="noreferrer"
                           className="bg-sky-100 hover:bg-sky-200 text-sky-700 text-[10px] font-bold px-2 py-0.5 rounded-md transition-colors flex items-center gap-0.5"
-                          title="Написать клиенту в Telegram"
+                          title={lang === "uz" ? "Mijozga Telegram orqali yozish" : "Написать клиенту в Telegram"}
                         >
                           <span>✈️</span>
                           <span>Telegram</span>
@@ -403,15 +432,15 @@ export default function AdminOrdersPage() {
                     </div>
 
                     <div className="text-gray-500 pt-1 border-t border-gray-200/60">
-                      💳 Оплата:{" "}
+                      💳 {lang === "uz" ? "To'lov:" : "Оплата:"}{" "}
                       <span className="font-bold text-gray-800">
                         {order.customer.paymentMethod === "cash"
-                          ? "Наличными курьеру"
+                          ? (lang === "uz" ? "Kuryerga naqd" : "Наличными курьеру")
                           : order.customer.paymentMethod === "click"
                           ? "Click"
                           : order.customer.paymentMethod === "payme"
                           ? "Payme"
-                          : "Безналичный расчет (юр. лица)"}
+                          : (lang === "uz" ? "Hisob-kitob raqami (yuridik)" : "Безналичный расчет (юр. лица)")}
                       </span>
                     </div>
 
@@ -425,7 +454,9 @@ export default function AdminOrdersPage() {
                   {/* Order items */}
                   <div className="md:col-span-2 space-y-2">
                     <div className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">
-                      Состав заказа ({order.items.reduce((s, i) => s + i.count, 0)} шт.)
+                      {lang === "uz"
+                        ? `Buyurtma tarkibi (${order.items.reduce((s, i) => s + i.count, 0)} dona)`
+                        : `Состав заказа (${order.items.reduce((s, i) => s + i.count, 0)} шт.)`}
                     </div>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                       {order.items.map((item, idx) => (
@@ -452,7 +483,9 @@ export default function AdminOrdersPage() {
                     </div>
 
                     <div className="pt-2 flex justify-between items-center text-sm font-bold border-t border-gray-100">
-                      <span className="text-gray-500 text-xs uppercase tracking-wider">Итого к оплате:</span>
+                      <span className="text-gray-500 text-xs uppercase tracking-wider">
+                        {lang === "uz" ? "To'lov uchun jami:" : "Итого к оплате:"}
+                      </span>
                       <span className="text-lg font-black text-red-600 font-mono">
                         {formatPrice(order.totalAmount)}
                       </span>

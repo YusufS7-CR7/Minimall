@@ -54,8 +54,14 @@ export default function BrandPage() {
   }, [baseProducts, filters, sortBy]);
 
   useDocumentMeta({
-    title: `${brandName} — инструменты и оборудование | Купить в Ташкенте Minimall`,
-    description: `Оригинальный инструмент ${brandName} в Ташкенте. Каталог из ${baseProducts.length} моделей с официальной гарантией и доставкой по Узбекистану на mini-mall.uz.`,
+    title:
+      lang === "uz"
+        ? `${brandName} — asboblar va uskunalar | Toshkentda xarid qilish Minimall`
+        : `${brandName} — инструменты и оборудование | Купить в Ташкенте Minimall`,
+    description:
+      lang === "uz"
+        ? `${brandName} original asboblari Toshkentda. ${baseProducts.length} modeldagi kafolatli tovarlar katalogi va butun O'zbekiston bo'ylab yetkazib berish mini-mall.uz da.`
+        : `Оригинальный инструмент ${brandName} в Ташкенте. Каталог из ${baseProducts.length} моделей с официальной гарантией и доставкой по Узбекистану на mini-mall.uz.`,
     canonical: `https://mini-mall.uz/brand/${slug}`,
     structuredData: {
       "@context": "https://schema.org",

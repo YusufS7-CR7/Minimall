@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import type { Product } from "@/data/types";
-import { CATEGORIES } from "@/data/categories";
+import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
+import { useApp } from "@/context/AppContext";
+import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { slugify } from "@/data/products";
 import { translateText } from "@/utils/googleTranslate";
 import { matchBrandFuzzy } from "@/utils/brandSearch";
@@ -22,7 +24,10 @@ export default function ProductFormModal({
   productToEdit,
   onSuccess,
 }: ProductFormModalProps) {
+  const { lang } = useApp();
+  const t = ADMIN_TRANSLATIONS[lang].productForm;
   const { addProduct, updateProduct, brands, addBrand } = useProducts();
+  const { categories } = useCategories();
 
   const [activeTab, setActiveTab] = useState<"general" | "media" | "specs" | "seo">("general");
 
@@ -69,10 +74,15 @@ export default function ProductFormModal({
     setNewBrandInput("");
     setShowAddBrandInline(false);
     setBrandDropdownOpen(false);
-    setBrandSuccessMsg(`Бренд «${trimmed}» сохранен и синхронизирован со всем сайтом!`);
+    setBrandSuccessMsg(
+      lang === "uz"
+        ? `«${trimmed}» brendi saqlandi va butun sayt bilan sinxronlandi!`
+        : `Бренд «${trimmed}» сохранен и синхронизирован со всем сайтом!`
+    );
     setTimeout(() => setBrandSuccessMsg(""), 3500);
   };
   const [category, setCategory] = useState("drills");
+  const [subcategory, setSubcategory] = useState("");
   const [price, setPrice] = useState<string>("");
   const [oldPrice, setOldPrice] = useState<string>("");
   const [inStock, setInStock] = useState(true);
@@ -108,6 +118,7 @@ export default function ProductFormModal({
       setNameUz(productToEdit.nameUz || productToEdit.name);
       setBrand(productToEdit.brand);
       setCategory(productToEdit.category);
+      setSubcategory(productToEdit.subcategory || "");
       setPrice(productToEdit.price.toString());
       setOldPrice(productToEdit.oldPrice ? productToEdit.oldPrice.toString() : "");
       setInStock(productToEdit.inStock);
@@ -136,6 +147,7 @@ export default function ProductFormModal({
       setBrand("Makita");
       setCustomBrand("");
       setCategory("drills");
+      setSubcategory("");
       setPrice("");
       setOldPrice("");
       setInStock(true);
@@ -162,7 +174,11 @@ export default function ProductFormModal({
       (f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|svg|avif|bmp)$/i.test(f.name)
     );
     if (validImageFiles.length === 0) {
-      alert("Пожалуйста, выберите файлы изображений (JPG, PNG, WEBP, GIF, SVG)");
+      alert(
+        lang === "uz"
+          ? "Iltimos, rasm fayllarini tanlang (JPG, PNG, WEBP, GIF, SVG)"
+          : "Пожалуйста, выберите файлы изображений (JPG, PNG, WEBP, GIF, SVG)"
+      );
       return;
     }
 
@@ -175,7 +191,11 @@ export default function ProductFormModal({
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       console.error("Image upload error:", err);
-      alert("Произошла ошибка при загрузке файлов. Попробуйте еще раз.");
+      alert(
+        lang === "uz"
+          ? "Fayllarni yuklashda xatolik yuz berdi. Qayta urinib ko'ring."
+          : "Произошла ошибка при загрузке файлов. Попробуйте еще раз."
+      );
     } finally {
       setUploadingImages(false);
     }
@@ -278,17 +298,29 @@ export default function ProductFormModal({
 
     const parsedPrice = parseInt(price, 10);
     if (!name.trim()) {
-      setError("Пожалуйста, укажите название товара на русском языке.");
+      setError(
+        lang === "uz"
+          ? "Iltimos, mahsulot nomini kiriting."
+          : "Пожалуйста, укажите название товара на русском языке."
+      );
       setActiveTab("general");
       return;
     }
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      setError("Пожалуйста, укажите корректную стоимость товара в сумах.");
+      setError(
+        lang === "uz"
+          ? "Iltimos, mahsulot narxini so'mda to'g'ri ko'rsating."
+          : "Пожалуйста, укажите корректную стоимость товара в сумах."
+      );
       setActiveTab("general");
       return;
     }
     if (imagesList.length === 0) {
-      setError("Пожалуйста, выберите и загрузите хотя бы одно фото товара с устройства.");
+      setError(
+        lang === "uz"
+          ? "Iltimos, qurilmangizdan kamida bitta rasm yuklang."
+          : "Пожалуйста, выберите и загрузите хотя бы одно фото товара с устройства."
+      );
       setActiveTab("media");
       return;
     }
@@ -314,6 +346,7 @@ export default function ProductFormModal({
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
         category,
+        subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
         inStock,
@@ -341,6 +374,7 @@ export default function ProductFormModal({
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
         category,
+        subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
         inStock,
@@ -373,12 +407,12 @@ export default function ProductFormModal({
               className="text-lg sm:text-xl font-bold tracking-wide text-gray-900"
               style={{ fontFamily: "Barlow Condensed, sans-serif" }}
             >
-              {productToEdit ? "Редактирование товара" : "Добавить новый товар"}
+              {productToEdit ? t.editTitle : t.createTitle}
             </h2>
             <p className="text-[11px] sm:text-xs text-gray-400">
               {productToEdit
                 ? `ID: #${productToEdit.id} | ${productToEdit.slug}`
-                : "Заполните данные для публикации товара в каталоге Minimall"}
+                : (lang === "uz" ? "Minimall katalogiga mahsulot joylash uchun ma'lumotlarni to'ldiring" : "Заполните данные для публикации товара в каталоге Minimall")}
             </p>
           </div>
           <button
@@ -400,7 +434,7 @@ export default function ProductFormModal({
                 : "border-transparent text-gray-500 hover:text-gray-900"
             }`}
           >
-            1. Основная информация
+            1. {t.tabGeneral}
           </button>
           <button
             type="button"
@@ -411,7 +445,7 @@ export default function ProductFormModal({
                 : "border-transparent text-gray-500 hover:text-gray-900"
             }`}
           >
-            2. Фото и описание
+            2. {t.tabMedia}
           </button>
           <button
             type="button"
@@ -422,7 +456,7 @@ export default function ProductFormModal({
                 : "border-transparent text-gray-500 hover:text-gray-900"
             }`}
           >
-            3. Характеристики
+            3. {t.tabSpecs}
           </button>
           <button
             type="button"
@@ -433,7 +467,7 @@ export default function ProductFormModal({
                 : "border-transparent text-gray-500 hover:text-gray-900"
             }`}
           >
-            4. SEO & URL
+            4. {t.tabSeo}
           </button>
         </div>
 
@@ -449,18 +483,42 @@ export default function ProductFormModal({
           {/* TAB 1: General */}
           {activeTab === "general" && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Название товара <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="например: Ударная дрель Makita HP1630"
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    {t.nameRu} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={lang === "uz" ? "masalan: Zarbali drel Makita HP1630" : "например: Ударная дрель Makita HP1630"}
+                    value={name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      {t.nameUz}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleTranslateName}
+                      disabled={translatingName || !name.trim()}
+                      className="text-[11px] text-red-600 hover:text-red-700 font-bold cursor-pointer disabled:opacity-40"
+                    >
+                      {translatingName ? t.translating : t.translateToUz}
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={lang === "uz" ? "O'zbek tilidagi nomi..." : "Название на узбекском..."}
+                    value={nameUz}
+                    onChange={(e) => setNameUz(e.target.value)}
+                    className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -468,7 +526,7 @@ export default function ProductFormModal({
                 <div ref={brandDropdownRef} className="relative">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-semibold text-gray-700">
-                      Бренд производителя <span className="text-red-500">*</span>
+                      {t.brand} <span className="text-red-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -478,7 +536,7 @@ export default function ProductFormModal({
                       }}
                       className="text-[11px] text-red-600 hover:text-red-700 font-bold cursor-pointer hover:underline"
                     >
-                      + Добавить бренд
+                      + {lang === "uz" ? "Brend qo'shish" : "Добавить бренд"}
                     </button>
                   </div>
 
@@ -490,7 +548,9 @@ export default function ProductFormModal({
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`w-2 h-2 rounded-full shrink-0 ${brand === "Без бренда" ? "bg-gray-400" : "bg-red-600"}`} />
                       <span className="font-bold text-gray-900 truncate">
-                        {brand === "Без бренда" ? "🏷️ Без бренда" : (brand || "Выберите бренд")}
+                        {brand === "Без бренда"
+                          ? (lang === "uz" ? "🏷️ Brendsiz" : "🏷️ Без бренда")
+                          : (brand || (lang === "uz" ? "Brendni tanlang" : "Выберите бренд"))}
                       </span>
                     </div>
                     <svg
@@ -522,7 +582,7 @@ export default function ProductFormModal({
                           type="text"
                           value={brandSearchQuery}
                           onChange={(e) => setBrandSearchQuery(e.target.value)}
-                          placeholder="Поиск бренда (напр. Bosch, Sparta)..."
+                          placeholder={lang === "uz" ? "Brend qidirish (masalan: Bosch)..." : "Поиск бренда (напр. Bosch, Sparta)..."}
                           autoFocus
                           className="w-full text-xs pl-8 pr-7 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/70 focus:bg-white transition-colors"
                         />
@@ -546,7 +606,7 @@ export default function ProductFormModal({
                       </div>
 
                       {/* Option: Без бренда (No brand) */}
-                      {(!brandSearchQuery || "без бренда".includes(brandSearchQuery.toLowerCase()) || "no brand".includes(brandSearchQuery.toLowerCase())) && (
+                      {(!brandSearchQuery || "без бренда".includes(brandSearchQuery.toLowerCase()) || "brendsiz".includes(brandSearchQuery.toLowerCase()) || "no brand".includes(brandSearchQuery.toLowerCase())) && (
                         <button
                           type="button"
                           onClick={() => {
@@ -562,7 +622,7 @@ export default function ProductFormModal({
                         >
                           <div className="flex items-center gap-2">
                             <span>🏷️</span>
-                            <span className="font-semibold">Без бренда</span>
+                            <span className="font-semibold">{lang === "uz" ? "Brendsiz" : "Без бренда"}</span>
                           </div>
                           {brand === "Без бренда" && <span>✓</span>}
                         </button>
@@ -572,14 +632,14 @@ export default function ProductFormModal({
                       {(showAddBrandInline || (brandSearchQuery.trim() && !brands.some((b) => b.toLowerCase() === brandSearchQuery.trim().toLowerCase()))) && (
                         <div className="p-2.5 bg-red-50/60 rounded-xl border border-red-200/80 space-y-1.5">
                           <div className="text-[11px] font-bold text-gray-800">
-                            Добавить новый бренд в систему:
+                            {lang === "uz" ? "Tizimga yangi brend qo'shish:" : "Добавить новый бренд в систему:"}
                           </div>
                           <div className="flex gap-2">
                             <input
                               type="text"
                               value={newBrandInput || brandSearchQuery}
                               onChange={(e) => setNewBrandInput(e.target.value)}
-                              placeholder="Название нового бренда..."
+                              placeholder={lang === "uz" ? "Yangi brend nomi..." : "Название нового бренда..."}
                               className="flex-1 text-xs px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-red-500"
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
@@ -593,7 +653,7 @@ export default function ProductFormModal({
                               onClick={() => handleCreateNewBrand(newBrandInput || brandSearchQuery)}
                               className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-xs shrink-0"
                             >
-                              + Сохранить
+                              + {lang === "uz" ? "Saqlash" : "Сохранить"}
                             </button>
                           </div>
                         </div>
@@ -603,14 +663,14 @@ export default function ProductFormModal({
                       <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
                         {matchingBrands.length === 0 ? (
                           <div className="py-3 text-center text-xs text-gray-500">
-                            <div>Бренд не найден</div>
+                            <div>{lang === "uz" ? "Brend topilmadi" : "Бренд не найден"}</div>
                             {brandSearchQuery && (
                               <button
                                 type="button"
                                 onClick={() => handleCreateNewBrand(brandSearchQuery)}
                                 className="mt-1.5 inline-flex items-center gap-1 text-red-600 hover:underline font-bold cursor-pointer"
                               >
-                                <span>+ Добавить «{brandSearchQuery}» во все фильтры сайта</span>
+                                <span>+ {lang === "uz" ? `«${brandSearchQuery}» brendini qo'shish` : `Добавить «${brandSearchQuery}» во все фильтры сайта`}</span>
                               </button>
                             )}
                           </div>
@@ -645,24 +705,53 @@ export default function ProductFormModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Категория каталога
+                    {t.category}
                   </label>
                   <CustomSelect
                     value={category}
-                    onChange={(val) => setCategory(val)}
-                    options={CATEGORIES.map((c) => ({
+                    onChange={(val) => { setCategory(val); setSubcategory(""); }}
+                    options={categories.map((c) => ({
                       value: c.key,
-                      label: c.labelRu,
+                      label: lang === "uz" ? c.labelUz : c.labelRu,
                       icon: c.icon,
                     }))}
                   />
                 </div>
+
+                {/* Subcategory selector */}
+                {(() => {
+                  const activeCat = categories.find((c) => c.key === category);
+                  const subs = activeCat?.subcategories ?? [];
+                  if (subs.length === 0) return null;
+                  return (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">
+                        {t.subcategory}
+                        <span className="ml-1 text-gray-400 font-normal">({lang === "uz" ? "ixtiyoriy" : "необязательно"})</span>
+                      </label>
+                      <CustomSelect
+                        value={subcategory}
+                        onChange={(val) => setSubcategory(val)}
+                        searchable={subs.length > 5}
+                        searchPlaceholder={lang === "uz" ? "Kichik toifani qidirish..." : "Поиск подкатегории..."}
+                        placeholder={lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —"}
+                        options={[
+                          { value: "", label: lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —" },
+                          ...subs.map((s) => ({
+                            value: s.key,
+                            label: lang === "uz" ? s.labelUz : s.labelRu,
+                          })),
+                        ]}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Цена в сумах <span className="text-red-500">*</span>
+                    {t.price} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input
@@ -682,7 +771,7 @@ export default function ProductFormModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Старая цена (для показа скидки)
+                    {t.oldPrice}
                   </label>
                   <div className="relative">
                     <input
@@ -702,23 +791,23 @@ export default function ProductFormModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Бейдж на карточке
+                    {t.badge}
                   </label>
                   <CustomSelect
                     value={badge}
                     onChange={(val) => setBadge(val)}
                     options={[
-                      { value: "", label: "Без бейджа" },
-                      { value: "Хит", label: "Хит продаж", icon: "🔥" },
-                      { value: "Новинка", label: "Новинка", icon: "✨" },
-                      { value: "Скидка", label: "Акция / Скидка", icon: "🏷️" },
+                      { value: "", label: lang === "uz" ? "Belgisiz" : "Без бейджа" },
+                      { value: "Хит", label: lang === "uz" ? "Ommabop" : "Хит продаж", icon: "🔥" },
+                      { value: "Новинка", label: lang === "uz" ? "Yangi" : "Новинка", icon: "✨" },
+                      { value: "Скидка", label: lang === "uz" ? "Aksiya / Chegirma" : "Акция / Скидка", icon: "🏷️" },
                     ]}
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Рейтинг (1-5)
+                    {lang === "uz" ? "Reyting (1-5)" : "Рейтинг (1-5)"}
                   </label>
                   <CustomSelect
                     value={rating}
@@ -740,7 +829,7 @@ export default function ProductFormModal({
                       className="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500"
                     />
                     <span className="text-xs font-semibold text-gray-800">
-                      В наличии на складе
+                      {t.inStock}
                     </span>
                   </label>
                 </div>
@@ -755,14 +844,14 @@ export default function ProductFormModal({
               <div className="bg-gray-50 p-4 sm:p-5 rounded-2xl border border-gray-200 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <span className="font-bold text-gray-900 text-sm flex items-center gap-2">
-                    <span className="text-base">📸</span> Фотографии товара ({imagesList.length} шт.)
+                    <span className="text-base">📸</span> {lang === "uz" ? `Mahsulot rasmlari (${imagesList.length} ta)` : `Фотографии товара (${imagesList.length} шт.)`}
                   </span>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                      Только файлы (PNG, JPG, WEBP)
+                      {lang === "uz" ? "Faqat fayllar (PNG, JPG, WEBP)" : "Только файлы (PNG, JPG, WEBP)"}
                     </span>
                     <span className="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-0.5 rounded-md border border-amber-200">
-                      Рекомендуется: 800 × 800 px (1:1)
+                      {lang === "uz" ? "Tavsiya: 800 × 800 px (1:1)" : "Рекомендуется: 800 × 800 px (1:1)"}
                     </span>
                   </div>
                 </div>
@@ -771,17 +860,19 @@ export default function ProductFormModal({
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-950 p-3 sm:p-3.5 rounded-xl text-xs space-y-1">
                   <div className="flex items-center gap-2 font-bold text-amber-900">
                     <span>💡</span>
-                    <span>Как работает галерея товара:</span>
+                    <span>{lang === "uz" ? "Mahsulot galereyasi qanday ishlaydi:" : "Как работает галерея товара:"}</span>
                   </div>
                   <ul className="text-[11px] text-amber-900/90 pl-5 list-disc space-y-0.5">
                     <li>
-                      <strong>Первое фото в списке — это обложка товара</strong>, которая отображается в каталоге и на карточках.
+                      <strong>{lang === "uz" ? "Ro'yxatdagi birinchi rasm — bu mahsulot muqovasi" : "Первое фото в списке — это обложка товара"}</strong>, {lang === "uz" ? "u katalog va kartochkalarda ko'rinadi." : "которая отображается в каталоге и на карточках."}
                     </li>
                     <li>
-                      <strong>Все остальные фото</strong> формируют полную галерею. Покупатели смогут листать их при клике на фото товара.
+                      <strong>{lang === "uz" ? "Barcha qolgan rasmlar" : "Все остальные фото"}</strong> {lang === "uz" ? "to'liq galereyani tashkil etadi. Xaridorlar rasmga bosganda ularni varaqlashlari mumkin." : "формируют полную галерею. Покупатели смогут листать их при клике на фото товара."}
                     </li>
                     <li>
-                      Вы можете загрузить <strong>сразу несколько фото одновременно</strong>, а также назначить любое фото обложкой кнопкой «Сделать обложкой».
+                      {lang === "uz"
+                        ? "Siz birdaniga bir nechta rasmni yuklashingiz va «Muqova qilish» tugmasi bilan istalgan rasmni asosiy muqova qilishingiz mumkin."
+                        : "Вы можете загрузить сразу несколько фото одновременно, а также назначить любое фото обложкой кнопкой «Сделать обложкой»."}
                     </li>
                   </ul>
                 </div>
@@ -812,7 +903,7 @@ export default function ProductFormModal({
                     <div className="flex flex-col items-center gap-2 py-3">
                       <span className="w-7 h-7 border-3 border-red-600 border-t-transparent rounded-full animate-spin" />
                       <span className="font-bold text-gray-700 text-xs sm:text-sm">
-                        Загрузка фотографий в галерею...
+                        {lang === "uz" ? "Rasmlar yuklanmoqda..." : "Загрузка фотографий в галерею..."}
                       </span>
                     </div>
                   ) : (
@@ -822,17 +913,17 @@ export default function ProductFormModal({
                       </div>
                       <div>
                         <p className="font-bold text-gray-900 text-xs sm:text-sm">
-                          Нажмите для выбора файлов или перетащите их сюда
+                          {lang === "uz" ? "Fayllarni tanlash uchun bosing yoki bu yerga sudrab tashlang" : "Нажмите для выбора файлов или перетащите их сюда"}
                         </p>
                         <p className="text-[11px] text-gray-500 mt-0.5">
-                          Можно выделить <strong>сразу несколько файлов</strong> (JPG, PNG, WEBP, GIF, SVG)
+                          {lang === "uz" ? "Birdaniga bir nechta faylni tanlashingiz mumkin (JPG, PNG, WEBP, GIF, SVG)" : "Можно выделить сразу несколько файлов (JPG, PNG, WEBP, GIF, SVG)"}
                         </p>
                       </div>
                       <button
                         type="button"
                         className="mt-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-colors shadow-xs inline-flex items-center gap-1.5 pointer-events-none"
                       >
-                        <span>+ Выбрать фото на устройстве</span>
+                        <span>+ {lang === "uz" ? "Qurilmadan rasm tanlash" : "Выбрать фото на устройстве"}</span>
                       </button>
                     </>
                   )}
@@ -842,7 +933,7 @@ export default function ProductFormModal({
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                      <span>🖼️</span> Галерея загруженных фото ({imagesList.length}):
+                      <span>🖼️</span> {lang === "uz" ? `Yuklangan rasmlar galereyasi (${imagesList.length}):` : `Галерея загруженных фото (${imagesList.length}):`}
                     </div>
                     {imagesList.length > 0 && (
                       <div className="flex items-center gap-2">
@@ -852,18 +943,18 @@ export default function ProductFormModal({
                           disabled={uploadingImages}
                           className="text-[11px] font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                         >
-                          + Добавить еще фото
+                          + {lang === "uz" ? "Yana rasm qo'shish" : "Добавить еще фото"}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
-                            if (window.confirm("Удалить все добавленные фото?")) {
+                            if (window.confirm(lang === "uz" ? "Barcha qo'shilgan rasmlarni o'chirasizmi?" : "Удалить все добавленные фото?")) {
                               setImagesList([]);
                             }
                           }}
                           className="text-[11px] text-gray-400 hover:text-red-600 px-2 py-1 rounded-lg transition-colors cursor-pointer"
                         >
-                          Очистить
+                          {lang === "uz" ? "Tozalash" : "Очистить"}
                         </button>
                       </div>
                     )}
@@ -871,7 +962,9 @@ export default function ProductFormModal({
 
                   {imagesList.length === 0 ? (
                     <div className="p-8 text-center text-xs text-gray-400 bg-white rounded-2xl border border-dashed border-gray-300">
-                      Фотографии пока не выбраны. Нажмите на блок выше и выберите файлы товара с компьютера или телефона.
+                      {lang === "uz"
+                        ? "Rasmlar hali tanlanmagan. Yuqoridagi blokni bosing va kompyuter yoki telefondan fayllarni tanlang."
+                        : "Фотографии пока не выбраны. Нажмите на блок выше и выберите файлы товара с компьютера или телефона."}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -890,11 +983,11 @@ export default function ProductFormModal({
                             <div className="w-full flex items-center justify-between text-[10px]">
                               {isPrimary ? (
                                 <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
-                                  ⭐ Обложка
+                                  ⭐ {t.cover}
                                 </span>
                               ) : (
                                 <span className="text-gray-400 font-semibold px-1">
-                                  Фото #{idx + 1}
+                                  {lang === "uz" ? `Rasm #${idx + 1}` : `Фото #${idx + 1}`}
                                 </span>
                               )}
 
@@ -904,7 +997,7 @@ export default function ProductFormModal({
                                     type="button"
                                     onClick={() => handleMoveImage(idx, idx - 1)}
                                     className="w-5 h-5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] transition-colors cursor-pointer"
-                                    title="Переместить влево"
+                                    title={lang === "uz" ? "Chapga surish" : "Переместить влево"}
                                   >
                                     ←
                                   </button>
@@ -914,7 +1007,7 @@ export default function ProductFormModal({
                                     type="button"
                                     onClick={() => handleMoveImage(idx, idx + 1)}
                                     className="w-5 h-5 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] transition-colors cursor-pointer"
-                                    title="Переместить вправо"
+                                    title={lang === "uz" ? "O'ngga surish" : "Переместить вправо"}
                                   >
                                     →
                                   </button>
@@ -923,7 +1016,7 @@ export default function ProductFormModal({
                                   type="button"
                                   onClick={() => handleRemoveImage(idx)}
                                   className="w-5 h-5 rounded-md bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer ml-0.5"
-                                  title="Удалить фото"
+                                  title={t.removePhoto}
                                 >
                                   ✕
                                 </button>
@@ -950,11 +1043,11 @@ export default function ProductFormModal({
                                 className="w-full py-1.5 text-[11px] font-bold text-gray-700 hover:text-red-600 bg-gray-50 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 hover:border-red-200 cursor-pointer flex items-center justify-center gap-1"
                               >
                                 <span>⭐</span>
-                                <span>Сделать обложкой</span>
+                                <span>{lang === "uz" ? "Muqova qilish" : "Сделать обложкой"}</span>
                               </button>
                             ) : (
                               <div className="w-full py-1 text-[10px] text-center font-bold text-red-600">
-                                Главная обложка товара
+                                {lang === "uz" ? "Mahsulotning asosiy muqovasi" : "Главная обложка товара"}
                               </div>
                             )}
                           </div>
@@ -965,20 +1058,45 @@ export default function ProductFormModal({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  Описание товара
-                </label>
-                <textarea
-                  rows={4}
-                  placeholder="Подробное описание назначения, комплектации и преимуществ инструмента..."
-                  value={descRu}
-                  onChange={(e) => {
-                    setDescRu(e.target.value);
-                    setDescUz(e.target.value);
-                  }}
-                  className="w-full text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-                />
+              {/* Descriptions in RU and UZ */}
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      {t.descRu}
+                    </label>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder={lang === "uz" ? "Mahsulotning rus tilidagi to'liq tavsifi..." : "Подробное описание назначения, комплектации и преимуществ инструмента..."}
+                    value={descRu}
+                    onChange={(e) => setDescRu(e.target.value)}
+                    className="w-full text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      {t.descUz}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleTranslateDesc}
+                      disabled={translatingDesc || !descRu.trim()}
+                      className="text-[11px] text-red-600 hover:text-red-700 font-bold cursor-pointer disabled:opacity-40"
+                    >
+                      {translatingDesc ? t.translating : t.translateToUz}
+                    </button>
+                  </div>
+                  <textarea
+                    rows={3}
+                    placeholder={lang === "uz" ? "Mahsulotning o'zbek tilidagi to'liq tavsifi..." : "Описание товара на узбекском языке..."}
+                    value={descUz}
+                    onChange={(e) => setDescUz(e.target.value)}
+                    className="w-full text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -989,18 +1107,20 @@ export default function ProductFormModal({
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-gray-900">
-                    Технические характеристики
+                    {lang === "uz" ? "Texnik xususiyatlar" : "Технические характеристики"}
                   </h3>
                   <p className="text-xs text-gray-400">
-                    Добавьте ключевые параметры (Мощность, Обороты, Вес, Тип патрона и т.д.)
+                    {lang === "uz"
+                      ? "Asosiy parametrlarni kiriting (Quvvat, Aylanishlar, Vazn, Patron turi va h.k.)"
+                      : "Добавьте ключевые параметры (Мощность, Обороты, Вес, Тип патрона и т.д.)"}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddSpec}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                 >
-                  + Добавить параметр
+                  {t.addSpec}
                 </button>
               </div>
 
@@ -1009,14 +1129,14 @@ export default function ProductFormModal({
                   <div key={idx} className="flex items-center gap-2">
                     <input
                       type="text"
-                      placeholder="Параметр (напр. Крутящий момент)"
+                      placeholder={t.specName}
                       value={spec.key}
                       onChange={(e) => handleSpecChange(idx, "key", e.target.value)}
                       className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
                     />
                     <input
                       type="text"
-                      placeholder="Значение (напр. 55 Нм)"
+                      placeholder={t.specValue}
                       value={spec.value}
                       onChange={(e) => handleSpecChange(idx, "value", e.target.value)}
                       className="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
@@ -1024,8 +1144,8 @@ export default function ProductFormModal({
                     <button
                       type="button"
                       onClick={() => handleRemoveSpec(idx)}
-                      className="w-8 h-8 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors"
-                      title="Удалить строку"
+                      className="w-8 h-8 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition-colors cursor-pointer"
+                      title={lang === "uz" ? "Qatorni o'chirish" : "Удалить строку"}
                     >
                       ✕
                     </button>
@@ -1040,7 +1160,7 @@ export default function ProductFormModal({
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  URL Slug (адрес страницы товара)
+                  URL Slug ({lang === "uz" ? "mahsulot sahifasi manzili" : "адрес страницы товара"})
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400 font-mono">
@@ -1058,24 +1178,28 @@ export default function ProductFormModal({
                   />
                 </div>
                 <p className="text-[11px] text-gray-400 mt-1">
-                  Генерируется автоматически из названия товара. Пользователи смогут находить этот товар в Google именно по этому URL.
+                  {lang === "uz"
+                    ? "Mahsulot nomidan avtomatik hosil qilinadi. Foydalanuvchilar ushbu URL orqali Google'da topishadi."
+                    : "Генерируется автоматически из названия товара. Пользователи смогут находить этот товар в Google именно по этому URL."}
                 </p>
               </div>
 
               {/* Google Search Snippet Preview */}
               <div className="border border-gray-200 rounded-2xl p-4 bg-white mt-4 shadow-xs">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-                  Предпросмотр сниппета в Google:
+                  {lang === "uz" ? "Google natijalarida ko'rinish:" : "Предпросмотр сниппета в Google:"}
                 </p>
                 <div className="text-xs text-gray-600 mb-1 font-mono">
                   https://mini-mall.uz &gt; product &gt; {slug || "primer-tovara"}
                 </div>
                 <div className="text-blue-700 hover:underline text-base font-medium cursor-pointer line-clamp-1">
-                  {name || "Название товара"} — купить в Ташкенте | Minimall
+                  {(lang === "uz" && nameUz ? nameUz : name) || (lang === "uz" ? "Mahsulot nomi" : "Название товара")} — {lang === "uz" ? "Toshkentda sotib olish | Minimall" : "купить в Ташкенте | Minimall"}
                 </div>
                 <div className="text-gray-600 text-xs mt-1 line-clamp-2">
-                  {descRu ||
-                    "Купить профессиональный инструмент в Ташкенте с официальной гарантией и оперативной доставкой по всему Узбекистану."}
+                  {(lang === "uz" && descUz ? descUz : descRu) ||
+                    (lang === "uz"
+                      ? "Toshkentda rasmiy kafolat va O'zbekiston bo'ylab tezkor yetkazib berish bilan professional asboblarni sotib oling."
+                      : "Купить профессиональный инструмент в Ташкенте с официальной гарантией и оперативной доставкой по всему Узбекистану.")}
                 </div>
               </div>
             </div>
@@ -1086,16 +1210,16 @@ export default function ProductFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 text-sm font-semibold transition-colors"
+              className="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 text-sm font-semibold transition-colors cursor-pointer"
             >
-              Отмена
+              {t.cancelBtn}
             </button>
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md shadow-red-600/20"
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all shadow-md shadow-red-600/20 cursor-pointer"
               >
-                {productToEdit ? "Сохранить изменения" : "Опубликовать товар"}
+                {productToEdit ? (lang === "uz" ? "O'zgarishlarni saqlash" : "Сохранить изменения") : (lang === "uz" ? "Mahsulotni chiqarish" : "Опубликовать товар")}
               </button>
             </div>
           </div>
