@@ -4,6 +4,7 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useApp } from "@/context/AppContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
+import logoImg from "@/assets/logo.jpg";
 
 export default function AdminLoginPage() {
   const { login } = useAdminAuth();
@@ -69,9 +70,12 @@ export default function AdminLoginPage() {
             className="inline-flex items-center gap-3 group transition-transform hover:scale-105"
           >
             <img
-              src="/logo.jpg"
+              src={logoImg}
               alt="Minimall"
               className="w-12 h-12 rounded-2xl object-contain bg-white p-1 shadow-lg shadow-red-600/20"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/logo.jpg";
+              }}
             />
             <div className="text-left">
               <div

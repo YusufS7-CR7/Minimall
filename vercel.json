@@ -1,10 +1,7 @@
 {
-  "framework": "vite",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/|.*\\.(?:jpg|jpeg|png|gif|svg|ico|webp|js|css|woff2?|ttf|eot|json|xml|txt)$).*)",
       "destination": "/index.html"
     }
   ]

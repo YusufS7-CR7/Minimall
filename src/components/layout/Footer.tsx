@@ -5,6 +5,7 @@ import { useCategories } from "@/context/CategoriesContext";
 import { BRANDS } from "@/data/products";
 import type { Lang } from "@/data/types";
 import type { InfoModalSection } from "@/components/ui/InfoModal";
+import logoImg from "@/assets/logo.jpg";
 
 interface FooterProps {
   lang: Lang;
@@ -165,7 +166,16 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
             <div className="col-span-2 md:col-span-4 lg:col-span-1">
               <Link to="/" className="flex items-center gap-3 mb-4">
                 <div className="bg-white p-1 rounded-xl shadow-xs inline-flex shrink-0">
-                  <img src="/logo.jpg" alt="Minimall" className="h-10 w-auto object-contain rounded-lg" width={40} height={40} />
+                  <img
+                    src={logoImg}
+                    alt="Minimall"
+                    className="h-10 w-auto object-contain rounded-lg"
+                    width={40}
+                    height={40}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/logo.jpg";
+                    }}
+                  />
                 </div>
                 <div>
                   <div className="text-xl font-extrabold text-white leading-none" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
