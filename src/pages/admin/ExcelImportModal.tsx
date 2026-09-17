@@ -4,7 +4,6 @@ import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import type { Product } from "@/data/types";
-import { formatPrice } from "@/utils/formatPrice";
 import CustomSelect from "@/components/ui/CustomSelect";
 
 interface ExcelImportModalProps {
@@ -13,9 +12,12 @@ interface ExcelImportModalProps {
   onSuccess: (count: number) => void;
 }
 
+type Currency = "UZS" | "USD";
+
 interface ParsedRow {
   name: string;
   price: number;
+  currency: Currency;
   brand: string;
   isValid: boolean;
   error?: string;
@@ -41,21 +43,28 @@ export default function ExcelImportModal({
 
   if (!isOpen) return null;
 
-  // Clean and parse price strings like "1 250 000 сум", "1,250,000", "450000"
+  // Clean and parse price strings like "1 250 000 сум", "61.36", "450000"
   const parsePrice = (raw: unknown): number => {
-    if (typeof raw === "number") return Math.round(raw);
+    if (typeof raw === "number") return raw > 0 ? raw : 0;
     if (!raw) return 0;
     const str = String(raw).trim();
-    // Remove currency words, spaces, non-breaking spaces
     const cleaned = str
-      .replace(/сум|so'm|som|uzs|руб|rub/gi, "")
+      .replace(/сум|so'm|som|uzs|usd|\$|руб|rub/gi, "")
       .replace(/[\s\u00a0]/g, "")
-      .replace(/,/g, "");
+      .replace(/,/g, ".");
     const num = parseFloat(cleaned);
-    return isNaN(num) || num <= 0 ? 0 : Math.round(num);
+    return isNaN(num) || num <= 0 ? 0 : num;
   };
 
-  // Detect brand in product name (e.g. "Дрель Makita HP1630" -> "Makita")
+  // Detect currency from column D value
+  const parseCurrency = (raw: unknown): Currency => {
+    if (!raw) return "UZS";
+    const s = String(raw).trim().toUpperCase();
+    if (s === "USD" || s === "$") return "USD";
+    return "UZS";
+  };
+
+  // Detect brand in product name (e.g. "Balgarka Palisad 647388" -> "Palisad")
   const detectBrand = (title: string): string => {
     const titleLower = title.toLowerCase();
     for (const b of brands) {
@@ -93,25 +102,21 @@ export default function ExcelImportModal({
 
       const rows: ParsedRow[] = [];
 
-      // Check if row 0 is a header row (e.g. "Название", "Цена")
+      // Auto-detect and skip header rows
       let startIndex = 0;
-      if (rawData.length > 0) {
-        const firstRow = rawData[0] as unknown[];
-        const col0 = String(firstRow[0] || "").toLowerCase();
-        const col1 = String(firstRow[1] || "").toLowerCase();
+      for (let i = 0; i < Math.min(rawData.length, 5); i++) {
+        const row = rawData[i] as unknown[];
+        const a = String(row[0] ?? "").toLowerCase();
+        const b = String(row[1] ?? "").toLowerCase();
+        const c = String(row[2] ?? "").toLowerCase();
+        const d = String(row[3] ?? "").toLowerCase();
         if (
-          col0.includes("назван") ||
-          col0.includes("наименов") ||
-          col0.includes("товар") ||
-          col0.includes("nom") ||
-          col0.includes("name") ||
-          col0.includes("mahsulot") ||
-          col1.includes("цен") ||
-          col1.includes("narx") ||
-          col1.includes("cost") ||
-          col1.includes("price")
+          a.includes("№") || a === "num" ||
+          b.includes("назван") || b.includes("наименов") || b.includes("товар") || b.includes("name") ||
+          c.includes("цен") || c.includes("price") || c.includes("narx") ||
+          d.includes("валют") || d.includes("currency") || d.includes("valyut")
         ) {
-          startIndex = 1;
+          startIndex = i + 1;
         }
       }
 
@@ -119,13 +124,32 @@ export default function ExcelImportModal({
         const row = rawData[i] as unknown[];
         if (!row || row.length === 0) continue;
 
-        const rawName = row[0] !== undefined ? String(row[0]).trim() : "";
-        const rawPrice = row[1] !== undefined ? row[1] : 0;
+        // 4-column format: A(№) | B(name) | C(price) | D(currency)
+        // Check if col A looks like a row number
+        let rawName: string;
+        let rawPrice: unknown;
+        let rawCurrency: unknown;
 
-        // Skip completely empty rows
+        const colA = row[0];
+        const colAIsNum = typeof colA === "number" ||
+          (typeof colA === "string" && /^\d+$/.test(String(colA).trim()));
+
+        if (row.length >= 3 && colAIsNum) {
+          // 4-col: A=№, B=name, C=price, D=currency
+          rawName = row[1] !== undefined ? String(row[1]).trim() : "";
+          rawPrice = row[2] !== undefined ? row[2] : 0;
+          rawCurrency = row[3] !== undefined ? row[3] : "UZS";
+        } else {
+          // 2-col fallback: A=name, B=price
+          rawName = row[0] !== undefined ? String(row[0]).trim() : "";
+          rawPrice = row[1] !== undefined ? row[1] : 0;
+          rawCurrency = row[2] !== undefined ? row[2] : "UZS";
+        }
+
         if (!rawName && !rawPrice) continue;
 
         const parsedPriceVal = parsePrice(rawPrice);
+        const currency = parseCurrency(rawCurrency);
         const isValid = rawName.length > 0 && parsedPriceVal > 0;
 
         let err: string | undefined;
@@ -135,6 +159,7 @@ export default function ExcelImportModal({
         rows.push({
           name: rawName,
           price: parsedPriceVal,
+          currency,
           brand: detectBrand(rawName),
           isValid,
           error: err,
@@ -144,8 +169,8 @@ export default function ExcelImportModal({
       if (rows.length === 0) {
         setErrorMessage(
           lang === "uz"
-            ? "Faylda tovarlar topilmadi. 1-ustun — nom, 2-ustun — narx ekanligiga ishonch hosil qiling."
-            : "В таблице не найдено строк с товарами. Убедитесь, что 1-я колонка содержит название, а 2-я — цену."
+            ? "Faylda tovarlar topilmadi. Fayl formatini tekshiring."
+            : "В таблице не найдено строк с товарами. Проверьте формат файла."
         );
         return;
       }
@@ -172,15 +197,16 @@ export default function ExcelImportModal({
 
   const handleDownloadTemplate = () => {
     const wsData = [
-      ["Название товара", "Цена (сум)"],
-      ["Перфоратор Makita HR2470", 1450000],
-      ["Ударная дрель Bosch GSB 13 RE", 890000],
-      ["Болгарка DeWalt DWE4057", 1100000],
-      ["Аккумуляторный шуруповерт Milwaukee M12", 2150000],
+      ["№", "Название товара", "Розничная Цена", "Валюта"],
+      [407, "Balgarka EPA 1300W d125mm EMSH-125-4", 61.36, "USD"],
+      [408, "Balgarka EPA 1100W EMSH-125-5", 54.28, "USD"],
+      [409, "Arra Torsevoy d250 EPA ETP-1025-4", 253.7, "USD"],
+      [410, "Suv sepadigan Pompali Bachonok Palisad 647388", 82000, "UZS"],
+      [415, "Raspiritel (suv sepadigan) Palisad 664688", 8000, "UZS"],
+      [418, "Raspiritel Pistolet suv sepadigan Palisad 651788", 48000, "UZS"],
     ];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
-    // Set column widths
-    ws["!cols"] = [{ wch: 45 }, { wch: 20 }];
+    ws["!cols"] = [{ wch: 6 }, { wch: 45 }, { wch: 16 }, { wch: 10 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Товары");
     XLSX.writeFile(wb, "shablon_tovarov_minimall.xlsx");
@@ -197,6 +223,7 @@ export default function ExcelImportModal({
         name: item.name,
         nameUz: item.name,
         price: item.price,
+        currency: item.currency,
         brand: item.brand,
         category: defaultCategory || "drills",
         image: "",
@@ -223,6 +250,16 @@ export default function ExcelImportModal({
 
   const validCount = parsedRows.filter((r) => r.isValid).length;
   const invalidCount = parsedRows.length - validCount;
+  const usdCount = parsedRows.filter((r) => r.isValid && r.currency === "USD").length;
+  const uzsCount = parsedRows.filter((r) => r.isValid && r.currency === "UZS").length;
+
+  const displayPrice = (row: ParsedRow) => {
+    if (!row.price) return "—";
+    if (row.currency === "USD") {
+      return `$${row.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    return `${Math.round(row.price).toLocaleString("ru-RU")} сум`;
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
@@ -242,8 +279,8 @@ export default function ExcelImportModal({
               </h2>
               <p className="text-[11px] sm:text-xs text-gray-400">
                 {lang === "uz"
-                  ? "1-ustun: Nom, 2-ustun: Narx (.xlsx, .xls yoki .csv)"
-                  : "Колонка 1: Название, Колонка 2: Цена (.xlsx, .xls или .csv)"}
+                  ? "A: №(o'tkaziladi) · B: Nom · C: Narx · D: Valyuta (USD/UZS)"
+                  : "A: №(игнорируется) · B: Название · C: Цена · D: Валюта (USD/UZS)"}
               </p>
             </div>
           </div>
@@ -270,14 +307,15 @@ export default function ExcelImportModal({
             <div className="flex items-center gap-2.5">
               <span className="text-2xl shrink-0">💡</span>
               <div className="text-xs text-emerald-950">
-                <span className="font-bold block">
-                  {lang === "uz" ? "Fayl formati qanday bo'lishi kerak?" : "Каким должен быть файл?"}
+                <span className="font-bold block mb-1">
+                  {lang === "uz" ? "Fayl formati (4 ta ustun):" : "Формат файла (4 колонки):"}
                 </span>
-                <span className="text-[11px] text-emerald-900/90 leading-relaxed">
-                  {lang === "uz"
-                    ? "Har bir qatorda 2 ta ustun: Mahsulot nomi va Narxi (so'mda)."
-                    : "Каждая строка — один товар: 1-я колонка — Название, 2-я — Цена."}
-                </span>
+                <div className="font-mono text-[11px] bg-white/60 rounded-lg px-2.5 py-1.5 border border-emerald-200 space-y-0.5">
+                  <div><span className="text-gray-400">A:</span> <span className="text-gray-500">{lang === "uz" ? "№ (o'tkaziladi)" : "№ (игнорируется)"}</span></div>
+                  <div><span className="text-gray-400">B:</span> <span className="text-gray-800 font-bold">{lang === "uz" ? "Nomi" : "Название"}</span></div>
+                  <div><span className="text-gray-400">C:</span> <span className="text-gray-800 font-bold">{lang === "uz" ? "Narx" : "Цена"}</span></div>
+                  <div><span className="text-gray-400">D:</span> <span className="text-blue-700 font-bold">USD</span> <span className="text-gray-400">{lang === "uz" ? "yoki" : "или"}</span> <span className="text-emerald-700 font-bold">UZS</span></div>
+                </div>
               </div>
             </div>
             <button
@@ -360,14 +398,24 @@ export default function ExcelImportModal({
               </div>
 
               {/* Status counter badges */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold text-gray-800">
                   {lang === "uz" ? "Topilgan tovarlar ro'yxati:" : "Предпросмотр распознанных товаров:"}
                 </span>
-                <div className="flex items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
                   <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md">
                     ✓ {validCount} {lang === "uz" ? "ta tayyor" : "готово к загрузке"}
                   </span>
+                  {uzsCount > 0 && (
+                    <span className="bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-md">
+                      🇺🇿 {uzsCount} UZS
+                    </span>
+                  )}
+                  {usdCount > 0 && (
+                    <span className="bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-md">
+                      💵 {usdCount} USD
+                    </span>
+                  )}
                   {invalidCount > 0 && (
                     <span className="bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-md">
                       ⚠️ {invalidCount} {lang === "uz" ? "ta xato (o'tkaziladi)" : "пропущено"}
@@ -409,14 +457,32 @@ export default function ExcelImportModal({
                             {row.brand}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-right font-bold text-gray-900 font-mono">
-                          {row.price > 0 ? formatPrice(row.price) : "—"}
+                        <td className="py-2 px-3 text-right font-bold font-mono">
+                          {row.price > 0 ? (
+                            <span className={row.currency === "USD" ? "text-blue-700" : "text-gray-900"}>
+                              {displayPrice(row)}
+                              {row.currency === "USD" && (
+                                <span className="ml-1 text-[9px] bg-blue-100 text-blue-600 px-1 py-0.5 rounded font-bold">USD</span>
+                              )}
+                            </span>
+                          ) : "—"}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+
+              {usdCount > 0 && (
+                <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-[11px] px-3 py-2.5 rounded-xl">
+                  <span className="shrink-0 mt-0.5">💵</span>
+                  <span>
+                    {lang === "uz"
+                      ? `${usdCount} ta tovar USD da saqlanadi va do'konda "$" belgisi bilan ko'rsatiladi.`
+                      : `${usdCount} ${usdCount === 1 ? "товар будет сохранён" : "товаров будут сохранены"} в долларах США и отображаться на сайте со значком "$".`}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>
