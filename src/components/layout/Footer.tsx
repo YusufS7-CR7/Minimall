@@ -37,36 +37,36 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
     <footer className="bg-gray-950 text-white pb-20 md:pb-6">
       {/* Store Location Map Section in Footer */}
       <div className="border-t border-white/5 bg-gray-950">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-10">
-          <div className="grid lg:grid-cols-12 gap-8 items-center bg-gray-900/70 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+          <div className="grid lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8 items-center bg-gray-900/70 rounded-2xl sm:rounded-3xl p-2 sm:p-4 lg:p-8 border border-white/10 shadow-2xl relative overflow-hidden w-full max-w-full">
             <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-red-500/10 to-transparent pointer-events-none" />
 
             {/* Left info column (5 cols) */}
-            <div className="lg:col-span-5 space-y-5 z-10">
+            <div className="lg:col-span-5 space-y-3.5 sm:space-y-5 z-10 w-full min-w-0">
               <div>
-                <div className="inline-flex items-center gap-2 bg-red-600/20 text-red-400 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 border border-red-500/30">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <div className="inline-flex items-center gap-1.5 sm:gap-2 bg-red-600/20 text-red-400 text-[11px] sm:text-xs font-bold uppercase tracking-widest px-2.5 sm:px-3 py-1 rounded-full mb-2 sm:mb-3 border border-red-500/30">
+                  <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-red-500 animate-pulse" />
                   <span>{lang === "ru" ? "Наш магазин на карте" : "Do'konimiz xaritada"}</span>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white leading-tight" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
                   {t.ourLocation}
                 </h3>
-                <p className="text-gray-400 text-sm mt-1.5 leading-relaxed">
+                <p className="text-gray-400 text-xs sm:text-sm mt-1 sm:mt-1.5 leading-relaxed">
                   {t.locationDesc}
                 </p>
               </div>
 
               {/* Coordinates Badge */}
-              <div className="bg-white/5 hover:bg-white/10 transition-colors p-3.5 rounded-2xl border border-white/10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center shrink-0 text-red-400 text-base font-bold">
+              <div className="bg-white/5 hover:bg-white/10 transition-colors p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl border border-white/10 flex items-center justify-between gap-2 sm:gap-3 w-full min-w-0">
+                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center shrink-0 text-red-400 text-sm sm:text-base font-bold">
                     📍
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                    <div className="text-[9px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">
                       {lang === "ru" ? "Координаты на карте" : "Xaritadagi koordinatalar"}
                     </div>
-                    <div className="text-white font-mono font-bold text-sm sm:text-base tracking-tight truncate">
+                    <div className="text-white font-mono font-bold text-xs sm:text-sm md:text-base tracking-tight truncate">
                       41°21'21.1"N 69°14'41.8"E
                     </div>
                   </div>
@@ -74,7 +74,7 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
                 <button
                   type="button"
                   onClick={copyCoordinates}
-                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 active:scale-95"
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-semibold transition-all cursor-pointer shrink-0 active:scale-95"
                   title={lang === "ru" ? "Скопировать координаты" : "Koordinatalarni nusxalash"}
                 >
                   {copied
@@ -84,52 +84,52 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
               </div>
 
               {/* Address, Phone, Hours */}
-              <div className="space-y-2.5 text-xs">
-                <div className="flex items-center gap-2.5 text-gray-300">
-                  <span className="text-gray-400">🏢</span>
-                  <span className="font-medium text-gray-200">{t.address}</span>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-start gap-2 text-gray-300">
+                  <span className="text-gray-400 shrink-0 mt-0.5">🏢</span>
+                  <span className="font-medium text-gray-200 leading-snug">{t.address}</span>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-gray-400">📞</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400 shrink-0">📞</span>
                   <a href="tel:+998970363636" className="text-white font-semibold hover:text-red-400 transition-colors">
                     +998 (97) 036 36 36
                   </a>
                 </div>
-                <div className="flex items-center gap-2.5 text-gray-300 font-medium">
-                  <span className="text-gray-400">⏱</span>
-                  <span>{lang === "ru" ? "Часы работы: с 9:00 до 19:00 каждый день" : "Ish vaqti: har kuni 9:00 dan 19:00 gacha"}</span>
+                <div className="flex items-center gap-2 text-gray-300 font-medium">
+                  <span className="text-gray-400 shrink-0">⏱</span>
+                  <span className="truncate">{lang === "ru" ? "Часы работы: 9:00 - 19:00" : "Ish vaqti: 9:00 - 19:00"}</span>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap gap-2.5 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-0.5 w-full">
                 <a
                   href="https://yandex.uz/maps/?text=41.355861,69.244944"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer text-center"
+                  className="w-full inline-flex items-center justify-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2 sm:py-2.5 px-3 rounded-xl shadow-md transition-all cursor-pointer text-center truncate active:scale-95"
                 >
-                  <span>Яндекс Карты</span>
+                  <span className="truncate">Яндекс Карты</span>
                   <span>↗</span>
                 </a>
                 <a
                   href="https://maps.google.com/?q=41%C2%B021'21.1%22N+69%C2%B014'41.8%22E"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 min-w-[130px] inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-all cursor-pointer text-center"
+                  className="w-full inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs py-2 sm:py-2.5 px-3 rounded-xl transition-all cursor-pointer text-center truncate active:scale-95"
                 >
-                  <span>Google Maps</span>
+                  <span className="truncate">Google Maps</span>
                   <span>↗</span>
                 </a>
               </div>
             </div>
 
             {/* Right Map Column */}
-            <div className="lg:col-span-7 h-[300px] sm:h-[380px] rounded-2xl overflow-hidden border border-white/15 relative shadow-inner group">
+            <div className="lg:col-span-7 h-[120px] sm:h-[190px] lg:h-[340px] rounded-xl sm:rounded-2xl overflow-hidden border border-white/15 relative shadow-inner group w-full min-w-0 max-w-full">
               <iframe
                 title="Карта магазина Minimall: 41°21'21.1&quot;N 69°14'41.8&quot;E"
                 src="https://www.openstreetmap.org/export/embed.html?bbox=69.2379%2C41.3518%2C69.2519%2C41.3598&layer=mapnik&marker=41.355861%2C69.244944"
-                className="w-full h-full"
+                className="w-full h-full block"
                 style={{
                   border: 0,
                   filter: "invert(90%) hue-rotate(180deg) contrast(0.9) brightness(0.9)",
@@ -138,9 +138,9 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
               />
 
               {/* Coordinates Badge on top of Map */}
-              <div className="absolute top-3 left-3 bg-gray-900/90 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-xl border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                <span className="font-mono font-bold text-xs">41°21'21.1"N 69°14'41.8"E</span>
+              <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-gray-900/90 backdrop-blur-md text-white px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl border border-white/20 shadow-lg flex items-center gap-1.5 sm:gap-2 pointer-events-none z-10">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 animate-ping" />
+                <span className="font-mono font-bold text-[10px] sm:text-xs">41°21'21.1"N 69°14'41.8"E</span>
               </div>
 
               {/* Open in full screen button overlay */}
@@ -148,9 +148,10 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
                 href="https://maps.google.com/?q=41%C2%B021'21.1%22N+69%C2%B014'41.8%22E"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="absolute bottom-3 right-3 bg-gray-900/90 hover:bg-red-600 backdrop-blur-md text-white text-[11px] font-semibold px-3 py-1.5 rounded-xl border border-white/20 shadow-lg transition-colors flex items-center gap-1.5"
+                className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-gray-900/90 hover:bg-red-600 backdrop-blur-md text-white text-[10px] sm:text-[11px] font-semibold px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl border border-white/20 shadow-lg transition-colors flex items-center gap-1 sm:gap-1.5 z-10 active:scale-95"
               >
-                <span>{lang === "ru" ? "Открыть на весь экран" : "Kengaytirish"}</span>
+                <span className="hidden sm:inline">{lang === "ru" ? "Открыть на весь экран" : "Kengaytirish"}</span>
+                <span className="sm:hidden">{lang === "ru" ? "Открыть карту" : "Karta"}</span>
                 <span>↗</span>
               </a>
             </div>
@@ -176,7 +177,7 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
                 </div>
                 <div>
                   <div className="text-xl font-extrabold text-white leading-none" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
-                    minimall<span className="text-red-500">.uz</span>
+                    mini-mall<span className="text-red-500">.uz</span>
                   </div>
                   <div className="text-[8px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">{t.tagline}</div>
                 </div>

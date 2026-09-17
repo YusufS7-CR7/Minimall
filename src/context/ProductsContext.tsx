@@ -103,6 +103,7 @@ interface ProductsContextValue {
   products: Product[];
   loading: boolean;
   addProduct: (data: Omit<Product, "id"> & { id?: number }) => Promise<Product | null>;
+  addProductsBatch: (items: Array<Omit<Product, "id">>) => Promise<Product[]>;
   updateProduct: (id: number, data: Partial<Product>) => Promise<void>;
   deleteProduct: (id: number) => Promise<void>;
   resetProducts: () => Promise<void>;
@@ -224,6 +225,49 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       return newProduct;
     },
     []
+  );
+
+  // ── Add products batch (Excel / CSV import) ────────────────────────────────
+  const addProductsBatch = useCallback(
+    async (items: Array<Omit<Product, "id">>): Promise<Product[]> => {
+      if (items.length === 0) return [];
+
+      const usedSlugs = new Set<string>();
+      const dbRows = items.map((data) => {
+        let baseSlug = data.slug?.trim() ? slugify(data.slug) : slugify(data.name);
+        if (!baseSlug) baseSlug = `item-${Date.now()}`;
+        let finalSlug = baseSlug;
+        let counter = 1;
+        while (usedSlugs.has(finalSlug)) {
+          finalSlug = `${baseSlug}-${counter++}`;
+        }
+        usedSlugs.add(finalSlug);
+
+        const dbRow = productToDb({ ...data, slug: finalSlug });
+        delete dbRow.id;
+        return dbRow;
+      });
+
+      const { data: inserted, error } = await supabase
+        .from("products")
+        .insert(dbRows)
+        .select();
+
+      if (error) {
+        console.error("Batch insert failed, falling back to sequential:", error.message);
+        const fallbackResults: Product[] = [];
+        for (const item of items) {
+          const res = await addProduct(item);
+          if (res) fallbackResults.push(res);
+        }
+        return fallbackResults;
+      }
+
+      const newProducts = (inserted as DbProduct[]).map(dbToProduct);
+      setProducts((prev) => [...newProducts, ...prev]);
+      return newProducts;
+    },
+    [addProduct]
   );
 
   // ── Update product ─────────────────────────────────────────────────────────
@@ -374,6 +418,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         products,
         loading,
         addProduct,
+        addProductsBatch,
         updateProduct,
         deleteProduct,
         resetProducts,

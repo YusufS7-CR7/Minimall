@@ -350,23 +350,23 @@ function HeroSection({ lang }: { lang: string }) {
                   <button
                     onClick={() => setActive((a) => (a - 1 + total) % total)}
                     aria-label="Предыдущий слайд"
-                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+                    className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 hover:text-red-600 w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 z-10 shadow-lg shadow-black/20 hover:scale-105 active:scale-95 border border-white/80 cursor-pointer backdrop-blur-xs"
                   >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                     </svg>
                   </button>
                   <button
                     onClick={() => setActive((a) => (a + 1) % total)}
                     aria-label="Следующий слайд"
-                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/30 backdrop-blur-sm text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all z-10 border border-white/10 cursor-pointer"
+                    className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 hover:text-red-600 w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 z-10 shadow-lg shadow-black/20 hover:scale-105 active:scale-95 border border-white/80 cursor-pointer backdrop-blur-xs"
                   >
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
 
-                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-10">
+                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-2 z-10 bg-black/30 backdrop-blur-md px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/15">
                     {slides.map((_, i) => (
                       <button
                         key={i}
@@ -374,8 +374,8 @@ function HeroSection({ lang }: { lang: string }) {
                         aria-label={`Слайд ${i + 1}`}
                         className={`transition-all rounded-full cursor-pointer ${
                           i === active
-                            ? "bg-red-500 w-5 sm:w-7 h-2 sm:h-2.5 shadow-lg shadow-red-500/50"
-                            : "bg-white/40 hover:bg-white/60 w-2 sm:w-2.5 h-2 sm:h-2.5"
+                            ? "bg-red-500 w-5 sm:w-7 h-2 sm:h-2.5 shadow-md shadow-red-500/50"
+                            : "bg-white/60 hover:bg-white w-2 sm:w-2.5 h-2 sm:h-2.5"
                         }`}
                       />
                     ))}
@@ -654,12 +654,21 @@ function SaleCarousel({ lang }: { lang: string }) {
       {/* Product Image */}
       <div className="relative overflow-hidden mx-3 rounded-xl bg-gradient-to-br from-gray-50 to-white flex-1 min-h-[160px] max-h-[190px]">
         <Link to={`/product/${p.slug}`} className="block w-full h-full">
-          <img
-            key={p.id}
-            src={p.image}
-            alt={name}
-            className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
-          />
+          {p.image && p.image.trim() !== "" ? (
+            <img
+              key={p.id}
+              src={p.image}
+              alt={name}
+              className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-slate-50 to-red-50/30 p-3 select-none">
+              <span className="text-3xl mb-1">📦</span>
+              <span className="text-[11px] font-semibold text-gray-400">
+                {lang === "uz" ? "Rasm tayyorlanmoqda" : "Фото готовится"}
+              </span>
+            </div>
+          )}
         </Link>
         {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">

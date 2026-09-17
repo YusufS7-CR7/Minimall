@@ -73,8 +73,10 @@ export default function ProductPage() {
   ).slice(0, 4);
 
   const allImages = useMemo(() => {
-    if (product?.images && product.images.length > 0) return product.images;
-    if (product?.image) return [product.image];
+    if (product?.images && product.images.length > 0) {
+      return product.images.filter((img) => Boolean(img && img.trim() !== ""));
+    }
+    if (product?.image && product.image.trim() !== "") return [product.image];
     return [];
   }, [product?.images, product?.image]);
 
@@ -150,88 +152,120 @@ export default function ProductPage() {
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-10 mb-8 sm:mb-12">
         {/* Images Gallery */}
         <div>
-          <div
-            onClick={() => setIsLightboxOpen(true)}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className="group relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm mb-3 cursor-zoom-in flex items-center justify-center select-none"
-            style={{ height: "min(420px, 72vw)" }}
-            title="Нажмите, чтобы открыть полную галерею"
-          >
-            <img
-              src={allImages[currentImgIndex] || product.image}
-              alt={`${name} фото ${currentImgIndex + 1}`}
-              className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]"
-              width={600}
-              height={420}
-            />
+          {allImages.length > 0 ? (
+            <>
+              <div
+                onClick={() => setIsLightboxOpen(true)}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+                className="group relative rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm mb-3 cursor-zoom-in flex items-center justify-center select-none"
+                style={{ height: "min(420px, 72vw)" }}
+                title="Нажмите, чтобы открыть полную галерею"
+              >
+                <img
+                  src={allImages[currentImgIndex] || product.image}
+                  alt={`${name} фото ${currentImgIndex + 1}`}
+                  className="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-[1.02]"
+                  width={600}
+                  height={420}
+                />
 
-            {/* Gallery counter badge */}
-            {allImages.length > 1 && (
-              <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full pointer-events-none">
-                {currentImgIndex + 1} / {allImages.length}
+                {/* Gallery counter badge */}
+                {allImages.length > 1 && (
+                  <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold px-2.5 py-1 rounded-full pointer-events-none">
+                    {currentImgIndex + 1} / {allImages.length}
+                  </div>
+                )}
+
+                {/* Hint overlay on hover */}
+                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1.5">
+                  <span>🔍</span>
+                  <span>{lang === "uz" ? "Galereyani ochish" : "Открыть галерею"}</span>
+                </div>
+
+                {/* Navigation arrows on main photo */}
+                {allImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+                      title={lang === "uz" ? "Oldingi rasm" : "Предыдущее фото"}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
+                      title={lang === "uz" ? "Keyingi rasm" : "Следующее фото"}
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
               </div>
-            )}
 
-            {/* Hint overlay on hover */}
-            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-white text-[11px] font-semibold px-2.5 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-center gap-1.5">
-              <span>🔍</span>
-              <span>{lang === "uz" ? "Galereyani ochish" : "Открыть галерею"}</span>
-            </div>
-
-            {/* Navigation arrows on main photo */}
-            {allImages.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
-                  title={lang === "uz" ? "Oldingi rasm" : "Предыдущее фото"}
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-gray-800 shadow-md flex items-center justify-center text-base font-bold opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 cursor-pointer"
-                  title={lang === "uz" ? "Keyingi rasm" : "Следующее фото"}
-                >
-                  ›
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Thumbnails row */}
-          {allImages.length > 1 && (
-            <div className="flex gap-2 sm:gap-2.5 flex-wrap">
-              {allImages.map((img, i) => {
-                const isSelected = currentImgIndex === i;
-                const isCover = i === 0;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCurrentImgIndex(i)}
-                    className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-white p-1 flex items-center justify-center ${
-                      isSelected
-                        ? "border-red-600 shadow-md ring-2 ring-red-500/30 scale-105"
-                        : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
-                    }`}
-                  >
-                    <img
-                      src={img}
-                      alt={`${name} foto ${i + 1}`}
-                      className="w-full h-full object-contain"
-                    />
-                    {isCover && (
-                      <span className="absolute bottom-0 inset-x-0 bg-red-600 text-[8px] font-bold text-white text-center py-0.2 uppercase tracking-tighter">
-                        {lang === "uz" ? "Muqova" : "Обложка"}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {/* Thumbnails row */}
+              {allImages.length > 1 && (
+                <div className="flex gap-2 sm:gap-2.5 flex-wrap">
+                  {allImages.map((img, i) => {
+                    const isSelected = currentImgIndex === i;
+                    const isCover = i === 0;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setCurrentImgIndex(i)}
+                        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all cursor-pointer bg-white p-1 flex items-center justify-center ${
+                          isSelected
+                            ? "border-red-600 shadow-md ring-2 ring-red-500/30 scale-105"
+                            : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        <img
+                          src={img}
+                          alt={`${name} foto ${i + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                        {isCover && (
+                          <span className="absolute bottom-0 inset-x-0 bg-red-600 text-[8px] font-bold text-white text-center py-0.2 uppercase tracking-tighter">
+                            {lang === "uz" ? "Muqova" : "Обложка"}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <div
+              className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-gray-50 via-slate-50 to-red-50/25 border border-gray-200/80 p-6 sm:p-10 flex flex-col items-center justify-center text-center shadow-xs"
+              style={{ minHeight: "clamp(260px, 50vw, 420px)" }}
+            >
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-white shadow-sm border border-gray-100 flex items-center justify-center text-4xl sm:text-5xl mb-4">
+                📦
+              </div>
+              <h3 className="text-base sm:text-lg font-extrabold text-gray-900 mb-1.5">
+                {lang === "uz" ? "Fotosurat tez orada yuklanadi" : "Фотография товара скоро появится"}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-500 max-w-sm leading-relaxed mb-4">
+                {lang === "uz"
+                  ? "Ushbu tovar sotuvda va omborimizda mavjud. Haqiqiy fotosuratlar yoki batafsil ma'lumot olish uchun Telegram orqali murojaat qilishingiz mumkin."
+                  : "Товар в наличии и доступен к покупке. Вы можете запросить живые фотографии и консультацию у нашего менеджера в Telegram."}
+              </p>
+              <a
+                href={`https://t.me/minimall_uzb?text=${encodeURIComponent(
+                  `Здравствуйте! Интересует товар: ${name} (арт. MM-${product.id}). Хочу запросить живые фото.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
+                <span>✈️</span>
+                <span>{lang === "uz" ? "Telegram'da rasm so'rash" : "Запросить фото в Telegram"}</span>
+              </a>
             </div>
           )}
         </div>
@@ -414,7 +448,7 @@ export default function ProductPage() {
         </section>
       )}
       {/* Fullscreen Lightbox Gallery Modal */}
-      {isLightboxOpen && (
+      {isLightboxOpen && allImages.length > 0 && (
         <div
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between p-3 sm:p-6 text-white animate-fadeIn select-none"
           onClick={() => setIsLightboxOpen(false)}

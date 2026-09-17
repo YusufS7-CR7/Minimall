@@ -1,4 +1,4 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -22,6 +22,8 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   const { user, openAuthModal } = useAuth();
   const name = lang === "uz" ? (product.nameUz || product.name) : product.name;
   const isFav = favorites.includes(product.id);
+  const [imgError, setImgError] = useState(false);
+  const hasImage = Boolean(product.image && product.image.trim() !== "" && !imgError);
 
   const handleFavorite = useCallback(() => {
     if (!user) {
@@ -59,15 +61,33 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
 
       {/* Image — wrapped in Link for SEO crawlability */}
       <Link to={`/product/${product.slug}`} tabIndex={-1} aria-hidden="true">
-        <div className="relative bg-gradient-to-br from-gray-50 to-white overflow-hidden" style={{ height: "clamp(130px, 36vw, 210px)" }}>
-          <img
-            src={product.image}
-            alt={name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            width={400}
-            height={210}
-          />
+        <div className="relative bg-gradient-to-br from-gray-50 via-slate-50 to-white overflow-hidden" style={{ height: "clamp(130px, 36vw, 210px)" }}>
+          {hasImage ? (
+            <img
+              src={product.image}
+              alt={name}
+              loading="lazy"
+              onError={() => setImgError(true)}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              width={400}
+              height={210}
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-slate-50 to-red-50/25 p-3 select-none relative group-hover:scale-[1.03] transition-transform duration-500">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white shadow-xs border border-gray-100 flex items-center justify-center text-2xl sm:text-3xl text-gray-400 group-hover:text-red-500 group-hover:border-red-100 group-hover:shadow-md transition-all duration-300 mb-1.5">
+                📦
+              </div>
+              <span className="text-[10px] sm:text-[11px] font-semibold text-gray-400 group-hover:text-gray-600 transition-colors text-center line-clamp-1">
+                {lang === "uz" ? "Rasm tayyorlanmoqda" : "Фото готовится"}
+              </span>
+              {product.brand && product.brand !== "Без бренда" && (
+                <span className="mt-1 text-[9px] font-bold text-gray-400/90 uppercase tracking-wider bg-white/80 px-2 py-0.5 rounded-md border border-gray-200/60 shadow-2xs">
+                  {product.brand}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.badge && (

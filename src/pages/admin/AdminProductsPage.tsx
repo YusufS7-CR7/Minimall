@@ -7,6 +7,7 @@ import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
+import ExcelImportModal from "./ExcelImportModal";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { formatPrice } from "@/utils/formatPrice";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
@@ -33,6 +34,15 @@ export default function AdminProductsPage() {
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
+
+  const handleExcelImportSuccess = (count: number) => {
+    showToast(
+      lang === "uz"
+        ? `Muvaffaqiyatli: ${count} ta tovar katalogga yuklandi!`
+        : `Успешно: ${count} ${count === 1 ? "товар добавлен" : count > 1 && count < 5 ? "товара добавлено" : "товаров добавлено"} в каталог!`
+    );
+  };
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -155,13 +165,26 @@ export default function AdminProductsPage() {
           </p>
         </div>
         {canCreate && (
-          <button
-            onClick={handleOpenCreate}
-            className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
-          >
-            <span className="text-base font-black">+</span>
-            <span>{t.addBtn}</span>
-          </button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsExcelModalOpen(true)}
+              className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
+              title={lang === "uz" ? "Excel orqali tovarlarni yuklash" : "Загрузить товары списком из Excel"}
+            >
+              <span className="text-base">📊</span>
+              <span>{lang === "uz" ? "Excel'dan import" : "Импорт из Excel"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
+            >
+              <span className="text-base font-black">+</span>
+              <span>{t.addBtn}</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -320,15 +343,21 @@ export default function AdminProductsPage() {
             return (
               <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-3.5 shadow-xs flex flex-col gap-3">
                 <div className="flex items-start gap-3">
-                  <img
-                    src={p.image}
-                    alt={pName}
-                    className="w-16 h-16 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100&h=100&fit=crop";
-                    }}
-                  />
+                  {p.image && p.image.trim() !== "" ? (
+                    <img
+                      src={p.image}
+                      alt={pName}
+                      className="w-16 h-16 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100&h=100&fit=crop";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl border border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-gray-400 shrink-0 text-xl">
+                      📦
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className="text-[11px] font-bold text-red-600 uppercase tracking-wider">{p.brand}</span>
@@ -459,15 +488,21 @@ export default function AdminProductsPage() {
                       {/* Product details */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={p.image}
-                            alt={pName}
-                            className="w-12 h-12 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100&h=100&fit=crop";
-                            }}
-                          />
+                          {p.image && p.image.trim() !== "" ? (
+                            <img
+                              src={p.image}
+                              alt={pName}
+                              className="w-12 h-12 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100&h=100&fit=crop";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 text-base" title="Нет фото">
+                              📦
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <div className="font-semibold text-gray-900 line-clamp-1 text-xs sm:text-sm">
                               {pName}
@@ -619,6 +654,13 @@ export default function AdminProductsPage() {
               : lang === "uz" ? `Yangi "${sName}" tovari katalogga muvaffaqiyatli qo'shildi!` : `Новый товар "${saved.name}" успешно добавлен в каталог!`
           );
         }}
+      />
+
+      {/* Excel / CSV Import Modal */}
+      <ExcelImportModal
+        isOpen={isExcelModalOpen}
+        onClose={() => setIsExcelModalOpen(false)}
+        onSuccess={handleExcelImportSuccess}
       />
     </div>
   );

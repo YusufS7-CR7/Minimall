@@ -83,7 +83,7 @@ export default function Header({ lang }: HeaderProps) {
                   className="text-[22px] font-extrabold text-gray-900 leading-none"
                   style={{ fontFamily: "Barlow Condensed, sans-serif", letterSpacing: "0.01em" }}
                 >
-                  minimall<span className="text-red-600">.uz</span>
+                  mini-mall<span className="text-red-600">.uz</span>
                 </div>
                 <div className="text-[8px] text-gray-400 font-bold uppercase tracking-[0.25em] leading-none mt-1">
                   {t.tagline}

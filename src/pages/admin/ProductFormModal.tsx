@@ -301,7 +301,7 @@ export default function ProductFormModal({
       setError(
         lang === "uz"
           ? "Iltimos, mahsulot nomini kiriting."
-          : "Пожалуйста, укажите название товара на русском языке."
+          : "Пожалуйста, укажите название товара."
       );
       setActiveTab("general");
       return;
@@ -313,15 +313,6 @@ export default function ProductFormModal({
           : "Пожалуйста, укажите корректную стоимость товара в сумах."
       );
       setActiveTab("general");
-      return;
-    }
-    if (imagesList.length === 0) {
-      setError(
-        lang === "uz"
-          ? "Iltimos, qurilmangizdan kamida bitta rasm yuklang."
-          : "Пожалуйста, выберите и загрузите хотя бы одно фото товара с устройства."
-      );
-      setActiveTab("media");
       return;
     }
 
@@ -338,14 +329,15 @@ export default function ProductFormModal({
     });
 
     const parsedOldPrice = oldPrice ? parseInt(oldPrice, 10) : undefined;
-    const primaryImage = imagesList[0];
+    const primaryImage = imagesList[0] || "";
+    const effectiveCategory = category || categories[0]?.key || "drills";
 
     if (productToEdit) {
       await updateProduct(productToEdit.id, {
         name: name.trim(),
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
-        category,
+        category: effectiveCategory,
         subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
@@ -373,7 +365,7 @@ export default function ProductFormModal({
         name: name.trim(),
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
-        category,
+        category: effectiveCategory,
         subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
@@ -445,7 +437,7 @@ export default function ProductFormModal({
                 : "border-transparent text-gray-500 hover:text-gray-900"
             }`}
           >
-            2. {t.tabMedia}
+            2. {t.tabMedia} <span className="text-[10px] font-normal text-gray-400">({lang === "uz" ? "ixtiyoriy" : "необязательно"})</span>
           </button>
           <button
             type="button"
@@ -483,6 +475,15 @@ export default function ProductFormModal({
           {/* TAB 1: General */}
           {activeTab === "general" && (
             <div className="space-y-4">
+              {/* Quick-add guidance tip */}
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/70 text-emerald-950 px-3.5 py-2.5 rounded-xl text-xs flex items-center gap-2.5">
+                <span className="text-base">⚡</span>
+                <span className="font-medium text-[11px] sm:text-xs text-emerald-900">
+                  {lang === "uz"
+                    ? "Tezkor qo'shish: faqat nom va narxni kiritib saqlashingiz mumkin. Rasmlar, tavsif va parametrlarni istalgan paytda keyinroq qo'shish mumkin."
+                    : "Быстрое добавление: достаточно указать только название и цену. Фотографии, описание и характеристики можно добавить в любой момент позже."}
+                </span>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -856,18 +857,18 @@ export default function ProductFormModal({
                   </div>
                 </div>
 
-                {/* Important notice: first photo is cover */}
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-950 p-3 sm:p-3.5 rounded-xl text-xs space-y-1">
-                  <div className="flex items-center gap-2 font-bold text-amber-900">
+                {/* Important notice: photos optional & first photo is cover */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-blue-950 p-3 sm:p-3.5 rounded-xl text-xs space-y-1">
+                  <div className="flex items-center gap-2 font-bold text-blue-900">
                     <span>💡</span>
-                    <span>{lang === "uz" ? "Mahsulot galereyasi qanday ishlaydi:" : "Как работает галерея товара:"}</span>
+                    <span>{lang === "uz" ? "Fotosuratlar ixtiyoriy (keyinroq qo'shish mumkin):" : "Фотографии необязательны (можно добавить позже):"}</span>
                   </div>
-                  <ul className="text-[11px] text-amber-900/90 pl-5 list-disc space-y-0.5">
+                  <ul className="text-[11px] text-blue-900/90 pl-5 list-disc space-y-0.5">
                     <li>
-                      <strong>{lang === "uz" ? "Ro'yxatdagi birinchi rasm — bu mahsulot muqovasi" : "Первое фото в списке — это обложка товара"}</strong>, {lang === "uz" ? "u katalog va kartochkalarda ko'rinadi." : "которая отображается в каталоге и на карточках."}
+                      <strong>{lang === "uz" ? "Fotosuratsiz saqlash" : "Сохранение без фото"}</strong>: {lang === "uz" ? "agar hozir rasm yuklamasangiz, saytda tovar chiroyli vaqtinchalik muqova bilan ko'rinadi." : "если сейчас нет фото, на сайте автоматически отобразится аккуратная фирменная заглушка."}
                     </li>
                     <li>
-                      <strong>{lang === "uz" ? "Barcha qolgan rasmlar" : "Все остальные фото"}</strong> {lang === "uz" ? "to'liq galereyani tashkil etadi. Xaridorlar rasmga bosganda ularni varaqlashlari mumkin." : "формируют полную галерею. Покупатели смогут листать их при клике на фото товара."}
+                      <strong>{lang === "uz" ? "Ro'yxatdagi birinchi rasm — bu mahsulot muqovasi" : "Первое фото в списке — это обложка товара"}</strong>, {lang === "uz" ? "u katalog va kartochkalarda ko'rinadi." : "которая отображается в каталоге и на карточках."}
                     </li>
                     <li>
                       {lang === "uz"
@@ -961,10 +962,16 @@ export default function ProductFormModal({
                   </div>
 
                   {imagesList.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-gray-400 bg-white rounded-2xl border border-dashed border-gray-300">
-                      {lang === "uz"
-                        ? "Rasmlar hali tanlanmagan. Yuqoridagi blokni bosing va kompyuter yoki telefondan fayllarni tanlang."
-                        : "Фотографии пока не выбраны. Нажмите на блок выше и выберите файлы товара с компьютера или телефона."}
+                    <div className="p-6 sm:p-8 text-center text-xs text-gray-500 bg-white rounded-2xl border border-dashed border-gray-300 flex flex-col items-center justify-center gap-2">
+                      <span className="text-3xl">📦</span>
+                      <p className="font-semibold text-gray-700">
+                        {lang === "uz" ? "Rasmlar hali tanlanmagan (ixtiyoriy)" : "Фотографии пока не выбраны (необязательно)"}
+                      </p>
+                      <p className="text-[11px] text-gray-400 max-w-sm">
+                        {lang === "uz"
+                          ? "Yuklash uchun yuqoridagi maydonni bosing yoki hozir saqlab, rasmlarni keyinroq qo'shing."
+                          : "Нажмите на блок выше, чтобы загрузить фото, или сохраните товар сейчас и добавьте фото позже."}
+                      </p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

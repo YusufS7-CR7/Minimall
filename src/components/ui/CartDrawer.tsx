@@ -52,13 +52,22 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
           ) : (
             cart.map((item) => (
               <div key={item.product.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <img
-                  src={item.product.image}
-                  alt={lang === "uz" ? (item.product.nameUz || item.product.name) : item.product.name}
-                  className="w-16 h-16 object-cover rounded-lg bg-white shrink-0"
-                  width={64}
-                  height={64}
-                />
+                {item.product.image && item.product.image.trim() !== "" ? (
+                  <img
+                    src={item.product.image}
+                    alt={lang === "uz" ? (item.product.nameUz || item.product.name) : item.product.name}
+                    className="w-16 h-16 object-cover rounded-lg bg-white shrink-0 border border-gray-200"
+                    width={64}
+                    height={64}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-white border border-gray-200 flex flex-col items-center justify-center text-gray-400 shrink-0">
+                    <span className="text-xl">📦</span>
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h4 className="text-xs font-bold text-gray-800 line-clamp-2">
                     {lang === "uz" ? (item.product.nameUz || item.product.name) : item.product.name}
