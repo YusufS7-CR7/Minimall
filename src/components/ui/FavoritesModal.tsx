@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useProducts } from "@/context/ProductsContext";
+import { useCurrency } from "@/context/CurrencyContext";
 
 import { formatPrice } from "@/utils/formatPrice";
 
@@ -12,6 +13,7 @@ interface FavoritesModalProps {
 export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps) {
   const { favorites, removeFavorite, addToCart, lang, showToast } = useApp();
   const { products } = useProducts();
+  const { usdRate } = useCurrency();
 
   if (!isOpen) return null;
 
@@ -114,11 +116,11 @@ export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps)
                     </Link>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-extrabold text-gray-900">
-                        {formatPrice(p.price)}
+                        {formatPrice(p.price, usdRate)}
                       </span>
                       {p.oldPrice && (
                         <span className="text-xs text-gray-400 line-through">
-                          {formatPrice(p.oldPrice)}
+                          {formatPrice(p.oldPrice, usdRate)}
                         </span>
                       )}
                       <span

@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useHelpCenter, type HelpSectionData } from "@/context/HelpCenterContext";
+import { useState, useRef } from "react";
+import { useHelpCenter, type HelpSectionData, type PartnerCompany } from "@/context/HelpCenterContext";
 import { useApp } from "@/context/AppContext";
+import { uploadMediaFile } from "@/lib/storage";
 import InfoModal, { type InfoModalSection } from "@/components/ui/InfoModal";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 
@@ -26,6 +27,18 @@ export default function AdminHelpPage() {
   const [activeLangTab, setActiveLangTab] = useState<"ru" | "uz">("ru");
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  // Partner Modal State
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<PartnerCompany | null>(null);
+  const [partnerName, setPartnerName] = useState("");
+  const [partnerLogo, setPartnerLogo] = useState("");
+  const [partnerDescRu, setPartnerDescRu] = useState("");
+  const [partnerDescUz, setPartnerDescUz] = useState("");
+  const [partnerWebsite, setPartnerWebsite] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoIsDragging, setLogoIsDragging] = useState(false);
+  const partnerLogoInputRef = useRef<HTMLInputElement>(null);
+
   const currentSection = sections[activeSectionId];
 
   // Local draft state for editing currently selected section
@@ -35,6 +48,84 @@ export default function AdminHelpPage() {
   const handleSelectSection = (id: InfoModalSection) => {
     setActiveSectionId(id);
     setDraft(sections[id]);
+  };
+
+  const handleOpenAddPartner = () => {
+    setEditingPartner(null);
+    setPartnerName("");
+    setPartnerLogo("");
+    setPartnerDescRu("");
+    setPartnerDescUz("");
+    setPartnerWebsite("");
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleOpenEditPartner = (p: PartnerCompany) => {
+    setEditingPartner(p);
+    setPartnerName(p.name);
+    setPartnerLogo(p.logo);
+    setPartnerDescRu(p.descriptionRu || "");
+    setPartnerDescUz(p.descriptionUz || "");
+    setPartnerWebsite(p.website || "");
+    setIsPartnerModalOpen(true);
+  };
+
+  const handleSavePartner = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!partnerName.trim()) return;
+
+    const newPartner: PartnerCompany = {
+      id: editingPartner ? editingPartner.id : `partner-${Date.now()}`,
+      name: partnerName.trim(),
+      logo: partnerLogo.trim() || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=200&h=200&fit=crop",
+      descriptionRu: partnerDescRu.trim() || undefined,
+      descriptionUz: partnerDescUz.trim() || undefined,
+      website: partnerWebsite.trim() || undefined,
+    };
+
+    const currentPartners = draft.partners || [];
+    let updatedPartners: PartnerCompany[];
+    if (editingPartner) {
+      updatedPartners = currentPartners.map((p) => (p.id === editingPartner.id ? newPartner : p));
+    } else {
+      updatedPartners = [...currentPartners, newPartner];
+    }
+
+    setDraft((prev) => ({ ...prev, partners: updatedPartners }));
+    setIsPartnerModalOpen(false);
+    showToast(
+      lang === "uz"
+        ? `«${newPartner.name}» kompaniyasi saqlandi`
+        : `Компания «${newPartner.name}» сохранена`
+    );
+  };
+
+  const handleDeletePartner = (id: string, name: string) => {
+    const confirmMsg =
+      lang === "uz"
+        ? `«${name}» kompaniyasini o'chirmoqchimisiz?`
+        : `Удалить компанию «${name}» из списка партнеров?`;
+    if (window.confirm(confirmMsg)) {
+      const updatedPartners = (draft.partners || []).filter((p) => p.id !== id);
+      setDraft((prev) => ({ ...prev, partners: updatedPartners }));
+      showToast(
+        lang === "uz"
+          ? `«${name}» kompaniyasi o'chirildi`
+          : `Компания «${name}» удалена`
+      );
+    }
+  };
+
+  const handleLogoFileUpload = async (file: File) => {
+    setUploadingLogo(true);
+    try {
+      const res = await uploadMediaFile(file, "banners");
+      setPartnerLogo(res.url);
+    } catch (err) {
+      console.error("Logo upload failed", err);
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const handleSave = () => {
@@ -375,6 +466,122 @@ export default function AdminHelpPage() {
               </div>
             )}
 
+            {/* Partner Companies Management (when section is "about") */}
+            {activeSectionId === "about" && (
+              <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-4 text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                      <span>🏢</span>
+                      <span>
+                        {lang === "uz"
+                          ? "Hamkor kompaniyalar va mijozlar (kartochkalar)"
+                          : "Компании-партнёры и клиенты (карточки с логотипами)"}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      {lang === "uz"
+                        ? "Minimall hamkorlik qilgan kompaniyalar ro'yxati «Kompaniya haqida» bo'limida ko'rsatiladi."
+                        : "Компании, с которыми сотрудничал Minimall — отображаются в виде карточек с логотипом в разделе «О компании»."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddPartner}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                  >
+                    <span>+</span>
+                    <span>{lang === "uz" ? "Kompaniya qo'shish" : "Добавить компанию"}</span>
+                  </button>
+                </div>
+
+                {/* Partners List / Grid */}
+                {draft.partners && draft.partners.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                    {draft.partners.map((p) => {
+                      const desc = activeLangTab === "ru" ? p.descriptionRu : p.descriptionUz;
+
+                      return (
+                        <div
+                          key={p.id}
+                          className="bg-white p-3.5 rounded-2xl border border-gray-200/90 shadow-2xs hover:border-red-200 transition-all flex flex-col justify-between space-y-2.5"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 p-1.5 flex items-center justify-center shrink-0 overflow-hidden">
+                              {p.logo ? (
+                                <img
+                                  src={p.logo}
+                                  alt={p.name}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop";
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-xl">🏢</span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-gray-900 text-xs truncate">
+                                {p.name}
+                              </h4>
+                              {desc && (
+                                <p className="text-[10px] text-gray-500 line-clamp-2 mt-0.5 leading-snug">
+                                  {desc}
+                                </p>
+                              )}
+                              {p.website && (
+                                <a
+                                  href={p.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] text-sky-600 hover:underline font-semibold block truncate mt-0.5"
+                                >
+                                  {p.website.replace(/^https?:\/\//, "")}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-100">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditPartner(p)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-gray-700 hover:text-red-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                              ✏️ {lang === "uz" ? "Tahrirlash" : "Изменить"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePartner(p.id, p.name)}
+                              className="px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              🗑️ {lang === "uz" ? "O'chirish" : "Удалить"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 bg-white rounded-2xl border border-dashed border-gray-300 space-y-2">
+                    <span className="text-2xl">🏢</span>
+                    <div className="text-xs font-semibold text-gray-700">
+                      {lang === "uz" ? "Hamkor kompaniyalar mavjud emas" : "Компании пока не добавлены"}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddPartner}
+                      className="text-xs text-red-600 hover:underline font-bold cursor-pointer"
+                    >
+                      + {lang === "uz" ? "Birinchi kompaniyani qo'shish" : "Добавить первую компанию"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Contacts fields if relevant */}
             {(activeSectionId === "contacts" || activeSectionId === "about" || activeSectionId === "service") && (
               <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200/80 space-y-3 text-xs">
@@ -511,6 +718,172 @@ export default function AdminHelpPage() {
         onSelectSection={setActiveSectionId}
         lang={activeLangTab}
       />
+
+      {/* Add / Edit Partner Modal */}
+      {isPartnerModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">🏢</span>
+                <h3 className="font-bold text-base sm:text-lg" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+                  {editingPartner
+                    ? (lang === "uz" ? "Kompaniyani tahrirlash" : "Редактировать компанию")
+                    : (lang === "uz" ? "Yangi hamkor kompaniya qo'shish" : "Добавить компанию-партнёра")}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPartnerModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePartner} className="p-4 sm:p-6 space-y-4 overflow-y-auto text-xs text-gray-800 flex-1">
+              {/* Company Name */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {lang === "uz" ? "Kompaniya nomi" : "Название компании"} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={partnerName}
+                  onChange={(e) => setPartnerName(e.target.value)}
+                  placeholder={lang === "uz" ? "Masalan: Discover Invest" : "Например: Discover Invest"}
+                  className="w-full text-xs px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              {/* Logo Upload & Preview */}
+              <div className="space-y-2">
+                <label className="block font-bold text-gray-700">
+                  {lang === "uz" ? "Kompaniya logotipi" : "Логотип компании"}
+                </label>
+
+                <div className="flex gap-3 items-center">
+                  <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-200 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                    {partnerLogo ? (
+                      <img
+                        src={partnerLogo}
+                        alt="Logo preview"
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop";
+                        }}
+                      />
+                    ) : (
+                      <span className="text-gray-400 text-xs">{lang === "uz" ? "Logotip" : "Лого"}</span>
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-2">
+                    <input
+                      ref={partnerLogoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoFileUpload(file);
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => partnerLogoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="w-full px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {uploadingLogo ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                          <span>{lang === "uz" ? "Yuklanmoqda..." : "Загрузка..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>📁</span>
+                          <span>{lang === "uz" ? "Fayldan logotip tanlash (PNG/JPG/WEBP)" : "Выбрать файл логотипа (PNG/JPG/WEBP)"}</span>
+                        </>
+                      )}
+                    </button>
+
+                    <input
+                      type="url"
+                      value={partnerLogo}
+                      onChange={(e) => setPartnerLogo(e.target.value)}
+                      placeholder={lang === "uz" ? "Yoki to'g'ridan-to'g'ri rasm havolasi..." : "Или прямая ссылка на логотип..."}
+                      className="w-full text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Website */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {lang === "uz" ? "Sayt havolasi (ixtiyoriy)" : "Ссылка на сайт компании (необязательно)"}
+                </label>
+                <input
+                  type="text"
+                  value={partnerWebsite}
+                  onChange={(e) => setPartnerWebsite(e.target.value)}
+                  placeholder="https://company.uz"
+                  className="w-full text-xs px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500 font-mono"
+                />
+              </div>
+
+              {/* Description RU */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {lang === "uz" ? "Qisqa tavsif (RU, ixtiyoriy)" : "Краткое описание (RU, необязательно)"}
+                </label>
+                <input
+                  type="text"
+                  value={partnerDescRu}
+                  onChange={(e) => setPartnerDescRu(e.target.value)}
+                  placeholder={lang === "uz" ? "Masalan: O'zbekistondagi yirik qurilish xoldingi" : "Например: Крупнейший строительный холдинг Узбекистана"}
+                  className="w-full text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              {/* Description UZ */}
+              <div>
+                <label className="block font-bold text-gray-700 mb-1">
+                  {lang === "uz" ? "Qisqa tavsif (UZ, ixtiyoriy)" : "Краткое описание (UZ, необязательно)"}
+                </label>
+                <input
+                  type="text"
+                  value={partnerDescUz}
+                  onChange={(e) => setPartnerDescUz(e.target.value)}
+                  placeholder={lang === "uz" ? "Masalan: O'zbekistondagi yirik qurilish xoldingi" : "Masalan: O'zbekistondagi yirik qurilish xoldingi"}
+                  className="w-full text-xs px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500"
+                />
+              </div>
+
+              {/* Modal footer */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setIsPartnerModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  {lang === "uz" ? "Bekor qilish" : "Отмена"}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-md shadow-red-600/20 transition-all cursor-pointer"
+                >
+                  {lang === "uz" ? "Saqlash" : "Сохранить компанию"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

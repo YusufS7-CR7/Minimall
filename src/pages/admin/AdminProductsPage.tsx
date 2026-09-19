@@ -5,6 +5,7 @@ import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
 import ExcelImportModal from "./ExcelImportModal";
@@ -17,6 +18,7 @@ export default function AdminProductsPage() {
   const { categories } = useCategories();
   const { lang, showToast } = useApp();
   const { isSuperAdmin, hasPermission } = useAdminAuth();
+  const { usdRate } = useCurrency();
 
   const t = ADMIN_TRANSLATIONS[lang].products;
 
@@ -242,9 +244,9 @@ export default function AdminProductsPage() {
           <div
             className="text-xl sm:text-2xl font-black text-gray-900 mt-1 truncate"
             style={{ fontFamily: "Barlow Condensed, sans-serif" }}
-            title={formatPrice(stats.totalCatalogValue)}
+            title={formatPrice(stats.totalCatalogValue, usdRate)}
           >
-            {formatPrice(stats.totalCatalogValue)}
+            {formatPrice(stats.totalCatalogValue, usdRate)}
           </div>
           <div className="text-[11px] text-gray-400 mt-1">
             {lang === "uz" ? "jami qiymat" : "суммарная стоимость"}
@@ -377,9 +379,9 @@ export default function AdminProductsPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                   <div>
-                    <div className="text-sm font-black text-gray-900">{formatPrice(p.price)}</div>
+                    <div className="text-sm font-black text-gray-900">{formatPrice(p.price, usdRate)}</div>
                     {p.oldPrice && (
-                      <div className="text-[10px] text-gray-400 line-through">{formatPrice(p.oldPrice)}</div>
+                      <div className="text-[10px] text-gray-400 line-through">{formatPrice(p.oldPrice, usdRate)}</div>
                     )}
                   </div>
                   <button
@@ -542,11 +544,11 @@ export default function AdminProductsPage() {
                       {/* Price */}
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="text-xs sm:text-sm font-bold text-gray-900">
-                          {formatPrice(p.price)}
+                          {formatPrice(p.price, usdRate)}
                         </div>
                         {p.oldPrice && (
                           <div className="text-[11px] text-gray-400 line-through">
-                            {formatPrice(p.oldPrice)}
+                            {formatPrice(p.oldPrice, usdRate)}
                           </div>
                         )}
                       </td>

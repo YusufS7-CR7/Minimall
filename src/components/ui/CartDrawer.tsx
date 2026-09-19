@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { T } from "@/data/translations";
 import type { Lang } from "@/data/types";
 import CheckoutModal from "./CheckoutModal";
@@ -15,6 +16,7 @@ interface CartDrawerProps {
 export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
   const t = T[lang];
   const { cart, totalCartCount, totalCartPrice, updateCartCount } = useApp();
+  const { usdRate } = useCurrency();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   if (!open && !checkoutOpen) return null;
@@ -51,7 +53,7 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.product.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <div key={`${item.product.id}-${item.selectedSize || ""}`} className="flex gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
                 {item.product.image && item.product.image.trim() !== "" ? (
                   <img
                     src={item.product.image}
@@ -72,12 +74,20 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
                   <h4 className="text-xs font-bold text-gray-800 line-clamp-2">
                     {lang === "uz" ? (item.product.nameUz || item.product.name) : item.product.name}
                   </h4>
+                  {item.selectedSize && (
+                    <div className="mt-1">
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 text-red-700 font-bold px-1.5 py-0.5 rounded border border-red-100">
+                        <span>📏</span>
+                        <span>{lang === "uz" ? "O'lcham:" : "Размер:"} {item.selectedSize}</span>
+                      </span>
+                    </div>
+                  )}
                   <div className="text-xs text-red-600 font-extrabold mt-1">
                     {formatPrice(item.product.price)}
                   </div>
                   <div className="flex items-center gap-2 mt-2.5">
                     <button
-                      onClick={() => updateCartCount(item.product.id, -1)}
+                      onClick={() => updateCartCount(item.product.id, -1, item.selectedSize)}
                       aria-label={lang === "ru" ? "Уменьшить количество" : "Miqdorni kamaytirish"}
                       className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-100 active:scale-95 cursor-pointer"
                     >
@@ -85,14 +95,14 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
                     </button>
                     <span className="text-xs font-extrabold text-gray-800 min-w-[20px] text-center">{item.count}</span>
                     <button
-                      onClick={() => updateCartCount(item.product.id, 1)}
+                      onClick={() => updateCartCount(item.product.id, 1, item.selectedSize)}
                       aria-label={lang === "ru" ? "Увеличить количество" : "Miqdorni oshirish"}
                       className="w-8 h-8 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-100 active:scale-95 cursor-pointer"
                     >
                       +
                     </button>
                     <button
-                      onClick={() => updateCartCount(item.product.id, -item.count)}
+                      onClick={() => updateCartCount(item.product.id, -item.count, item.selectedSize)}
                       aria-label={lang === "ru" ? "Удалить товар" : "Tovarni o'chirish"}
                       className="w-8 h-8 ml-auto text-gray-400 hover:text-red-600 flex items-center justify-center text-xs rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                       title={lang === "ru" ? "Удалить из корзины" : "Savatdan o'chirish"}
@@ -113,7 +123,7 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
               <span className="text-sm font-semibold text-gray-600">
                 {lang === "ru" ? "Итого:" : "Jami:"}
               </span>
-              <span className="text-xl font-extrabold text-gray-900">{formatPrice(totalCartPrice)}</span>
+              <span className="text-xl font-extrabold text-gray-900">{formatPrice(totalCartPrice, usdRate)}</span>
             </div>
             <button
               onClick={() => {

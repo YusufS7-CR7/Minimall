@@ -56,8 +56,8 @@ interface AppContextValue {
   theme: "light" | "dark";
   setTheme: (t: "light" | "dark") => void;
   toggleTheme: () => void;
-  addToCart: (product: Product) => void;
-  updateCartCount: (productId: number, delta: number) => void;
+  addToCart: (product: Product, selectedSize?: string) => void;
+  updateCartCount: (productId: number, delta: number, selectedSize?: string) => void;
   clearCart: () => void;
   toggleFavorite: (productId: number) => void;
   removeFavorite: (productId: number) => void;
@@ -171,32 +171,37 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
 
   // ── Cart ──────────────────────────────────────────────────────────────────────
   const addToCart = useCallback(
-    (product: Product) => {
+    (product: Product, selectedSize?: string) => {
       setCart((prev) => {
-        const existing = prev.find((i) => i.product.id === product.id);
+        const existing = prev.find(
+          (i) => i.product.id === product.id && (i.selectedSize || "") === (selectedSize || "")
+        );
         const next = existing
           ? prev.map((i) =>
-              i.product.id === product.id ? { ...i, count: i.count + 1 } : i
+              i.product.id === product.id && (i.selectedSize || "") === (selectedSize || "")
+                ? { ...i, count: i.count + 1 }
+                : i
             )
-          : [...prev, { product, count: 1 }];
+          : [...prev, { product, count: 1, selectedSize }];
         saveCart(userId, next);
         return next;
       });
+      const sizeNote = selectedSize ? ` (${selectedSize})` : "";
       showToast(
         lang === "ru"
-          ? `"${product.name}" добавлен в корзину!`
-          : `"${product.nameUz}" savatga qo'shildi!`
+          ? `"${product.name}"${sizeNote} добавлен в корзину!`
+          : `"${product.nameUz || product.name}"${sizeNote} savatga qo'shildi!`
       );
     },
     [lang, showToast, userId]
   );
 
   const updateCartCount = useCallback(
-    (productId: number, delta: number) => {
+    (productId: number, delta: number, selectedSize?: string) => {
       setCart((prev) => {
         const next = prev
           .map((i) => {
-            if (i.product.id !== productId) return i;
+            if (i.product.id !== productId || (i.selectedSize || "") !== (selectedSize || "")) return i;
             const newCount = i.count + delta;
             return newCount > 0 ? { ...i, count: newCount } : null;
           })

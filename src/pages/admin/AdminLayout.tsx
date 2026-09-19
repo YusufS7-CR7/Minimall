@@ -1,10 +1,12 @@
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useOrders } from "@/context/OrdersContext";
 import { useBanners } from "@/context/BannersContext";
 import { useCategories } from "@/context/CategoriesContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
@@ -19,7 +21,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const { adminUser, admins, logout, isSuperAdmin, hasPermission } = useAdminAuth();
   const { orders, newOrdersCount } = useOrders();
   const { slides } = useBanners();
+  const { usdRate, setUsdRate } = useCurrency();
   const location = useLocation();
+
+  // Currency widget local state
+  const [rateInput, setRateInput] = useState<string>(String(usdRate));
+  const [rateEditing, setRateEditing] = useState(false);
+  const [rateSaved, setRateSaved] = useState(false);
+
+  const handleRateSave = () => {
+    const val = parseFloat(rateInput.replace(/\s/g, "").replace(/,/g, "."));
+    if (!isNaN(val) && val > 0) {
+      setUsdRate(val);
+      setRateEditing(false);
+      setRateSaved(true);
+      setTimeout(() => setRateSaved(false), 2000);
+      showToast(lang === "uz" ? `Kurs yangilandi: 1 $ = ${val.toLocaleString("ru")} сум` : `Курс обновлён: 1 $ = ${val.toLocaleString("ru")} сум`);
+    }
+  };
 
   const t = ADMIN_TRANSLATIONS[lang].nav;
 
@@ -335,6 +354,74 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 </span>
               </Link>
             </nav>
+          </div>
+
+          {/* Currency Rate Widget — desktop only */}
+          <div className="hidden md:block bg-white rounded-2xl border border-amber-200 p-4 shadow-xs">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">💱</span>
+                <span className="text-xs font-bold text-gray-700">
+                  {lang === "uz" ? "Dollar kursi" : "Курс доллара"}
+                </span>
+              </div>
+              {rateSaved && (
+                <span className="text-[10px] text-emerald-600 font-bold animate-pulse">✓ {lang === "uz" ? "Saqlandi" : "Сохранено"}</span>
+              )}
+            </div>
+
+            {/* Current rate display */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-3">
+              <div className="text-[10px] text-amber-700 font-medium mb-0.5">1 USD =</div>
+              <div className="text-lg font-black text-amber-800">
+                {usdRate.toLocaleString("ru")} <span className="text-xs font-bold">сум</span>
+              </div>
+            </div>
+
+            {/* Rate input */}
+            {rateEditing ? (
+              <div className="space-y-2">
+                <input
+                  id="admin-usd-rate-input"
+                  type="number"
+                  min="1"
+                  step="100"
+                  value={rateInput}
+                  onChange={(e) => setRateInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleRateSave(); if (e.key === "Escape") { setRateEditing(false); setRateInput(String(usdRate)); } }}
+                  className="w-full text-sm font-bold border border-amber-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400 text-gray-800"
+                  placeholder={lang === "uz" ? "Kursni kiriting..." : "Введите курс..."}
+                  autoFocus
+                />
+                <div className="flex gap-1.5">
+                  <button
+                    id="admin-usd-rate-save-btn"
+                    type="button"
+                    onClick={handleRateSave}
+                    className="flex-1 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    {lang === "uz" ? "Saqlash" : "Сохранить"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRateEditing(false); setRateInput(String(usdRate)); }}
+                    className="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    {lang === "uz" ? "Bekor" : "Отмена"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                id="admin-usd-rate-edit-btn"
+                type="button"
+                onClick={() => { setRateEditing(true); setRateInput(String(usdRate)); }}
+                className="w-full text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>✏️</span>
+                <span>{lang === "uz" ? "Kursni o'zgartirish" : "Изменить курс"}</span>
+              </button>
+            )}
           </div>
 
           {/* Quick System Info Box — desktop only */}

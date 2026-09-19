@@ -3,6 +3,7 @@ import type { Order } from "@/data/orderTypes";
 import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
 import { formatPrice } from "@/utils/formatPrice";
 import { useApp } from "@/context/AppContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
@@ -14,6 +15,7 @@ interface OrderInvoiceModalProps {
 
 export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoiceModalProps) {
   const { lang } = useApp();
+  const { usdRate } = useCurrency();
   const t = ADMIN_TRANSLATIONS[lang].invoice;
 
   if (!isOpen || !order) return null;
@@ -210,7 +212,14 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                             className="w-7 h-7 rounded object-cover border border-gray-200 shrink-0 print:hidden"
                           />
                         )}
-                        <span>{item.name}</span>
+                        <div>
+                          <div className="font-semibold text-gray-900">{item.name}</div>
+                          {item.selectedSize && (
+                            <div className="text-[10px] text-red-600 font-bold mt-0.5">
+                              📏 {lang === "uz" ? "O'lcham:" : "Размер:"} {item.selectedSize}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="py-2.5 px-3 text-center font-bold text-gray-800">

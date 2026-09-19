@@ -8,6 +8,7 @@ import { AdminAuthProvider, useAdminAuth } from "@/context/AdminAuthContext";
 import { OrdersProvider } from "@/context/OrdersContext";
 import { BannersProvider } from "@/context/BannersContext";
 import { CategoriesProvider } from "@/context/CategoriesContext";
+import { CurrencyProvider } from "@/context/CurrencyContext";
 import { HelpCenterProvider } from "@/context/HelpCenterContext";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
 import { LOGO_DATA_URI } from "@/assets/logoDataUri";
@@ -169,23 +170,25 @@ function AppLayout() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <AppContextBridge>
-          <CategoriesProvider>
-            <HelpCenterProvider>
-              <ProductsProvider>
-                <BannersProvider>
-                  <OrdersProvider>
-                    <AdminAuthProvider>
-                      <AppLayout />
-                    </AdminAuthProvider>
-                  </OrdersProvider>
-                </BannersProvider>
-              </ProductsProvider>
-            </HelpCenterProvider>
-          </CategoriesProvider>
-        </AppContextBridge>
-      </AuthProvider>
+      <CurrencyProvider>
+        <AuthProvider>
+          <AppContextBridge>
+            <CategoriesProvider>
+              <HelpCenterProvider>
+                <ProductsProvider>
+                  <BannersProvider>
+                    <OrdersProvider>
+                      <AdminAuthProvider>
+                        <AppLayout />
+                      </AdminAuthProvider>
+                    </OrdersProvider>
+                  </BannersProvider>
+                </ProductsProvider>
+              </HelpCenterProvider>
+            </CategoriesProvider>
+          </AppContextBridge>
+        </AuthProvider>
+      </CurrencyProvider>
     </ErrorBoundary>
   );
 }

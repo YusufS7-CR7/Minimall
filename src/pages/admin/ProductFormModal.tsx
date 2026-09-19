@@ -89,6 +89,29 @@ export default function ProductFormModal({
   const [badge, setBadge] = useState<string>("");
   const [rating, setRating] = useState<number>(5);
 
+  // Sizes / Variations state
+  const [hasSizes, setHasSizes] = useState(false);
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [newSizeInput, setNewSizeInput] = useState("");
+
+  const handleAddSize = (val?: string) => {
+    const text = (val !== undefined ? val : newSizeInput).trim();
+    if (!text) return;
+    const parts = text.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    setSizes((prev) => {
+      const combined = [...prev];
+      for (const part of parts) {
+        if (!combined.includes(part)) combined.push(part);
+      }
+      return combined;
+    });
+    setNewSizeInput("");
+  };
+
+  const handleRemoveSize = (indexToRemove: number) => {
+    setSizes((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   // Images state: array of images (first image is primary cover photo)
   const [imagesList, setImagesList] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -125,6 +148,11 @@ export default function ProductFormModal({
       setBadge(productToEdit.badge || "");
       setRating(productToEdit.rating || 5);
 
+      const existingSizes = productToEdit.sizes && productToEdit.sizes.length > 0 ? productToEdit.sizes : [];
+      setSizes(existingSizes);
+      setHasSizes(existingSizes.length > 0);
+      setNewSizeInput("");
+
       const existingImages = productToEdit.images && productToEdit.images.length > 0
         ? productToEdit.images
         : (productToEdit.image ? [productToEdit.image] : []);
@@ -153,6 +181,9 @@ export default function ProductFormModal({
       setInStock(true);
       setBadge("");
       setRating(5);
+      setSizes([]);
+      setHasSizes(false);
+      setNewSizeInput("");
       setImagesList([]);
       setDescRu("");
       setDescUz("");
@@ -333,6 +364,8 @@ export default function ProductFormModal({
     const effectiveCategory = category || categories[0]?.key || "drills";
 
     if (productToEdit) {
+      const effectiveSizes = hasSizes ? sizes.filter((s) => s.trim().length > 0) : undefined;
+
       await updateProduct(productToEdit.id, {
         name: name.trim(),
         nameUz: nameUz.trim() || name.trim(),
@@ -350,6 +383,7 @@ export default function ProductFormModal({
         descUz: descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`,
         slug: slug.trim() || slugify(name.trim()),
         specs: specsRecord,
+        sizes: effectiveSizes,
       });
 
       onSuccess({
@@ -359,8 +393,11 @@ export default function ProductFormModal({
         image: primaryImage,
         images: imagesList,
         slug: slug.trim() || slugify(name.trim()),
+        sizes: effectiveSizes,
       });
     } else {
+      const effectiveSizes = hasSizes ? sizes.filter((s) => s.trim().length > 0) : undefined;
+
       const created = await addProduct({
         name: name.trim(),
         nameUz: nameUz.trim() || name.trim(),
@@ -379,6 +416,7 @@ export default function ProductFormModal({
         slug: slug.trim() || slugify(name.trim()),
         type: "corded",
         specs: specsRecord,
+        sizes: effectiveSizes,
       });
 
       if (created) onSuccess(created);
@@ -834,6 +872,127 @@ export default function ProductFormModal({
                     </span>
                   </label>
                 </div>
+              </div>
+
+              {/* Sizes / Variations Section */}
+              <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📏</span>
+                    <div>
+                      <div className="text-xs font-bold text-gray-800">
+                        {lang === "uz" ? "O'lchamli tovar (variatsiyalar)" : "Товар с размерами (вариации)"}
+                      </div>
+                      <div className="text-[11px] text-gray-500">
+                        {lang === "uz"
+                          ? "Masalan: burg'ular (sverlo), disklar, kiyimlar va boshqalar uchun"
+                          : "Например: для свёрл, дисков, коронок, крепежа, одежды и т.д."}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={hasSizes}
+                    onClick={() => setHasSizes(!hasSizes)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      hasSizes ? "bg-red-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        hasSizes ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {hasSizes && (
+                  <div className="pt-2 border-t border-gray-200 space-y-3 animate-fadeIn">
+                    {/* Input to add size */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newSizeInput}
+                        onChange={(e) => setNewSizeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddSize();
+                          }
+                        }}
+                        placeholder={
+                          lang === "uz"
+                            ? "O'lcham kiriting (masalan: 6mm, 8mm, 10mm yoki M6, M8)..."
+                            : "Введите размер (напр: 4mm, 6mm, 8mm, 10mm, 125mm, M6)..."
+                        }
+                        className="flex-1 text-xs px-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddSize()}
+                        disabled={!newSizeInput.trim()}
+                        className="px-3.5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
+                      >
+                        + {lang === "uz" ? "Qo'shish" : "Добавить"}
+                      </button>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-gray-500">
+                      <span className="font-semibold text-gray-600">{lang === "uz" ? "Tezkor namunalar:" : "Быстрые шаблоны:"}</span>
+                      <button
+                        type="button"
+                        onClick={() => ["3mm", "4mm", "5mm", "6mm", "8mm", "10mm", "12mm"].forEach((s) => handleAddSize(s))}
+                        className="px-2 py-0.5 bg-white border border-gray-200 hover:border-red-400 hover:text-red-600 rounded-md text-[10px] font-medium transition-colors cursor-pointer"
+                      >
+                        🔩 {lang === "uz" ? "Burg'ular (3-12mm)" : "Свёрла (3-12mm)"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => ["115mm", "125mm", "150mm", "180mm", "230mm"].forEach((s) => handleAddSize(s))}
+                        className="px-2 py-0.5 bg-white border border-gray-200 hover:border-red-400 hover:text-red-600 rounded-md text-[10px] font-medium transition-colors cursor-pointer"
+                      >
+                        💿 {lang === "uz" ? "Disklar (115-230mm)" : "Диски (115-230mm)"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => ["M4", "M5", "M6", "M8", "M10", "M12"].forEach((s) => handleAddSize(s))}
+                        className="px-2 py-0.5 bg-white border border-gray-200 hover:border-red-400 hover:text-red-600 rounded-md text-[10px] font-medium transition-colors cursor-pointer"
+                      >
+                        ⚙️ {lang === "uz" ? "Rezbalar (M4-M12)" : "Резьба (M4-M12)"}
+                      </button>
+                    </div>
+
+                    {/* Tags List */}
+                    {sizes.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {sizes.map((s, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 bg-white border border-red-200 text-red-700 font-bold px-2.5 py-1 rounded-lg text-xs shadow-2xs group"
+                          >
+                            <span>{s}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSize(idx)}
+                              className="text-gray-400 hover:text-red-600 cursor-pointer font-bold text-sm leading-none"
+                              title={lang === "uz" ? "O'chirish" : "Удалить"}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                        ⚠️ {lang === "uz" ? "Hozircha o'lchamlar kiritilmagan. Yuqoridagi maydondan o'lcham qo'shing." : "Размеры пока не добавлены. Введите размер в поле выше или выберите шаблон."}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

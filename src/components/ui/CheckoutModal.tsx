@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { useOrders } from "@/context/OrdersContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import type { CustomerInfo } from "@/data/orderTypes";
 
 import { formatPrice } from "@/utils/formatPrice";
@@ -16,6 +17,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
   const { cart, totalCartPrice, clearCart, lang, showToast } = useApp();
   const { placeOrder } = useOrders();
   const { user, userProfile, saveProfile } = useAuth();
+  const { usdRate } = useCurrency();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("+998 ");
@@ -85,6 +87,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
       image: i.product.image,
       price: i.product.price,
       count: i.count,
+      selectedSize: i.selectedSize,
     }));
 
     const res = await placeOrder(
@@ -231,7 +234,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                   <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                     {lang === "ru" ? "Сумма к оплате" : "To'lov summasi"}
                   </div>
-                  <div className="text-lg font-black text-red-600">{formatPrice(totalCartPrice)}</div>
+                  <div className="text-lg font-black text-red-600">{formatPrice(totalCartPrice, usdRate)}</div>
                 </div>
               </div>
               <div className="text-[10px] text-gray-500 bg-white/80 p-2 rounded-xl border border-red-100/60 leading-tight">
@@ -408,8 +411,8 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
                   <>
                     <span>
                       {lang === "ru"
-                        ? `Подтвердить заказ на ${formatPrice(totalCartPrice)}`
-                        : `Buyurtmani tasdiqlash (${formatPrice(totalCartPrice)})`}
+                        ? `Подтвердить заказ на ${formatPrice(totalCartPrice, usdRate)}`
+                        : `Buyurtmani tasdiqlash (${formatPrice(totalCartPrice, usdRate)})`}
                     </span>
                     <span>→</span>
                   </>

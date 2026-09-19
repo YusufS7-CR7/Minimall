@@ -33,6 +33,8 @@ export interface Product {
   badge?: string;
   inStock: boolean;
   rating?: number;
+  /** Available sizes/variations (e.g. ["3mm", "4mm", "6mm"] or ["100mm", "125mm"]) */
+  sizes?: string[];
 }
 
 export interface CategoryDef {
@@ -49,4 +51,5 @@ export interface CategoryDef {
 export interface CartItem {
   product: Product;
   count: number;
+  selectedSize?: string;
 }

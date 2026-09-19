@@ -45,6 +45,23 @@ function dbToProduct(row: DbProduct): Product {
     (specs as Record<string, any>)?.subcategory ||
     undefined;
 
+  let sizes: string[] | undefined = undefined;
+  if (specs && typeof specs === "object") {
+    const rawSizes = (specs as Record<string, any>)._sizes ?? (specs as Record<string, any>).sizes;
+    if (Array.isArray(rawSizes)) {
+      sizes = rawSizes.map(String).filter((s) => s.trim().length > 0);
+    } else if (typeof rawSizes === "string") {
+      try {
+        const parsed = JSON.parse(rawSizes);
+        if (Array.isArray(parsed)) {
+          sizes = parsed.map(String).filter((s) => s.trim().length > 0);
+        }
+      } catch {
+        sizes = rawSizes.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+  }
+
   return {
     id: row.id,
     slug: row.slug,
@@ -66,6 +83,7 @@ function dbToProduct(row: DbProduct): Product {
     badge: row.badge ?? undefined,
     inStock: row.in_stock,
     rating: row.rating ?? undefined,
+    sizes: sizes && sizes.length > 0 ? sizes : undefined,
   };
 }
 
@@ -73,6 +91,7 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
   const specs = {
     ...(p.specs ?? {}),
     ...(p.subcategory ? { _subcategory: p.subcategory } : {}),
+    ...(p.sizes && p.sizes.length > 0 ? { _sizes: JSON.stringify(p.sizes) } : {}),
   };
   return {
     ...(p.id ? { id: p.id } : {}),

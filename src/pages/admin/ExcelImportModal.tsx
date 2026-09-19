@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import type { Product } from "@/data/types";
 import CustomSelect from "@/components/ui/CustomSelect";
 
@@ -31,6 +32,7 @@ export default function ExcelImportModal({
   const { lang } = useApp();
   const { categories } = useCategories();
   const { addProductsBatch, brands } = useProducts();
+  const { usdRate } = useCurrency();
 
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string>("");
@@ -219,21 +221,33 @@ export default function ExcelImportModal({
     setIsImporting(true);
 
     try {
-      const itemsToCreate: Array<Omit<Product, "id">> = validItems.map((item) => ({
-        name: item.name,
-        nameUz: item.name,
-        price: item.price,
-        currency: item.currency,
-        brand: item.brand,
-        category: defaultCategory || "drills",
-        image: "",
-        images: [],
-        inStock: true,
-        rating: 5,
-        descRu: `Качественный инструмент ${item.name} с официальной гарантией.`,
-        descUz: `${item.name} rasmiy kafolatli sifatli asbob.`,
-        specs: {},
-      }));
+      const itemsToCreate: Array<Omit<Product, "id">> = validItems.map((item) => {
+        // If price is in USD, multiply by current exchange rate; if in UZS, leave untouched
+        const finalPrice =
+          item.currency === "USD"
+            ? Math.round(item.price * usdRate)
+            : Math.round(item.price);
+
+        return {
+          name: item.name,
+          nameUz: item.name,
+          slug: "",
+          type: "tool",
+          price: finalPrice,
+          brand: item.brand,
+          category: defaultCategory || "drills",
+          image: "",
+          images: [],
+          inStock: true,
+          rating: 5,
+          descRu: `Качественный инструмент ${item.name} с официальной гарантией.`,
+          descUz: `${item.name} rasmiy kafolatli sifatli asbob.`,
+          specs: {
+            _origPrice: String(item.price),
+            _origCurrency: item.currency,
+          },
+        };
+      });
 
       const added = await addProductsBatch(itemsToCreate);
       setIsImporting(false);
@@ -256,9 +270,17 @@ export default function ExcelImportModal({
   const displayPrice = (row: ParsedRow) => {
     if (!row.price) return "—";
     if (row.currency === "USD") {
-      return `$${row.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const convertedSom = Math.round(row.price * usdRate);
+      return (
+        <span className="text-emerald-700">
+          {convertedSom.toLocaleString("ru-RU")} сум
+          <span className="block text-[10px] text-gray-400 font-normal">
+            (${row.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} × {usdRate.toLocaleString("ru-RU")})
+          </span>
+        </span>
+      );
     }
-    return `${Math.round(row.price).toLocaleString("ru-RU")} сум`;
+    return <span>{Math.round(row.price).toLocaleString("ru-RU")} сум</span>;
   };
 
   return (
@@ -474,12 +496,12 @@ export default function ExcelImportModal({
               </div>
 
               {usdCount > 0 && (
-                <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 text-blue-800 text-[11px] px-3 py-2.5 rounded-xl">
-                  <span className="shrink-0 mt-0.5">💵</span>
+                <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] px-3 py-2.5 rounded-xl">
+                  <span className="shrink-0 mt-0.5">💱</span>
                   <span>
                     {lang === "uz"
-                      ? `${usdCount} ta tovar USD da saqlanadi va do'konda "$" belgisi bilan ko'rsatiladi.`
-                      : `${usdCount} ${usdCount === 1 ? "товар будет сохранён" : "товаров будут сохранены"} в долларах США и отображаться на сайте со значком "$".`}
+                      ? `${usdCount} ta USD narxli tovar joriy kurs bo'yicha (1$ = ${usdRate.toLocaleString("ru-RU")} so'm) avtomatik so'mga aylantirilib, bazaga so'mda saqlanadi.`
+                      : `${usdCount} ${usdCount === 1 ? "товар с ценой в USD будет автоматически пересчитан" : "товаров с ценами в USD будут автоматически пересчитаны"} в сумы по текущему курсу админки (1$ = ${usdRate.toLocaleString("ru-RU")} сум) и сохранены в базу в сумах.`}
                   </span>
                 </div>
               )}

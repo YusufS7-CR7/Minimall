@@ -1,7 +1,8 @@
 import { memo, useCallback, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { T } from "@/data/translations";
 import type { Product, Lang } from "@/data/types";
 import StarRating from "./StarRating";
@@ -20,10 +21,13 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   const t = T[lang];
   const { addToCart, toggleFavorite, favorites } = useApp();
   const { user, openAuthModal } = useAuth();
+  const { usdRate } = useCurrency();
+  const navigate = useNavigate();
   const name = lang === "uz" ? (product.nameUz || product.name) : product.name;
   const isFav = favorites.includes(product.id);
   const [imgError, setImgError] = useState(false);
   const hasImage = Boolean(product.image && product.image.trim() !== "" && !imgError);
+  const hasSizes = Boolean(product.sizes && product.sizes.length > 0);
 
   const handleFavorite = useCallback(() => {
     if (!user) {
@@ -38,8 +42,12 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
       openAuthModal("register");
       return;
     }
+    if (hasSizes) {
+      navigate(`/product/${product.slug}`);
+      return;
+    }
     addToCart(product);
-  }, [user, openAuthModal, addToCart, product]);
+  }, [user, openAuthModal, addToCart, product, hasSizes, navigate]);
 
   return (
     <article className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 hover:-translate-y-1 relative">
@@ -125,6 +133,12 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
               {lang === "uz" ? "Brendsiz" : "Без бренда"}
             </span>
           )}
+          {hasSizes && (
+            <span className="text-[9px] sm:text-[10px] bg-red-50 text-red-700 font-bold px-1.5 py-0.5 rounded border border-red-100 flex items-center gap-0.5 shrink-0" title={lang === "uz" ? "Bir nechta o'lchamlar mavjud" : "Доступно несколько размеров"}>
+              <span>📏</span>
+              <span>{product.sizes!.length} {lang === "uz" ? "o'lcham" : "разм."}</span>
+            </span>
+          )}
           {product.voltage && product.voltage !== "N/A" && (
             <span className="text-[9px] sm:text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono shrink-0">
               {product.voltage}
@@ -163,8 +177,11 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
             </svg>
-            <span className="hidden sm:inline">{t.addToCart}</span>
-            <span className="sm:hidden">{lang === "uz" ? "Savatga" : "В корзину"}</span>
+            <span>
+              {hasSizes
+                ? (lang === "uz" ? "Tanlash" : "Выбрать")
+                : t.addToCart}
+            </span>
           </button>
         </div>
       </div>

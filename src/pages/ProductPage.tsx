@@ -3,6 +3,7 @@ import { useParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/context/ProductsContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { getCategoryByKey } from "@/data/categories";
 import { T } from "@/data/translations";
@@ -16,6 +17,7 @@ export default function ProductPage() {
   const { lang, addToCart } = useApp();
   const { user, openAuthModal } = useAuth();
   const { getProductBySlug, products } = useProducts();
+  const { usdRate } = useCurrency();
   const t = T[lang];
 
   const product = getProductBySlug(slug ?? "");
@@ -83,6 +85,15 @@ export default function ProductPage() {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"specs" | "desc">("specs");
+  const [selectedSize, setSelectedSize] = useState<string>("");
+
+  useEffect(() => {
+    if (product?.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    } else {
+      setSelectedSize("");
+    }
+  }, [product?.id, product?.sizes]);
 
   useEffect(() => {
     setCurrentImgIndex(0);
@@ -309,21 +320,57 @@ export default function ProductPage() {
 
           {/* Price */}
           <div className="mb-6">
-            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(product.price)}</div>
+            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(product.price, usdRate)}</div>
             {product.oldPrice && (
-              <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice)}</div>
+              <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice, usdRate)}</div>
             )}
           </div>
 
-          {/* CTA — стacked on mobile */}
+          {/* Sizes selector if available */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="mb-6 bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                  <span>📏</span>
+                  <span>{lang === "uz" ? "O'lchamni tanlang:" : "Выберите размер:"}</span>
+                </span>
+                {selectedSize && (
+                  <span className="text-xs font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
+                    {selectedSize}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {product.sizes.map((s) => {
+                  const isSelected = selectedSize === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSelectedSize(s)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-105"
+                          : "bg-white text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-600 shadow-2xs"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* CTA — stacked on mobile */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
               onClick={() => {
                 if (!user) { openAuthModal("register"); return; }
-                addToCart(product);
+                addToCart(product, selectedSize || undefined);
               }}
               disabled={!product.inStock}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                 product.inStock
                   ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -334,7 +381,7 @@ export default function ProductPage() {
             </button>
             <div className="flex gap-2 sm:gap-3">
               <a
-                href={`https://t.me/minimall_uzb?text=${encodeURIComponent(`Здравствуйте! Интересует товар: ${name} (арт. MM-${product.id})`)}`}
+                href={`https://t.me/minimall_uzb?text=${encodeURIComponent(`Здравствуйте! Интересует товар: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700 text-sm font-bold transition-all shadow-xs"

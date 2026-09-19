@@ -185,6 +185,93 @@ export default function InfoModal({
               </div>
             )}
 
+            {/* Special block for About: Partner Companies */}
+            {section === "about" && currentSection.partners && currentSection.partners.length > 0 && (
+              <div className="pt-2 space-y-3">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                  <div>
+                    <h3
+                      className="text-lg font-black text-gray-900 tracking-wide flex items-center gap-2"
+                      style={{ fontFamily: "Barlow Condensed, sans-serif" }}
+                    >
+                      <span>🏢</span>
+                      <span>
+                        {lang === "ru"
+                          ? "Компании, которые нам доверяют"
+                          : "Bizga ishonch bildirgan kompaniyalar"}
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-gray-500">
+                      {lang === "ru"
+                        ? "Ведущие строительные холдинги и предприятия, с которыми мы успешно сотрудничаем"
+                        : "Biz muvaffaqiyatli hamkorlik qilayotgan yetakchi qurilish va sanoat korxonalari"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {currentSection.partners.map((partner) => {
+                    const desc = lang === "ru" ? partner.descriptionRu : partner.descriptionUz;
+
+                    return (
+                      <div
+                        key={partner.id}
+                        className="bg-white p-3.5 rounded-2xl border border-gray-200/90 hover:border-red-300 hover:shadow-md transition-all group flex flex-col justify-between"
+                      >
+                        <div>
+                          {/* Logo container */}
+                          <div className="w-full h-20 bg-gray-50 rounded-xl border border-gray-100 p-2 flex items-center justify-center overflow-hidden mb-2.5 group-hover:bg-red-50/30 transition-colors">
+                            {partner.logo ? (
+                              <img
+                                src={partner.logo}
+                                alt={partner.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=100&h=100&fit=crop";
+                                }}
+                              />
+                            ) : (
+                              <span className="text-2xl text-gray-300 font-bold">
+                                {partner.name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Company Name */}
+                          <div className="font-bold text-gray-900 text-xs line-clamp-1 group-hover:text-red-600 transition-colors">
+                            {partner.name}
+                          </div>
+
+                          {/* Description */}
+                          {desc && (
+                            <p className="text-[10px] text-gray-500 mt-1 line-clamp-2 leading-snug">
+                              {desc}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* External website link if present */}
+                        {partner.website && (
+                          <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between">
+                            <a
+                              href={partner.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-sky-600 hover:text-sky-700 font-bold flex items-center gap-1 hover:underline"
+                            >
+                              <span>{lang === "ru" ? "Сайт компании" : "Kompaniya sayti"}</span>
+                              <span className="text-xs">↗</span>
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Formatted Content Paragraphs */}
             <div className="space-y-3 text-xs leading-relaxed text-gray-700">
               {content

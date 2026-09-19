@@ -8,6 +8,15 @@ import React, {
 } from "react";
 import type { InfoModalSection } from "@/components/ui/InfoModal";
 
+export interface PartnerCompany {
+  id: string;
+  name: string;
+  logo: string;
+  descriptionRu?: string;
+  descriptionUz?: string;
+  website?: string;
+}
+
 export interface HelpSectionData {
   id: InfoModalSection;
   icon: string;
@@ -26,6 +35,8 @@ export interface HelpSectionData {
   stats?: { value: string; labelRu: string; labelUz: string }[];
   /** FAQ or Q&A accordion items */
   faqList?: { qRu: string; qUz: string; aRu: string; aUz: string }[];
+  /** Partner companies (for About section) */
+  partners?: PartnerCompany[];
   /** Contacts details */
   contacts?: {
     phone: string;
@@ -64,6 +75,56 @@ export const INITIAL_HELP_SECTIONS: Record<InfoModalSection, HelpSectionData> = 
       "Основанный в 2018 году, проект Minimall начинался как узкоспециализированная дистрибьюторская компания для снабжения монтажных организаций столицы. За годы динамичного развития мы выросли в масштабную платформу и надежный складской хаб в Ташкенте с прямыми контрактами от заводов-изготовителей.\n\nСегодня mini-mall.uz — это продуманная экосистема для снабжения строительных объектов любой сложности: от компактных мастерских до масштабных промышленных комплексов. Мы исключаем серые схемы и подделки: каждый поставляемый инструмент имеет официальный серийный номер, сертифицирован и обеспечивается гарантией авторизованных сервисных центров.",
     contentUz:
       "2018 yilda tashkil topgan Minimall loyihasi poytaxt montaj korxonalarini ta'minlash uchun ixtisoslashtirilgan distribyutorlik sifatida boshlangan. Yillar davomida biz Toshkentda to'g'ridan-to'g'ri ishlab chiqaruvchi zavodlar bilan ishlovchi yirik ombor va platformaga aylandik.\n\nBugungi kunda mini-mall.uz — har qanday murakkablikdagi qurilish obyektlarini ta'minlash uchun qulay ekotizimdir. Har bir taqdim etilayotgan asbob rasmiy seriya raqamiga ega, to'liq sertifikatlangan va rasmiy servis kafolatiga ega.",
+    partners: [
+      {
+        id: "partner-1",
+        name: "Discover Invest",
+        logo: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=200&h=200&fit=crop",
+        descriptionRu: "Крупнейший строительный холдинг Узбекистана",
+        descriptionUz: "O'zbekistondagi eng yirik qurilish xoldingi",
+        website: "https://di.uz",
+      },
+      {
+        id: "partner-2",
+        name: "Murad Buildings",
+        logo: "https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=200&h=200&fit=crop",
+        descriptionRu: "Девелопер премиальной жилой и коммерческой недвижимости",
+        descriptionUz: "Premium turar-joy va tijorat ko'chmas mulk ishlab chiquvchisi",
+        website: "https://mbc.uz",
+      },
+      {
+        id: "partner-3",
+        name: "Enter Engineering",
+        logo: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=200&h=200&fit=crop",
+        descriptionRu: "Генеральный подрядчик нефтегазового и промышленного строительства",
+        descriptionUz: "Neft-gaz va sanoat qurilishi bo'yicha bosh pudratchi",
+        website: "https://ent-en.com",
+      },
+      {
+        id: "partner-4",
+        name: "Golden House",
+        logo: "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=200&h=200&fit=crop",
+        descriptionRu: "Ведущая девелоперская компания столичного региона",
+        descriptionUz: "Poytaxtning yetakchi developerlik kompaniyasi",
+        website: "https://gh.uz",
+      },
+      {
+        id: "partner-5",
+        name: "Akfa Group",
+        logo: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=200&h=200&fit=crop",
+        descriptionRu: "Промышленно-строительный холдинг и производство конструкций",
+        descriptionUz: "Sanoat-qurilish xoldingi va konstruksiyalar ishlab chiqarish",
+        website: "https://akfagroup.com",
+      },
+      {
+        id: "partner-6",
+        name: "Orient Group",
+        logo: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=200&h=200&fit=crop",
+        descriptionRu: "Многопрофильная инвестиционно-производственная группа",
+        descriptionUz: "Ko'p tarmoqli investitsiya-ishlab chiqarish guruhi",
+        website: "https://orientgroup.uz",
+      },
+    ],
     contacts: {
       phone: "+998 (97) 036 36 36",
       email: "info@mini-mall.uz",

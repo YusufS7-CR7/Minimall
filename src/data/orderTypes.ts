@@ -10,6 +10,7 @@ export interface OrderItem {
   image: string;
   price: number;
   count: number;
+  selectedSize?: string;
 }
 
 export interface CustomerInfo {

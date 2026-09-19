@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useOrders } from "@/context/OrdersContext";
 import { useApp } from "@/context/AppContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import type { Order, OrderStatus } from "@/data/orderTypes";
 import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
@@ -13,6 +14,7 @@ import TelegramSettingsModal from "./TelegramSettingsModal";
 export default function AdminOrdersPage() {
   const { orders, updateOrderStatus, deleteOrder, fetchAllOrders, loading } = useOrders();
   const { showToast, lang } = useApp();
+  const { usdRate } = useCurrency();
   const t = ADMIN_TRANSLATIONS[lang].orders;
 
   useEffect(() => {
@@ -264,7 +266,7 @@ export default function AdminOrdersPage() {
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t.statRevenue}</div>
-          <div className="text-lg sm:text-2xl font-black text-gray-900 mt-1 truncate" style={{ fontFamily: "Barlow Condensed, sans-serif" }} title={formatPrice(stats.totalValue)}>{formatPrice(stats.totalValue)}</div>
+          <div className="text-lg sm:text-2xl font-black text-gray-900 mt-1 truncate" style={{ fontFamily: "Barlow Condensed, sans-serif" }} title={formatPrice(stats.totalValue, usdRate)}>{formatPrice(stats.totalValue, usdRate)}</div>
           <div className="text-[11px] text-gray-400 mt-1">{lang === "uz" ? "umumiy aylanma" : "общий оборот"}</div>
         </div>
       </div>
@@ -470,8 +472,16 @@ export default function AdminOrdersPage() {
                               alt={item.name}
                               className="w-10 h-10 rounded-lg object-cover bg-white border border-gray-100 shrink-0"
                             />
-                            <div className="truncate font-semibold text-gray-800">
-                              {item.name}
+                            <div className="min-w-0">
+                              <div className="truncate font-semibold text-gray-800">
+                                {item.name}
+                              </div>
+                              {item.selectedSize && (
+                                <span className="inline-flex items-center gap-1 text-[10px] bg-red-50 text-red-700 font-bold px-1.5 py-0.2 rounded border border-red-100">
+                                  <span>📏</span>
+                                  <span>{lang === "uz" ? "O'lcham:" : "Размер:"} {item.selectedSize}</span>
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="text-right shrink-0">
@@ -487,7 +497,7 @@ export default function AdminOrdersPage() {
                         {lang === "uz" ? "To'lov uchun jami:" : "Итого к оплате:"}
                       </span>
                       <span className="text-lg font-black text-red-600 font-mono">
-                        {formatPrice(order.totalAmount)}
+                        {formatPrice(order.totalAmount, usdRate)}
                       </span>
                     </div>
                   </div>

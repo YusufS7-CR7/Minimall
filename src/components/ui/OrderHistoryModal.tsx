@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useOrders } from "@/context/OrdersContext";
 import { useAuth } from "@/context/AuthContext";
 import { useApp } from "@/context/AppContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { ORDER_STATUS_LABELS } from "@/data/orderTypes";
 import type { Order } from "@/data/orderTypes";
 import { formatPrice } from "@/utils/formatPrice";
@@ -74,9 +75,10 @@ function StatusTracker({ status, lang }: { status: string; lang: "ru" | "uz" }) 
   );
 }
 
-function OrderCard({ order, lang, onExpand, expanded }: {
+function OrderCard({ order, lang, usdRate, onExpand, expanded }: {
   order: Order;
   lang: "ru" | "uz";
+  usdRate: number;
   onExpand: () => void;
   expanded: boolean;
 }) {
@@ -119,7 +121,7 @@ function OrderCard({ order, lang, onExpand, expanded }: {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="font-bold text-sm text-gray-900">{formatPrice(order.totalAmount)}</span>
+          <span className="font-bold text-sm text-gray-900">{formatPrice(order.totalAmount, usdRate)}</span>
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -155,9 +157,9 @@ function OrderCard({ order, lang, onExpand, expanded }: {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-900 truncate">{item.name}</p>
-                    <p className="text-[11px] text-gray-500">{item.count} шт. × {formatPrice(item.price)}</p>
+                    <p className="text-[11px] text-gray-500">{item.count} шт. × {formatPrice(item.price, usdRate)}</p>
                   </div>
-                  <span className="text-xs font-bold text-gray-900 shrink-0">{formatPrice(item.price * item.count)}</span>
+                  <span className="text-xs font-bold text-gray-900 shrink-0">{formatPrice(item.price * item.count, usdRate)}</span>
                 </div>
               ))}
             </div>
@@ -184,7 +186,7 @@ function OrderCard({ order, lang, onExpand, expanded }: {
             <span className="text-xs font-bold text-gray-700">
               {lang === "ru" ? "Итого к оплате" : "Jami to'lov"}
             </span>
-            <span className="text-base font-black text-red-600">{formatPrice(order.totalAmount)}</span>
+            <span className="text-base font-black text-red-600">{formatPrice(order.totalAmount, usdRate)}</span>
           </div>
         </div>
       )}
@@ -196,6 +198,7 @@ export default function OrderHistoryModal({ isOpen, onClose }: Props) {
   const { user } = useAuth();
   const { userOrders, fetchUserOrders, loading } = useOrders();
   const { lang } = useApp();
+  const { usdRate } = useCurrency();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -264,6 +267,7 @@ export default function OrderHistoryModal({ isOpen, onClose }: Props) {
                   key={order.id}
                   order={order}
                   lang={lang}
+                  usdRate={usdRate}
                   expanded={expandedId === order.id}
                   onExpand={() => setExpandedId(expandedId === order.id ? null : order.id)}
                 />

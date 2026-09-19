@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/context/ProductsContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { T } from "@/data/translations";
 import { useCategories } from "@/context/CategoriesContext";
@@ -35,6 +36,7 @@ const ADVANTAGE_COLORS = [
 export default function HomePage() {
   const { lang, addToCart } = useApp();
   const { products, brands } = useProducts();
+  const { usdRate } = useCurrency();
   const t = T[lang];
 
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20_000_000]);
@@ -480,6 +482,7 @@ function DiscountProductsRow({ lang }: { lang: string }) {
   const { addToCart } = useApp();
   const { user, openAuthModal } = useAuth();
   const { products } = useProducts();
+  const { usdRate } = useCurrency();
   const t = T[lang as "ru" | "uz"];
   const discountProducts = products.filter((p) => p.oldPrice);
   if (discountProducts.length === 0) return null;
@@ -520,9 +523,9 @@ function DiscountProductsRow({ lang }: { lang: string }) {
                 </Link>
               </h3>
               <div className="flex items-baseline gap-1.5 mb-0.5">
-                <span className="text-sm sm:text-base font-extrabold text-gray-900">{formatPrice(p.price)}</span>
+                <span className="text-sm sm:text-base font-extrabold text-gray-900">{formatPrice(p.price, usdRate)}</span>
               </div>
-              <div className="text-[10px] sm:text-xs text-gray-400 line-through mb-1.5">{formatPrice(p.oldPrice!)}</div>
+              <div className="text-[10px] sm:text-xs text-gray-400 line-through mb-1.5">{formatPrice(p.oldPrice!, usdRate)}</div>
               <StarRating rating={p.rating} />
               <button onClick={() => handleAddToCart(p)} className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2 sm:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer">
                 {t.addToCart}
@@ -541,6 +544,7 @@ function SaleCarousel({ lang }: { lang: string }) {
   const { products } = useProducts();
   const { addToCart } = useApp();
   const { user, openAuthModal } = useAuth();
+  const { usdRate } = useCurrency();
   const t = T[lang as "ru" | "uz"];
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -694,9 +698,9 @@ function SaleCarousel({ lang }: { lang: string }) {
             </Link>
           </h3>
           <div className="flex items-baseline gap-2 mb-0.5">
-            <span className="text-base font-extrabold text-gray-900">{formatPrice(p.price)}</span>
+            <span className="text-base font-extrabold text-gray-900">{formatPrice(p.price, usdRate)}</span>
             {p.oldPrice && (
-              <span className="text-xs text-gray-400 line-through">{formatPrice(p.oldPrice)}</span>
+              <span className="text-xs text-gray-400 line-through">{formatPrice(p.oldPrice, usdRate)}</span>
             )}
           </div>
           <StarRating rating={p.rating} />

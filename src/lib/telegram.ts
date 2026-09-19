@@ -45,6 +45,16 @@ export function saveTelegramSettings(settings: TelegramSettings): void {
  * Format order into Telegram HTML message
  */
 export function formatOrderForTelegram(order: Order): string {
+  // Read current exchange rate from localStorage (same key as CurrencyContext)
+  let usdRate = 12700;
+  try {
+    const raw = localStorage.getItem("mm_usd_rate");
+    if (raw) {
+      const parsed = parseFloat(raw);
+      if (!isNaN(parsed) && parsed > 0) usdRate = parsed;
+    }
+  } catch {}
+
   const paymentLabels: Record<string, string> = {
     cash: "💵 Наличными курьеру",
     click: "📱 Click",
@@ -65,7 +75,8 @@ export function formatOrderForTelegram(order: Order): string {
 
   const itemsList = order.items
     .map((item, idx) => {
-      return `${idx + 1}. <b>${escapeHtml(item.name)}</b>\n   └ ${item.count} шт. × ${formatPrice(item.price)} = <b>${formatPrice(item.price * item.count)}</b>`;
+      const sizeTag = item.selectedSize ? ` 📏 <i>[Размер: ${escapeHtml(item.selectedSize)}]</i>` : "";
+      return `${idx + 1}. <b>${escapeHtml(item.name)}</b>${sizeTag}\n   └ ${item.count} шт. × ${formatPrice(item.price)} = <b>${formatPrice(item.price * item.count)}</b>`;
     })
     .join("\n");
 
@@ -86,7 +97,7 @@ ${order.customer.comment ? `💬 <b>Комментарий:</b> <i>«${escapeHtm
 📦 <b>Состав заказа (${order.items.reduce((s, i) => s + i.count, 0)} шт.):</b>
 ${itemsList}
 ━━━━━━━━━━━━━━━━━━
-💰 <b>ИТОГО К ОПЛАТЕ: ${formatPrice(order.totalAmount)}</b>
+💰 <b>ИТОГО К ОПЛАТЕ: ${formatPrice(order.totalAmount, usdRate)}</b>
 
 ⚡ <i>Свяжитесь с клиентом для подтверждения доставки!</i>`;
 }
