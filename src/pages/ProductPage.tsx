@@ -23,10 +23,21 @@ export default function ProductPage() {
   const product = getProductBySlug(slug ?? "");
 
   // SEO — always call hooks before any conditional return
-  const category = product ? getCategoryByKey(product.category) : undefined;
+  const primaryCatKey = (product?.categories && product.categories.length > 0)
+    ? product.categories[0]
+    : product?.category;
+  const category = primaryCatKey ? getCategoryByKey(primaryCatKey) : undefined;
   const name = product ? (lang === "uz" ? (product.nameUz || product.name) : product.name) : "";
   const desc = product ? (lang === "uz" ? (product.descUz || product.descRu) : product.descRu) : "";
   const categoryLabel = category ? (lang === "uz" ? (category.labelUz || category.labelRu) : category.labelRu) : "";
+
+  const productCategories = useMemo(() => {
+    if (!product) return [];
+    const keys = (product.categories && product.categories.length > 0)
+      ? product.categories
+      : (product.category ? [product.category] : []);
+    return keys.map((k) => getCategoryByKey(k)).filter(Boolean) as NonNullable<ReturnType<typeof getCategoryByKey>>[];
+  }, [product]);
 
   useDocumentMeta({
     title: product
@@ -70,9 +81,16 @@ export default function ProductPage() {
 
   if (!product) return <Navigate to="/404" replace />;
 
-  const related = products.filter(
-    (p) => p.category === product.category && p.id !== product.id
-  ).slice(0, 4);
+  const related = products.filter((p) => {
+    if (p.id === product.id) return false;
+    const prodCats = (product.categories && product.categories.length > 0)
+      ? product.categories
+      : (product.category ? [product.category] : []);
+    const pCats = (p.categories && p.categories.length > 0)
+      ? p.categories
+      : (p.category ? [p.category] : []);
+    return prodCats.some((c) => pCats.includes(c));
+  }).slice(0, 4);
 
   const allImages = useMemo(() => {
     if (product?.images && product.images.length > 0) {
@@ -146,7 +164,25 @@ export default function ProductPage() {
             <Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link>
           </li>
           <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-          {category && (
+          {productCategories.length > 0 ? (
+            productCategories.map((cat, idx) => {
+              const catLbl = lang === "uz" ? (cat.labelUz || cat.labelRu) : cat.labelRu;
+              return (
+                <span key={cat.key} className="flex items-center gap-1.5">
+                  <li>
+                    <Link to={`/catalog/${cat.slug}`} className="hover:text-red-500 transition-colors">
+                      {catLbl}
+                    </Link>
+                  </li>
+                  {idx < productCategories.length - 1 ? (
+                    <span className="text-gray-300">,</span>
+                  ) : (
+                    <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+                  )}
+                </span>
+              );
+            })
+          ) : category ? (
             <>
               <li>
                 <Link to={`/catalog/${category.slug}`} className="hover:text-red-500 transition-colors">
@@ -155,7 +191,7 @@ export default function ProductPage() {
               </li>
               <li aria-hidden="true"><span className="text-gray-300">›</span></li>
             </>
-          )}
+          ) : null}
           <li className="text-gray-800 font-medium" aria-current="page">{name}</li>
         </ol>
       </nav>

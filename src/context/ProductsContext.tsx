@@ -62,13 +62,34 @@ function dbToProduct(row: DbProduct): Product {
     }
   }
 
+  let categories: string[] = [];
+  if (specs && typeof specs === "object") {
+    const rawCats = (specs as Record<string, any>)._categories ?? (specs as Record<string, any>).categories;
+    if (Array.isArray(rawCats)) {
+      categories = rawCats.map(String).map((s) => s.trim()).filter(Boolean);
+    } else if (typeof rawCats === "string") {
+      try {
+        const parsed = JSON.parse(rawCats);
+        if (Array.isArray(parsed)) {
+          categories = parsed.map(String).map((s) => s.trim()).filter(Boolean);
+        }
+      } catch {
+        categories = rawCats.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+    }
+  }
+  if (categories.length === 0 && row.category) {
+    categories = [row.category];
+  }
+
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     nameUz: row.name_uz,
     brand: row.brand,
-    category: row.category,
+    category: categories[0] || row.category || "",
+    categories: categories.length > 0 ? categories : undefined,
     subcategory,
     price: row.price,
     oldPrice: row.old_price ?? undefined,
@@ -88,10 +109,16 @@ function dbToProduct(row: DbProduct): Product {
 }
 
 function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, "id" | "created_at"> & { id?: number } {
+  const cats = (p.categories && p.categories.length > 0)
+    ? p.categories.map((c) => c.trim()).filter(Boolean)
+    : (p.category ? [p.category.trim()] : []);
+  const primaryCategory = cats[0] || p.category || "";
+
   const specs = {
     ...(p.specs ?? {}),
     ...(p.subcategory ? { _subcategory: p.subcategory } : {}),
     ...(p.sizes && p.sizes.length > 0 ? { _sizes: JSON.stringify(p.sizes) } : {}),
+    ...(cats.length > 0 ? { _categories: JSON.stringify(cats) } : {}),
   };
   return {
     ...(p.id ? { id: p.id } : {}),
@@ -99,7 +126,7 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
     name: p.name,
     name_uz: p.nameUz,
     brand: p.brand,
-    category: p.category,
+    category: primaryCategory,
     price: p.price,
     old_price: p.oldPrice ?? null,
     image: p.image,
@@ -298,7 +325,6 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       if (patch.nameUz !== undefined) dbPatch.name_uz = patch.nameUz;
       if (patch.slug !== undefined) dbPatch.slug = slugify(patch.slug);
       if (patch.brand !== undefined) dbPatch.brand = patch.brand;
-      if (patch.category !== undefined) dbPatch.category = patch.category;
       if (patch.price !== undefined) dbPatch.price = patch.price;
       if (patch.oldPrice !== undefined) dbPatch.old_price = patch.oldPrice;
       if (patch.image !== undefined) dbPatch.image = patch.image;
@@ -308,12 +334,21 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       if (patch.type !== undefined) dbPatch.type = patch.type;
       if (patch.descRu !== undefined) dbPatch.desc_ru = patch.descRu;
       if (patch.descUz !== undefined) dbPatch.desc_uz = patch.descUz;
-      if (patch.specs !== undefined || patch.subcategory !== undefined) {
+
+      // Handle category, categories, subcategory, sizes and specs
+      if (
+        patch.categories !== undefined ||
+        patch.category !== undefined ||
+        patch.subcategory !== undefined ||
+        patch.sizes !== undefined ||
+        patch.specs !== undefined
+      ) {
         const currentProd = products.find((p) => p.id === id);
         const mergedSpecs: Record<string, any> = {
           ...(currentProd?.specs || {}),
           ...(patch.specs || {}),
         };
+
         if (patch.subcategory !== undefined) {
           if (patch.subcategory) {
             mergedSpecs._subcategory = patch.subcategory;
@@ -321,6 +356,28 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
             delete mergedSpecs._subcategory;
           }
         }
+
+        if (patch.sizes !== undefined) {
+          if (patch.sizes && patch.sizes.length > 0) {
+            mergedSpecs._sizes = JSON.stringify(patch.sizes);
+          } else {
+            delete mergedSpecs._sizes;
+          }
+        }
+
+        if (patch.categories !== undefined) {
+          const cats = patch.categories.map((c) => c.trim()).filter(Boolean);
+          if (cats.length > 0) {
+            mergedSpecs._categories = JSON.stringify(cats);
+            dbPatch.category = cats[0];
+          } else {
+            delete mergedSpecs._categories;
+          }
+        } else if (patch.category !== undefined) {
+          dbPatch.category = patch.category;
+          mergedSpecs._categories = JSON.stringify([patch.category]);
+        }
+
         dbPatch.specs = mergedSpecs;
       }
       if (patch.badge !== undefined) dbPatch.badge = patch.badge;
@@ -345,7 +402,20 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           if (patch.slug && patch.slug !== p.slug) {
             nextSlug = slugify(patch.slug);
           }
-          return { ...p, ...patch, slug: nextSlug };
+          const nextCategories = patch.categories !== undefined
+            ? patch.categories
+            : (patch.category ? [patch.category] : p.categories);
+          const nextCategory = (nextCategories && nextCategories.length > 0)
+            ? nextCategories[0]
+            : (patch.category || p.category);
+
+          return {
+            ...p,
+            ...patch,
+            category: nextCategory,
+            categories: nextCategories,
+            slug: nextSlug,
+          };
         })
       );
     },

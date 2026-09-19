@@ -16,10 +16,14 @@ export interface Product {
   name: string;
   nameUz: string;
   brand: string;
-  /** Category key (matches CategoryDef.key) */
+  /** Primary Category key (matches CategoryDef.key) */
   category: string;
+  /** Multiple Category keys (when product belongs to more than one category) */
+  categories?: string[];
   /** Subcategory key (optional, matches SubcategoryDef.key within the category) */
   subcategory?: string;
+  /** Multiple Subcategory keys (optional) */
+  subcategories?: string[];
   price: number;
   oldPrice?: number;
   image: string;

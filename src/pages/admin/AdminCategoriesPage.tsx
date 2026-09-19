@@ -54,7 +54,12 @@ export default function AdminCategoriesPage() {
   const productsByCat = useMemo(() => {
     const map = new Map<string, number>();
     products.forEach((p) => {
-      map.set(p.category, (map.get(p.category) || 0) + 1);
+      const cats = (p.categories && p.categories.length > 0)
+        ? p.categories
+        : (p.category ? [p.category] : []);
+      cats.forEach((cKey) => {
+        map.set(cKey, (map.get(cKey) || 0) + 1);
+      });
     });
     return map;
   }, [products]);
@@ -63,8 +68,13 @@ export default function AdminCategoriesPage() {
     const map = new Map<string, number>();
     products.forEach((p) => {
       if (p.subcategory) {
-        const fullKey = `${p.category}::${p.subcategory}`;
-        map.set(fullKey, (map.get(fullKey) || 0) + 1);
+        const cats = (p.categories && p.categories.length > 0)
+          ? p.categories
+          : (p.category ? [p.category] : []);
+        cats.forEach((cKey) => {
+          const fullKey = `${cKey}::${p.subcategory}`;
+          map.set(fullKey, (map.get(fullKey) || 0) + 1);
+        });
       }
     });
     return map;

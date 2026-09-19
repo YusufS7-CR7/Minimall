@@ -236,6 +236,7 @@ export default function ExcelImportModal({
           price: finalPrice,
           brand: item.brand,
           category: defaultCategory || "drills",
+          categories: [defaultCategory || "drills"],
           image: "",
           images: [],
           inStock: true,

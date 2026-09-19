@@ -49,7 +49,13 @@ export default function CatalogModal({ id, lang, open, onClose }: CatalogModalPr
   const activeCat = categories.find((c) => c.key === activeCategory) ?? categories[0];
   if (!activeCat) return null;
   const subcategories = activeCat.subcategories ?? [];
-  const catProductCount = (catKey: string) => products.filter((p) => p.category === catKey).length;
+  const catProductCount = (catKey: string) =>
+    products.filter((p) => {
+      const cats = (p.categories && p.categories.length > 0)
+        ? p.categories
+        : (p.category ? [p.category] : []);
+      return cats.includes(catKey);
+    }).length;
 
   return (
     <>

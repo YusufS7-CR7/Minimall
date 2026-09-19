@@ -77,8 +77,13 @@ export default function AdminProductsPage() {
       }
 
       // Category
-      if (selectedCategory !== "all" && p.category !== selectedCategory) {
-        return false;
+      if (selectedCategory !== "all") {
+        const productCategories = (p.categories && p.categories.length > 0)
+          ? p.categories
+          : (p.category ? [p.category] : []);
+        if (!productCategories.includes(selectedCategory)) {
+          return false;
+        }
       }
 
       // Brand
@@ -336,10 +341,12 @@ export default function AdminProductsPage() {
           </div>
         ) : (
           filteredProducts.map((p) => {
-            const cat = categories.find((c) => c.key === p.category);
+            const productCats = (p.categories && p.categories.length > 0)
+              ? p.categories
+              : (p.category ? [p.category] : []);
+            const primaryCat = categories.find((c) => c.key === productCats[0]);
             const pName = lang === "uz" ? p.nameUz || p.name : p.name;
-            const catLabel = lang === "uz" ? cat?.labelUz || cat?.labelRu || p.category : cat?.labelRu || p.category;
-            const sub = cat?.subcategories?.find((s) => s.key === p.subcategory || s.slug === p.subcategory);
+            const sub = primaryCat?.subcategories?.find((s) => s.key === p.subcategory || s.slug === p.subcategory);
             const subLabel = lang === "uz" ? sub?.labelUz || sub?.labelRu || p.subcategory : sub?.labelRu || p.subcategory;
 
             return (
@@ -366,8 +373,17 @@ export default function AdminProductsPage() {
                       <span className="font-mono text-[10px] text-gray-400">#{p.id}</span>
                     </div>
                     <h4 className="font-bold text-gray-900 text-xs line-clamp-2 leading-snug mt-0.5">{pName}</h4>
-                    <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                      <span>{catLabel}</span>
+                    <div className="text-[11px] text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                      {productCats.map((cKey) => {
+                        const cObj = categories.find((c) => c.key === cKey);
+                        const cLabel = lang === "uz" ? cObj?.labelUz || cObj?.labelRu || cKey : cObj?.labelRu || cKey;
+                        return (
+                          <span key={cKey} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded-md text-[10px] font-medium">
+                            {cObj?.icon && <span>{cObj.icon}</span>}
+                            <span>{cLabel}</span>
+                          </span>
+                        );
+                      })}
                       {p.subcategory && (
                         <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.2 rounded font-medium border border-red-100">
                           {subLabel}
@@ -476,10 +492,12 @@ export default function AdminProductsPage() {
                 </tr>
               ) : (
                 filteredProducts.map((p) => {
-                  const cat = categories.find((c) => c.key === p.category);
+                  const productCats = (p.categories && p.categories.length > 0)
+                    ? p.categories
+                    : (p.category ? [p.category] : []);
+                  const primaryCat = categories.find((c) => c.key === productCats[0]);
                   const pName = lang === "uz" ? p.nameUz || p.name : p.name;
-                  const catLabel = lang === "uz" ? cat?.labelUz || cat?.labelRu || p.category : cat?.labelRu || p.category;
-                  const sub = cat?.subcategories?.find((s) => s.key === p.subcategory || s.slug === p.subcategory);
+                  const sub = primaryCat?.subcategories?.find((s) => s.key === p.subcategory || s.slug === p.subcategory);
                   const subLabel = lang === "uz" ? sub?.labelUz || sub?.labelRu || p.subcategory : sub?.labelRu || p.subcategory;
 
                   return (
@@ -527,14 +545,23 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Category & Brand */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="text-xs font-medium text-gray-900">
+                      <td className="py-3 px-4">
+                        <div className="text-xs font-medium text-gray-900 mb-1">
                           {p.brand}
                         </div>
-                        <div className="text-[11px] text-gray-400 flex items-center gap-1.5 flex-wrap">
-                          <span>{catLabel}</span>
+                        <div className="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap max-w-xs">
+                          {productCats.map((cKey) => {
+                            const cObj = categories.find((c) => c.key === cKey);
+                            const cLabel = lang === "uz" ? cObj?.labelUz || cObj?.labelRu || cKey : cObj?.labelRu || cKey;
+                            return (
+                              <span key={cKey} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap">
+                                {cObj?.icon && <span>{cObj.icon}</span>}
+                                <span>{cLabel}</span>
+                              </span>
+                            );
+                          })}
                           {p.subcategory && (
-                            <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded-md font-medium border border-red-100">
+                            <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded-md font-medium border border-red-100 whitespace-nowrap">
                               {subLabel}
                             </span>
                           )}

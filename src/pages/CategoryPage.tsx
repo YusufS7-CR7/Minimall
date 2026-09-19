@@ -61,7 +61,12 @@ export default function CategoryPage() {
   // Base products filtered by category and subcategory
   const baseProducts = useMemo(() => {
     let prods = slug
-      ? allProducts.filter((p) => p.category === category!.key)
+      ? allProducts.filter((p) => {
+          const productCats = (p.categories && p.categories.length > 0)
+            ? p.categories
+            : (p.category ? [p.category] : []);
+          return productCats.includes(category!.key);
+        })
       : allProducts;
 
     if (activeSubcategory) {

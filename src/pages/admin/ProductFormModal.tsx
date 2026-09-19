@@ -8,6 +8,7 @@ import { slugify } from "@/data/products";
 import { translateText } from "@/utils/googleTranslate";
 import { matchBrandFuzzy } from "@/utils/brandSearch";
 import CustomSelect from "@/components/ui/CustomSelect";
+import CustomMultiSelect from "@/components/ui/CustomMultiSelect";
 import { uploadMediaFile } from "@/lib/storage";
 
 interface ProductFormModalProps {
@@ -81,8 +82,31 @@ export default function ProductFormModal({
     );
     setTimeout(() => setBrandSuccessMsg(""), 3500);
   };
-  const [category, setCategory] = useState("drills");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["drills"]);
+  const category = selectedCategories[0] || "drills";
   const [subcategory, setSubcategory] = useState("");
+
+  const availableSubcategories = useMemo(() => {
+    const list: { key: string; label: string }[] = [];
+    const seen = new Set<string>();
+    selectedCategories.forEach((catKey) => {
+      const cat = categories.find((c) => c.key === catKey);
+      if (cat?.subcategories) {
+        cat.subcategories.forEach((sub) => {
+          if (!seen.has(sub.key)) {
+            seen.add(sub.key);
+            const subLabel = lang === "uz" ? sub.labelUz : sub.labelRu;
+            const catLabel = lang === "uz" ? cat.labelUz : cat.labelRu;
+            list.push({
+              key: sub.key,
+              label: selectedCategories.length > 1 ? `${subLabel} (${catLabel})` : subLabel,
+            });
+          }
+        });
+      }
+    });
+    return list;
+  }, [selectedCategories, categories, lang]);
   const [price, setPrice] = useState<string>("");
   const [oldPrice, setOldPrice] = useState<string>("");
   const [inStock, setInStock] = useState(true);
@@ -140,7 +164,10 @@ export default function ProductFormModal({
       setName(productToEdit.name);
       setNameUz(productToEdit.nameUz || productToEdit.name);
       setBrand(productToEdit.brand);
-      setCategory(productToEdit.category);
+      const existingCats = (productToEdit.categories && productToEdit.categories.length > 0)
+        ? productToEdit.categories
+        : (productToEdit.category ? [productToEdit.category] : ["drills"]);
+      setSelectedCategories(existingCats);
       setSubcategory(productToEdit.subcategory || "");
       setPrice(productToEdit.price.toString());
       setOldPrice(productToEdit.oldPrice ? productToEdit.oldPrice.toString() : "");
@@ -174,7 +201,7 @@ export default function ProductFormModal({
       setNameUz("");
       setBrand("Makita");
       setCustomBrand("");
-      setCategory("drills");
+      setSelectedCategories(["drills"]);
       setSubcategory("");
       setPrice("");
       setOldPrice("");
@@ -361,7 +388,8 @@ export default function ProductFormModal({
 
     const parsedOldPrice = oldPrice ? parseInt(oldPrice, 10) : undefined;
     const primaryImage = imagesList[0] || "";
-    const effectiveCategory = category || categories[0]?.key || "drills";
+    const effectiveCategories = selectedCategories.length > 0 ? selectedCategories : [categories[0]?.key || "drills"];
+    const effectiveCategory = effectiveCategories[0];
 
     if (productToEdit) {
       const effectiveSizes = hasSizes ? sizes.filter((s) => s.trim().length > 0) : undefined;
@@ -371,6 +399,7 @@ export default function ProductFormModal({
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
         category: effectiveCategory,
+        categories: effectiveCategories,
         subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
@@ -392,6 +421,8 @@ export default function ProductFormModal({
         price: parsedPrice,
         image: primaryImage,
         images: imagesList,
+        category: effectiveCategory,
+        categories: effectiveCategories,
         slug: slug.trim() || slugify(name.trim()),
         sizes: effectiveSizes,
       });
@@ -403,6 +434,7 @@ export default function ProductFormModal({
         nameUz: nameUz.trim() || name.trim(),
         brand: effectiveBrand,
         category: effectiveCategory,
+        categories: effectiveCategories,
         subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
@@ -743,12 +775,26 @@ export default function ProductFormModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    {t.category}
-                  </label>
-                  <CustomSelect
-                    value={category}
-                    onChange={(val) => { setCategory(val); setSubcategory(""); }}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold text-gray-700">
+                      {t.category}
+                      <span className="ml-1 text-red-500 font-normal">
+                        ({lang === "uz" ? "bir nechtasini tanlash mumkin" : "можно выбрать несколько"})
+                      </span>
+                    </label>
+                    <span className="text-[11px] text-gray-400">
+                      {lang === "uz" ? "★ Birinchisi — asosiy" : "★ Первая в списке — основная"}
+                    </span>
+                  </div>
+                  <CustomMultiSelect
+                    values={selectedCategories}
+                    onChange={(vals) => {
+                      setSelectedCategories(vals);
+                    }}
+                    placeholder={lang === "uz" ? "Kategoriyalarni tanlang..." : "Выберите категории..."}
+                    searchPlaceholder={lang === "uz" ? "Kategoriyani qidirish..." : "Поиск категории..."}
+                    primaryLabel={lang === "uz" ? "★ Asosiy" : "★ Основная"}
+                    makePrimaryTooltip={lang === "uz" ? "Asosiy kategoriya qilish" : "Сделать основной категорией"}
                     options={categories.map((c) => ({
                       value: c.key,
                       label: lang === "uz" ? c.labelUz : c.labelRu,
@@ -758,33 +804,28 @@ export default function ProductFormModal({
                 </div>
 
                 {/* Subcategory selector */}
-                {(() => {
-                  const activeCat = categories.find((c) => c.key === category);
-                  const subs = activeCat?.subcategories ?? [];
-                  if (subs.length === 0) return null;
-                  return (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1">
-                        {t.subcategory}
-                        <span className="ml-1 text-gray-400 font-normal">({lang === "uz" ? "ixtiyoriy" : "необязательно"})</span>
-                      </label>
-                      <CustomSelect
-                        value={subcategory}
-                        onChange={(val) => setSubcategory(val)}
-                        searchable={subs.length > 5}
-                        searchPlaceholder={lang === "uz" ? "Kichik toifani qidirish..." : "Поиск подкатегории..."}
-                        placeholder={lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —"}
-                        options={[
-                          { value: "", label: lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —" },
-                          ...subs.map((s) => ({
-                            value: s.key,
-                            label: lang === "uz" ? s.labelUz : s.labelRu,
-                          })),
-                        ]}
-                      />
-                    </div>
-                  );
-                })()}
+                {availableSubcategories.length > 0 && (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                      {t.subcategory}
+                      <span className="ml-1 text-gray-400 font-normal">({lang === "uz" ? "ixtiyoriy" : "необязательно"})</span>
+                    </label>
+                    <CustomSelect
+                      value={subcategory}
+                      onChange={(val) => setSubcategory(val)}
+                      searchable={availableSubcategories.length > 5}
+                      searchPlaceholder={lang === "uz" ? "Kichik toifani qidirish..." : "Поиск подкатегории..."}
+                      placeholder={lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —"}
+                      options={[
+                        { value: "", label: lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —" },
+                        ...availableSubcategories.map((s) => ({
+                          value: s.key,
+                          label: s.label,
+                        })),
+                      ]}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
