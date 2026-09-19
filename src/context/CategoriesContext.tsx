@@ -72,6 +72,16 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
           const prevMap = new Map(prev.map((c) => [c.key, c]));
           const merged: CategoryDef[] = data.map((row: any) => {
             const existing = prevMap.get(row.key);
+            // Prefer Supabase subcategories if available, fall back to local
+            let remoteSubs: any[] = [];
+            if (Array.isArray(row.subcategories) && row.subcategories.length > 0) {
+              remoteSubs = row.subcategories;
+            } else if (typeof row.subcategories === "string" && row.subcategories) {
+              try { remoteSubs = JSON.parse(row.subcategories); } catch {}
+            }
+            const subcategories = remoteSubs.length > 0
+              ? remoteSubs
+              : (existing?.subcategories || []);
             return {
               key: row.key,
               slug: row.slug || row.key,
@@ -79,7 +89,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
               image: row.image || existing?.image || "",
               labelRu: row.label_ru || existing?.labelRu || row.key,
               labelUz: row.label_uz || existing?.labelUz || row.key,
-              subcategories: existing?.subcategories || [],
+              subcategories,
             };
           });
 
@@ -152,6 +162,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
             label_uz: created.labelUz,
             icon: created.icon,
             image: created.image,
+            subcategories: JSON.stringify(created.subcategories || []),
           },
         ]);
       } catch (e) {
@@ -208,55 +219,78 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const addSubcategory = useCallback(
     async (categoryKey: string, sub: SubcategoryDef) => {
+      let updatedSubs: SubcategoryDef[] = [];
       setCategories((prev) => {
         const updated = prev.map((c) => {
           if (c.key !== categoryKey) return c;
           const currentSubs = c.subcategories || [];
-          // Avoid duplicate subcategory keys
           if (currentSubs.some((s) => s.key === sub.key)) return c;
-          return {
-            ...c,
-            subcategories: [...currentSubs, sub],
-          };
+          updatedSubs = [...currentSubs, sub];
+          return { ...c, subcategories: updatedSubs };
         });
         saveLocalCategories(updated);
         return updated;
       });
+      // Persist to Supabase
+      try {
+        await supabase
+          .from("categories")
+          .update({ subcategories: JSON.stringify(updatedSubs) })
+          .eq("key", categoryKey);
+      } catch (e) {
+        console.error("Failed to sync subcategory add to Supabase", e);
+      }
     },
     []
   );
 
   const updateSubcategory = useCallback(
     async (categoryKey: string, subKey: string, patch: Partial<SubcategoryDef>) => {
+      let updatedSubs: SubcategoryDef[] = [];
       setCategories((prev) => {
         const updated = prev.map((c) => {
           if (c.key !== categoryKey) return c;
           const currentSubs = c.subcategories || [];
-          return {
-            ...c,
-            subcategories: currentSubs.map((s) => (s.key === subKey ? { ...s, ...patch } : s)),
-          };
+          updatedSubs = currentSubs.map((s) => (s.key === subKey ? { ...s, ...patch } : s));
+          return { ...c, subcategories: updatedSubs };
         });
         saveLocalCategories(updated);
         return updated;
       });
+      // Persist to Supabase
+      try {
+        await supabase
+          .from("categories")
+          .update({ subcategories: JSON.stringify(updatedSubs) })
+          .eq("key", categoryKey);
+      } catch (e) {
+        console.error("Failed to sync subcategory update to Supabase", e);
+      }
     },
     []
   );
 
   const deleteSubcategory = useCallback(
     async (categoryKey: string, subKey: string) => {
+      let updatedSubs: SubcategoryDef[] = [];
       setCategories((prev) => {
         const updated = prev.map((c) => {
           if (c.key !== categoryKey) return c;
-          return {
-            ...c,
-            subcategories: (c.subcategories || []).filter((s) => s.key !== subKey),
-          };
+          updatedSubs = (c.subcategories || []).filter((s) => s.key !== subKey);
+          return { ...c, subcategories: updatedSubs };
         });
         saveLocalCategories(updated);
         return updated;
       });
+      // Persist to Supabase
+      try {
+        await supabase
+          .from("categories")
+          .update({ subcategories: JSON.stringify(updatedSubs) })
+          .eq("key", categoryKey);
+      } catch (e) {
+        console.error("Failed to sync subcategory delete to Supabase", e);
+      }
     },
     []
   );

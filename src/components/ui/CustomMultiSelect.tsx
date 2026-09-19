@@ -152,12 +152,32 @@ export default function CustomMultiSelect({
             : "border-gray-200 hover:border-gray-300"
         } ${disabled ? "opacity-60 cursor-not-allowed bg-gray-50" : ""}`}
       >
-        <div className="flex items-center gap-2 truncate">
-          <span className="text-gray-500 text-xs">
-            {values.length === 0
-              ? placeholder
-              : `Выбрано категорий: ${values.length} (нажмите для изменения)`}
-          </span>
+        <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
+          {values.length === 0 ? (
+            <span className="text-gray-400 text-xs font-normal">{placeholder}</span>
+          ) : (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {values.slice(0, 3).map((val, idx) => {
+                const opt = options.find((o) => o.value === val);
+                return (
+                  <span
+                    key={val}
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg font-medium ${
+                      idx === 0
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-gray-100 text-gray-700 border border-gray-200"
+                    }`}
+                  >
+                    {opt?.icon && <span className="text-xs">{opt.icon}</span>}
+                    <span className="truncate max-w-[80px]">{opt?.label ?? val}</span>
+                  </span>
+                );
+              })}
+              {values.length > 3 && (
+                <span className="text-xs text-gray-400 font-medium">+{values.length - 3}</span>
+              )}
+            </div>
+          )}
         </div>
         <svg
           className={`w-4 h-4 text-gray-400 transition-transform duration-200 shrink-0 ml-2 ${
@@ -214,7 +234,8 @@ export default function CustomMultiSelect({
           <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
             {filteredOptions.length === 0 ? (
               <div className="p-4 text-center text-xs text-gray-400">
-                Категории не найдены
+                <div>🔍 Категории не найдены</div>
+                <div className="mt-0.5 text-[11px]">Kategoriya topilmadi</div>
               </div>
             ) : (
               filteredOptions.map((opt) => {
@@ -275,13 +296,13 @@ export default function CustomMultiSelect({
 
           {/* Footer note */}
           <div className="p-2 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-[11px] text-gray-500">
-            <span>Выбрано: <strong className="text-gray-900">{values.length}</strong></span>
+            <span>Выбрано: <strong className="text-gray-900">{values.length}</strong> {values.length === 1 ? "категория" : values.length < 5 ? "категории" : "категорий"}</span>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="text-red-600 font-semibold hover:text-red-700 cursor-pointer"
+              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg cursor-pointer transition-colors"
             >
-              Готово
+              ✓ Готово
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { uploadMediaFile } from "@/lib/storage";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
@@ -63,6 +64,12 @@ export default function AdminCategoriesPage() {
   });
   const [isAddingEmoji, setIsAddingEmoji] = useState(false);
   const [newEmojiInput, setNewEmojiInput] = useState("");
+
+  // Image upload state for category modal
+  const [catImageUploading, setCatImageUploading] = useState(false);
+  const [catImageDragging, setCatImageDragging] = useState(false);
+  const [catImageShowUrl, setCatImageShowUrl] = useState(false);
+  const catImageInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddEmoji = () => {
     const trimmed = newEmojiInput.trim();
@@ -209,6 +216,9 @@ export default function AdminCategoriesPage() {
       icon: "🔌",
       image: "",
     });
+    setCatImageUploading(false);
+    setCatImageDragging(false);
+    setCatImageShowUrl(false);
     setCatModalOpen(true);
   };
 
@@ -223,6 +233,9 @@ export default function AdminCategoriesPage() {
       icon: cat.icon,
       image: cat.image,
     });
+    setCatImageUploading(false);
+    setCatImageDragging(false);
+    setCatImageShowUrl(false);
     setCatModalOpen(true);
   };
 
@@ -899,25 +912,157 @@ export default function AdminCategoriesPage() {
                 )}
               </div>
 
+              {/* ── Image Upload Widget ── */}
               <div>
-                <label className="block font-bold text-gray-800 mb-1">
-                  {t.image}
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/... yoki rasm havolasi"
-                  value={catForm.image}
-                  onChange={(e) => setCatForm((prev) => ({ ...prev, image: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500 text-xs"
-                />
-                {catForm.image && (
-                  <div className="mt-2 w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
-                    <img
-                      src={catForm.image}
-                      alt="Превью"
-                      className="w-full h-full object-cover"
-                      onError={(e) => ((e.target as HTMLElement).style.display = "none")}
-                    />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block font-bold text-gray-800 text-xs">
+                    {t.image}
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    {catForm.image && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCatForm((prev) => ({ ...prev, image: "" }));
+                          setCatImageShowUrl(false);
+                        }}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded-lg transition-colors cursor-pointer border border-red-200"
+                      >
+                        🗑 {lang === "uz" ? "O'chirish" : "Удалить"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setCatImageShowUrl((prev) => !prev)}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded-lg transition-colors cursor-pointer border border-gray-200"
+                    >
+                      🔗 URL
+                    </button>
+                  </div>
+                </div>
+
+                {/* Drop zone / upload area */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setCatImageDragging(true); }}
+                  onDragLeave={() => setCatImageDragging(false)}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    setCatImageDragging(false);
+                    const file = e.dataTransfer.files?.[0];
+                    if (!file || !file.type.startsWith("image/")) return;
+                    setCatImageUploading(true);
+                    const res = await uploadMediaFile(file, "banners");
+                    setCatImageUploading(false);
+                    if (res.url) setCatForm((prev) => ({ ...prev, image: res.url }));
+                  }}
+                  className={`relative rounded-2xl border-2 border-dashed transition-all overflow-hidden ${
+                    catImageDragging
+                      ? "border-red-400 bg-red-50/60 scale-[1.01]"
+                      : catForm.image
+                      ? "border-gray-200 bg-gray-50"
+                      : "border-gray-300 bg-gray-50/60 hover:border-red-300 hover:bg-red-50/30"
+                  }`}
+                  style={{ minHeight: catForm.image ? "auto" : "100px" }}
+                >
+                  {/* Current image preview */}
+                  {catForm.image && !catImageUploading && (
+                    <div className="relative group">
+                      <img
+                        src={catForm.image}
+                        alt="Превью категории"
+                        className="w-full h-40 object-cover rounded-xl"
+                        onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                      />
+                      {/* Overlay on hover */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => catImageInputRef.current?.click()}
+                          className="px-4 py-2 bg-white/90 text-gray-900 text-xs font-bold rounded-xl shadow-lg hover:bg-white cursor-pointer transition-all"
+                        >
+                          📷 {lang === "uz" ? "Rasmni almashtirish" : "Заменить фото"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload placeholder (no image) */}
+                  {!catForm.image && !catImageUploading && (
+                    <button
+                      type="button"
+                      onClick={() => catImageInputRef.current?.click()}
+                      className="w-full h-full min-h-[100px] flex flex-col items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <div className="w-10 h-10 rounded-2xl bg-white border border-gray-200 shadow-xs flex items-center justify-center text-xl">
+                        🖼️
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs font-semibold text-gray-700">
+                          {lang === "uz" ? "Rasm yuklash" : "Загрузить фото"}
+                        </div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          {lang === "uz" ? "Bosing yoki bu yerga torting" : "Нажмите или перетащите файл"}
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Upload spinner */}
+                  {catImageUploading && (
+                    <div className="flex flex-col items-center justify-center h-24 gap-2">
+                      <div className="w-7 h-7 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="text-[11px] text-gray-500">
+                        {lang === "uz" ? "Yuklanmoqda..." : "Загрузка..."}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={catImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setCatImageUploading(true);
+                      const res = await uploadMediaFile(file, "banners");
+                      setCatImageUploading(false);
+                      if (res.url) setCatForm((prev) => ({ ...prev, image: res.url }));
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+
+                {/* Replace button below image */}
+                {catForm.image && !catImageUploading && (
+                  <button
+                    type="button"
+                    onClick={() => catImageInputRef.current?.click()}
+                    className="mt-2 w-full text-[11px] font-semibold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 border border-gray-200"
+                  >
+                    📷 {lang === "uz" ? "Rasmni almashtirish" : "Заменить фото"}
+                  </button>
+                )}
+
+                {/* URL input (collapsed by default, toggle with button) */}
+                {catImageShowUrl && (
+                  <div className="mt-2 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="https://images.unsplash.com/..."
+                        value={catForm.image}
+                        onChange={(e) => setCatForm((prev) => ({ ...prev, image: e.target.value }))}
+                        className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500 text-[11px] font-mono"
+                        autoFocus
+                      />
+                      <span className="absolute left-2.5 top-2 text-gray-400 text-xs">🔗</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">
+                      {lang === "uz" ? "Rasm URL manzilini kiriting" : "Вставьте прямую ссылку на изображение"}
+                    </div>
                   </div>
                 )}
               </div>

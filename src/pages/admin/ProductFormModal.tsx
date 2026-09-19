@@ -10,6 +10,7 @@ import { matchBrandFuzzy } from "@/utils/brandSearch";
 import CustomSelect from "@/components/ui/CustomSelect";
 import CustomMultiSelect from "@/components/ui/CustomMultiSelect";
 import { uploadMediaFile } from "@/lib/storage";
+import { formatNumberWithSpaces, parseFormattedNumber } from "@/utils/formatPrice";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -109,6 +110,14 @@ export default function ProductFormModal({
   }, [selectedCategories, categories, lang]);
   const [price, setPrice] = useState<string>("");
   const [oldPrice, setOldPrice] = useState<string>("");
+
+  const handlePriceChange = (raw: string) => {
+    setPrice(formatNumberWithSpaces(raw));
+  };
+
+  const handleOldPriceChange = (raw: string) => {
+    setOldPrice(formatNumberWithSpaces(raw));
+  };
   const [inStock, setInStock] = useState(true);
   const [badge, setBadge] = useState<string>("");
   const [rating, setRating] = useState<number>(5);
@@ -169,8 +178,8 @@ export default function ProductFormModal({
         : (productToEdit.category ? [productToEdit.category] : ["drills"]);
       setSelectedCategories(existingCats);
       setSubcategory(productToEdit.subcategory || "");
-      setPrice(productToEdit.price.toString());
-      setOldPrice(productToEdit.oldPrice ? productToEdit.oldPrice.toString() : "");
+      setPrice(formatNumberWithSpaces(productToEdit.price));
+      setOldPrice(productToEdit.oldPrice ? formatNumberWithSpaces(productToEdit.oldPrice) : "");
       setInStock(productToEdit.inStock);
       setBadge(productToEdit.badge || "");
       setRating(productToEdit.rating || 5);
@@ -354,7 +363,7 @@ export default function ProductFormModal({
     e.preventDefault();
     setError(null);
 
-    const parsedPrice = parseInt(price, 10);
+    const parsedPrice = parseFormattedNumber(price);
     if (!name.trim()) {
       setError(
         lang === "uz"
@@ -386,7 +395,7 @@ export default function ProductFormModal({
       }
     });
 
-    const parsedOldPrice = oldPrice ? parseInt(oldPrice, 10) : undefined;
+    const parsedOldPrice = oldPrice ? parseFormattedNumber(oldPrice) : undefined;
     const primaryImage = imagesList[0] || "";
     const effectiveCategories = selectedCategories.length > 0 ? selectedCategories : [categories[0]?.key || "drills"];
     const effectiveCategory = effectiveCategories[0];
@@ -792,7 +801,7 @@ export default function ProductFormModal({
                       setSelectedCategories(vals);
                     }}
                     placeholder={lang === "uz" ? "Kategoriyalarni tanlang..." : "Выберите категории..."}
-                    searchPlaceholder={lang === "uz" ? "Kategoriyani qidirish..." : "Поиск категории..."}
+                    searchPlaceholder={lang === "uz" ? "🔍 Kategoriyani qidirish..." : "🔍 Поиск по категориям..."}
                     primaryLabel={lang === "uz" ? "★ Asosiy" : "★ Основная"}
                     makePrimaryTooltip={lang === "uz" ? "Asosiy kategoriya qilish" : "Сделать основной категорией"}
                     options={categories.map((c) => ({
@@ -813,8 +822,8 @@ export default function ProductFormModal({
                     <CustomSelect
                       value={subcategory}
                       onChange={(val) => setSubcategory(val)}
-                      searchable={availableSubcategories.length > 5}
-                      searchPlaceholder={lang === "uz" ? "Kichik toifani qidirish..." : "Поиск подкатегории..."}
+                      searchable
+                      searchPlaceholder={lang === "uz" ? "🔍 Kichik toifani qidirish..." : "🔍 Поиск подкатегории..."}
                       placeholder={lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —"}
                       options={[
                         { value: "", label: lang === "uz" ? "— Kichik toifasiz —" : "— Без подкатегории —" },
@@ -835,12 +844,12 @@ export default function ProductFormModal({
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      min="1"
-                      placeholder="850000"
+                      placeholder="850 000"
                       value={price}
-                      onChange={(e) => setPrice(e.target.value)}
+                      onChange={(e) => handlePriceChange(e.target.value)}
                       className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
                     />
                     <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
@@ -855,10 +864,11 @@ export default function ProductFormModal({
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      placeholder="1050000"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="1 050 000"
                       value={oldPrice}
-                      onChange={(e) => setOldPrice(e.target.value)}
+                      onChange={(e) => handleOldPriceChange(e.target.value)}
                       className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
                     />
                     <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
