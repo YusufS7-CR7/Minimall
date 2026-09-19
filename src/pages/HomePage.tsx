@@ -210,11 +210,26 @@ export default function HomePage() {
 
 function HeroSection({ lang }: { lang: string }) {
 
-  const { activeSlides } = useBanners();
+  const { activeSlides, loading } = useBanners();
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const slides = activeSlides.length > 0 ? activeSlides : [];
   const total = slides.length;
+
+  // Preload the first banner image for fastest LCP
+  useEffect(() => {
+    if (slides[0]?.image) {
+      const existing = document.querySelector(`link[rel="preload"][href="${slides[0].image}"]`);
+      if (!existing) {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "image";
+        link.href = slides[0].image;
+        link.setAttribute("fetchpriority", "high");
+        document.head.appendChild(link);
+      }
+    }
+  }, [slides[0]?.image]);
 
 
   useEffect(() => {
@@ -238,6 +253,12 @@ function HeroSection({ lang }: { lang: string }) {
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
+          {/* Loading skeleton — shown only on first load when no cache */}
+          {loading && total === 0 && (
+            <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-2xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-[shimmer_1.5s_infinite]" />
+            </div>
+          )}
           {total === 0 ? (
             <div className="relative w-full h-full min-h-[210px] sm:min-h-[380px] bg-gradient-to-br from-gray-950 via-gray-900 to-red-950/40 p-4 sm:p-9 flex flex-col justify-between overflow-hidden">
               {/* Ambient background glows */}
@@ -321,15 +342,21 @@ function HeroSection({ lang }: { lang: string }) {
                     <Link to={slide.link} className="block w-full h-full">
                       <img
                         src={slide.image}
-                        alt="Баннер"
+                        alt={`Баннер ${i + 1}`}
                         className="w-full h-full object-cover"
+                        fetchPriority={i === 0 ? "high" : "low"}
+                        decoding={i === 0 ? "sync" : "async"}
+                        loading={i === 0 ? "eager" : "lazy"}
                       />
                     </Link>
                   ) : (
                     <img
                       src={slide.image}
-                      alt="Баннер"
+                      alt={`Баннер ${i + 1}`}
                       className="w-full h-full object-cover"
+                      fetchPriority={i === 0 ? "high" : "low"}
+                      decoding={i === 0 ? "sync" : "async"}
+                      loading={i === 0 ? "eager" : "lazy"}
                     />
                   )}
 

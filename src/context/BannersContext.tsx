@@ -3,6 +3,25 @@ import type { BannerSlide } from "@/data/bannerTypes";
 import { INITIAL_BANNER_SLIDES } from "@/data/bannerTypes";
 import { supabase } from "@/lib/supabase";
 
+const BANNERS_CACHE_KEY = "minimall_banners_cache_v1";
+
+function loadCachedBanners(): BannerSlide[] {
+  try {
+    const raw = localStorage.getItem(BANNERS_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return [];
+}
+
+function saveCachedBanners(slides: BannerSlide[]) {
+  try {
+    localStorage.setItem(BANNERS_CACHE_KEY, JSON.stringify(slides));
+  } catch {}
+}
+
 // ─── DB row type (Supabase snake_case) ───────────────────────────────────────
 
 interface DbBanner {
@@ -67,12 +86,13 @@ interface BannersContextType {
 const BannersContext = createContext<BannersContextType | undefined>(undefined);
 
 export function BannersProvider({ children }: { children: React.ReactNode }) {
-  const [slides, setSlides] = useState<BannerSlide[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize from localStorage cache for instant display
+  const [slides, setSlides] = useState<BannerSlide[]>(loadCachedBanners);
+  const [loading, setLoading] = useState(slides.length === 0); // skip spinner if we have cache
 
   // ── Fetch all banners from Supabase ────────────────────────────────────────
   const fetchBanners = useCallback(async () => {
-    setLoading(true);
+    if (slides.length === 0) setLoading(true);
     const { data, error } = await supabase
       .from("banners")
       .select("*")
@@ -81,9 +101,10 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
     if (!error && data) {
       const fetched = (data as DbBanner[]).map(dbToSlide);
       setSlides(fetched);
+      saveCachedBanners(fetched); // update cache
     } else if (error) {
       console.error("Failed to fetch banners:", error.message);
-      setSlides([]);
+      if (slides.length === 0) setSlides([]);
     }
     setLoading(false);
   }, []);
@@ -107,7 +128,11 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
     }
 
     const newSlide: BannerSlide = { ...newSlideData, id };
-    setSlides((prev) => [newSlide, ...prev]);
+    setSlides((prev) => {
+      const updated = [newSlide, ...prev];
+      saveCachedBanners(updated);
+      return updated;
+    });
   }, []);
 
   // ── Update slide ───────────────────────────────────────────────────────────
@@ -134,9 +159,11 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setSlides((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...updatedFields } : s))
-    );
+    setSlides((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, ...updatedFields } : s));
+      saveCachedBanners(updated);
+      return updated;
+    });
   }, []);
 
   // ── Delete slide ───────────────────────────────────────────────────────────
@@ -151,7 +178,11 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setSlides((prev) => prev.filter((s) => s.id !== id));
+    setSlides((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      saveCachedBanners(updated);
+      return updated;
+    });
   }, []);
 
   // ── Toggle active ──────────────────────────────────────────────────────────
@@ -170,9 +201,11 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    setSlides((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, isActive: newActive } : s))
-    );
+    setSlides((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, isActive: newActive } : s));
+      saveCachedBanners(updated);
+      return updated;
+    });
   }, [slides]);
 
   // ── Reset (delete all from DB) ─────────────────────────────────────────────
@@ -188,6 +221,7 @@ export function BannersProvider({ children }: { children: React.ReactNode }) {
     }
 
     setSlides([]);
+    saveCachedBanners([]);
   }, []);
 
   return (
