@@ -5,7 +5,16 @@ import { useApp } from "@/context/AppContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import type { CategoryDef, SubcategoryDef } from "@/data/types";
 
-const EMOJI_PRESETS = ["🔌", "🌿", "🏠", "💧", "🔧", "💡", "⚡", "🔩", "🪚", "🧰", "🚜", "📐", "🚗", "📦", "🏢"];
+const DEFAULT_EMOJIS = [
+  "🔌", "🌿", "🏠", "💧", "🔧", "💡", "⚡", "🔩", "🪚", "🧰", "🚜", "📐", "🚗", "📦", "🏢",
+  "🛠️", "🔨", "🪓", "🧱", "⚙️", "🔋", "🔦", "🦺", "🥽", "🧤", "🪜", "🪣", "🧲", "🏷️", "📏",
+];
+
+const SUGGESTED_EMOJIS = [
+  "🪛", "⛏️", "🎨", "🧹", "🧺", "🧯", "🔒", "🔑", "🚛", "🚚",
+  "🪵", "🎯", "💎", "⭐", "🔥", "🛡️", "🏷️", "🧤", "🥽", "🦺",
+  "🪜", "🪣", "🧲", "🧱", "⚙️", "🔋", "🔦", "🛠️", "🔨", "🪓",
+];
 
 export default function AdminCategoriesPage() {
   const {
@@ -38,6 +47,57 @@ export default function AdminCategoriesPage() {
     icon: "🔌",
     image: "",
   });
+
+  // Custom Emojis State
+  const [customEmojis, setCustomEmojis] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem("minimall_category_emojis");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return DEFAULT_EMOJIS;
+  });
+  const [isAddingEmoji, setIsAddingEmoji] = useState(false);
+  const [newEmojiInput, setNewEmojiInput] = useState("");
+
+  const handleAddEmoji = () => {
+    const trimmed = newEmojiInput.trim();
+    if (!trimmed) return;
+
+    if (!customEmojis.includes(trimmed)) {
+      const updated = [trimmed, ...customEmojis];
+      setCustomEmojis(updated);
+      try {
+        localStorage.setItem("minimall_category_emojis", JSON.stringify(updated));
+      } catch (err) {
+        console.error("Failed to save emojis to localStorage", err);
+      }
+    }
+
+    setCatForm((prev) => ({ ...prev, icon: trimmed }));
+    setNewEmojiInput("");
+    setIsAddingEmoji(false);
+    showToast(lang === "uz" ? `Smaylik «${trimmed}» qo'shildi va tanlandi!` : `Смайлик «${trimmed}» добавлен и выбран!`);
+  };
+
+  const handleAddSpecificEmoji = (emoji: string) => {
+    if (!customEmojis.includes(emoji)) {
+      const updated = [emoji, ...customEmojis];
+      setCustomEmojis(updated);
+      try {
+        localStorage.setItem("minimall_category_emojis", JSON.stringify(updated));
+      } catch (err) {
+        console.error("Failed to save emojis to localStorage", err);
+      }
+    }
+    setCatForm((prev) => ({ ...prev, icon: emoji }));
+    setIsAddingEmoji(false);
+    showToast(lang === "uz" ? `Smaylik «${emoji}» qo'shildi va tanlandi!` : `Смайлик «${emoji}» добавлен и выбран!`);
+  };
 
   // Subcategory Modal State
   const [subModalOpen, setSubModalOpen] = useState(false);
@@ -710,27 +770,133 @@ export default function AdminCategoriesPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-gray-800 mb-1">{t.icon}</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={catForm.icon}
-                    onChange={(e) => setCatForm((prev) => ({ ...prev, icon: e.target.value }))}
-                    className="w-16 text-center text-lg px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-red-500"
-                  />
-                  <div className="flex flex-wrap gap-1 flex-1">
-                    {EMOJI_PRESETS.map((emoji) => (
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block font-bold text-gray-800 text-xs">
+                    {t.icon}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingEmoji((prev) => !prev)}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer border border-red-200"
+                  >
+                    <span className="text-xs font-bold">+</span>
+                    <span>{lang === "uz" ? "Yangi smaylik qo'shish" : "Добавить смайлик"}</span>
+                  </button>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  {/* Selected/current preview input */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <input
+                      type="text"
+                      value={catForm.icon}
+                      title={lang === "uz" ? "Tanlangan belgi / smaylik" : "Выбранный смайлик / иконка"}
+                      onChange={(e) => setCatForm((prev) => ({ ...prev, icon: e.target.value }))}
+                      className="w-14 h-14 text-center text-2xl bg-gray-50 border-2 border-red-500 rounded-2xl shadow-xs focus:bg-white focus:outline-hidden"
+                    />
+                    <span className="text-[10px] text-gray-400 mt-1">{lang === "uz" ? "Tanlandi" : "Выбран"}</span>
+                  </div>
+
+                  {/* Emoji presets + add button */}
+                  <div className="flex-1">
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1.5 bg-gray-50/70 border border-gray-200 rounded-xl">
+                      {customEmojis.map((emoji) => {
+                        const isSelected = catForm.icon === emoji;
+                        return (
+                          <button
+                            type="button"
+                            key={emoji}
+                            onClick={() => setCatForm((prev) => ({ ...prev, icon: emoji }))}
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg cursor-pointer transition-all ${
+                              isSelected
+                                ? "bg-red-600 text-white shadow-xs scale-105 ring-2 ring-red-300"
+                                : "bg-white hover:bg-gray-100 border border-gray-200 hover:border-gray-300"
+                            }`}
+                          >
+                            {emoji}
+                          </button>
+                        );
+                      })}
+
+                      {/* Add new emoji quick button */}
                       <button
                         type="button"
-                        key={emoji}
-                        onClick={() => setCatForm((prev) => ({ ...prev, icon: emoji }))}
-                        className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-sm cursor-pointer transition-colors"
+                        onClick={() => setIsAddingEmoji(true)}
+                        title={lang === "uz" ? "Yangi smaylik qo'shish" : "Добавить новый смайлик"}
+                        className="w-9 h-9 rounded-xl border border-dashed border-red-300 bg-red-50/50 hover:bg-red-100 text-red-600 flex items-center justify-center text-base font-bold cursor-pointer transition-colors"
                       >
-                        {emoji}
+                        +
                       </button>
-                    ))}
+                    </div>
                   </div>
                 </div>
+
+                {/* Add new emoji inline popover / form */}
+                {isAddingEmoji && (
+                  <div className="mt-2.5 p-3 bg-gradient-to-br from-red-50/70 to-orange-50/40 border border-red-200 rounded-xl space-y-2.5 animate-in fade-in zoom-in-95 duration-150 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                        <span>✨</span>
+                        <span>{lang === "uz" ? "Yangi smaylik qo'shish" : "Добавить новый смайлик"}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingEmoji(false);
+                          setNewEmojiInput("");
+                        }}
+                        className="text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newEmojiInput}
+                        onChange={(e) => setNewEmojiInput(e.target.value)}
+                        placeholder={lang === "uz" ? "Smaylikni kiriting yoki joylang (masalan: 🪛, 🎨)..." : "Вставьте или введите смайлик (например: 🪛, 🎨, ⛏️)..."}
+                        className="flex-1 text-xs px-3 py-2 border border-gray-200 bg-white rounded-lg focus:outline-hidden focus:border-red-500 focus:ring-1 focus:ring-red-500 text-center"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddEmoji();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddEmoji}
+                        disabled={!newEmojiInput.trim()}
+                        className="px-3.5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold rounded-lg cursor-pointer transition-colors shrink-0 shadow-xs"
+                      >
+                        {lang === "uz" ? "Qo'shish" : "Добавить"}
+                      </button>
+                    </div>
+
+                    {/* Quick popular emojis suggestions */}
+                    <div>
+                      <div className="text-[10px] text-gray-500 font-medium mb-1">
+                        {lang === "uz" ? "Tez tanlash uchun tavsiya etilganlar:" : "Быстрый выбор из популярных:"}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {SUGGESTED_EMOJIS.map((sug) => (
+                          <button
+                            type="button"
+                            key={sug}
+                            onClick={() => handleAddSpecificEmoji(sug)}
+                            className="w-7 h-7 rounded-lg bg-white border border-gray-200 hover:bg-red-50 hover:border-red-300 flex items-center justify-center text-sm cursor-pointer transition-colors"
+                            title={`Добавить ${sug}`}
+                          >
+                            {sug}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
