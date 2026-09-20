@@ -3,6 +3,7 @@ import type { Product } from "@/data/types";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
+import { useCurrency } from "@/context/CurrencyContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { slugify } from "@/data/products";
 import { translateText } from "@/utils/googleTranslate";
@@ -30,6 +31,7 @@ export default function ProductFormModal({
   const t = ADMIN_TRANSLATIONS[lang].productForm;
   const { addProduct, updateProduct, brands, addBrand } = useProducts();
   const { categories } = useCategories();
+  const { usdRate } = useCurrency();
 
   const [activeTab, setActiveTab] = useState<"general" | "media" | "specs" | "seo">("general");
 
@@ -108,8 +110,12 @@ export default function ProductFormModal({
     });
     return list;
   }, [selectedCategories, categories, lang]);
+  // Currency mode: "UZS" (сум) or "USD" ($ доллар)
+  const [currencyMode, setCurrencyMode] = useState<"UZS" | "USD">("UZS");
   const [price, setPrice] = useState<string>("");
   const [oldPrice, setOldPrice] = useState<string>("");
+  const [priceUsd, setPriceUsd] = useState<string>("");
+  const [oldPriceUsd, setOldPriceUsd] = useState<string>("");
 
   const handlePriceChange = (raw: string) => {
     setPrice(formatNumberWithSpaces(raw));
@@ -117,6 +123,60 @@ export default function ProductFormModal({
 
   const handleOldPriceChange = (raw: string) => {
     setOldPrice(formatNumberWithSpaces(raw));
+  };
+
+  const handlePriceUsdChange = (raw: string) => {
+    const cleaned = raw.replace(/[^\d.,]/g, "").replace(",", ".");
+    setPriceUsd(cleaned);
+  };
+
+  const handleOldPriceUsdChange = (raw: string) => {
+    const cleaned = raw.replace(/[^\d.,]/g, "").replace(",", ".");
+    setOldPriceUsd(cleaned);
+  };
+
+  // Convert USD price to UZS in real-time
+  const convertedPriceUzs = useMemo(() => {
+    const val = parseFloat(priceUsd.replace(",", "."));
+    if (isNaN(val) || val <= 0 || !usdRate) return 0;
+    return Math.round(val * usdRate);
+  }, [priceUsd, usdRate]);
+
+  const convertedOldPriceUzs = useMemo(() => {
+    const val = parseFloat(oldPriceUsd.replace(",", "."));
+    if (isNaN(val) || val <= 0 || !usdRate) return 0;
+    return Math.round(val * usdRate);
+  }, [oldPriceUsd, usdRate]);
+
+  // Approximate USD for UZS input
+  const approxUsd = useMemo(() => {
+    const uzs = parseFormattedNumber(price);
+    if (!uzs || !usdRate) return "";
+    return (uzs / usdRate).toFixed(2);
+  }, [price, usdRate]);
+
+  const switchCurrencyMode = (newMode: "UZS" | "USD") => {
+    if (newMode === currencyMode) return;
+    if (newMode === "USD") {
+      const uzs = parseFormattedNumber(price);
+      if (uzs > 0 && usdRate > 0) {
+        setPriceUsd((uzs / usdRate).toFixed(2).replace(/\.00$/, ""));
+      }
+      const oldUzs = parseFormattedNumber(oldPrice);
+      if (oldUzs > 0 && usdRate > 0) {
+        setOldPriceUsd((oldUzs / usdRate).toFixed(2).replace(/\.00$/, ""));
+      }
+    } else {
+      const usd = parseFloat(priceUsd.replace(",", "."));
+      if (!isNaN(usd) && usd > 0 && usdRate > 0) {
+        setPrice(formatNumberWithSpaces(Math.round(usd * usdRate)));
+      }
+      const oldUsd = parseFloat(oldPriceUsd.replace(",", "."));
+      if (!isNaN(oldUsd) && oldUsd > 0 && usdRate > 0) {
+        setOldPrice(formatNumberWithSpaces(Math.round(oldUsd * usdRate)));
+      }
+    }
+    setCurrencyMode(newMode);
   };
   const [inStock, setInStock] = useState(true);
   const [badge, setBadge] = useState<string>("");
@@ -178,8 +238,28 @@ export default function ProductFormModal({
         : (productToEdit.category ? [productToEdit.category] : ["drills"]);
       setSelectedCategories(existingCats);
       setSubcategory(productToEdit.subcategory || "");
-      setPrice(formatNumberWithSpaces(productToEdit.price));
-      setOldPrice(productToEdit.oldPrice ? formatNumberWithSpaces(productToEdit.oldPrice) : "");
+      const origCurrency = productToEdit.specs?._origCurrency;
+      const origPrice = productToEdit.specs?._origPrice;
+      const origOldPrice = productToEdit.specs?._origOldPrice;
+
+      if (origCurrency === "USD" && origPrice) {
+        setCurrencyMode("USD");
+        setPriceUsd(origPrice);
+        setOldPriceUsd(origOldPrice || "");
+        setPrice(formatNumberWithSpaces(productToEdit.price));
+        setOldPrice(productToEdit.oldPrice ? formatNumberWithSpaces(productToEdit.oldPrice) : "");
+      } else {
+        setCurrencyMode("UZS");
+        setPrice(formatNumberWithSpaces(productToEdit.price));
+        setOldPrice(productToEdit.oldPrice ? formatNumberWithSpaces(productToEdit.oldPrice) : "");
+        if (usdRate > 0) {
+          setPriceUsd(parseFloat((productToEdit.price / usdRate).toFixed(2)).toString());
+          setOldPriceUsd(productToEdit.oldPrice ? parseFloat((productToEdit.oldPrice / usdRate).toFixed(2)).toString() : "");
+        } else {
+          setPriceUsd("");
+          setOldPriceUsd("");
+        }
+      }
       setInStock(productToEdit.inStock);
       setBadge(productToEdit.badge || "");
       setRating(productToEdit.rating || 5);
@@ -199,10 +279,12 @@ export default function ProductFormModal({
       setSlug(productToEdit.slug);
       setSlugManuallyEdited(true);
 
-      const parsedSpecs = Object.entries(productToEdit.specs || {}).map(([k, v]) => ({
-        key: k,
-        value: v,
-      }));
+      const parsedSpecs = Object.entries(productToEdit.specs || {})
+        .filter(([k]) => !k.startsWith("_orig"))
+        .map(([k, v]) => ({
+          key: k,
+          value: v,
+        }));
       setSpecsList(parsedSpecs.length > 0 ? parsedSpecs : [{ key: "", value: "" }]);
     } else {
       // Defaults for new product: empty imagesList, user must select files
@@ -212,8 +294,11 @@ export default function ProductFormModal({
       setCustomBrand("");
       setSelectedCategories([]);
       setSubcategory("");
+      setCurrencyMode("UZS");
       setPrice("");
       setOldPrice("");
+      setPriceUsd("");
+      setOldPriceUsd("");
       setInStock(true);
       setBadge("");
       setRating(5);
@@ -363,7 +448,6 @@ export default function ProductFormModal({
     e.preventDefault();
     setError(null);
 
-    const parsedPrice = parseFormattedNumber(price);
     if (!name.trim()) {
       setError(
         lang === "uz"
@@ -373,14 +457,46 @@ export default function ProductFormModal({
       setActiveTab("general");
       return;
     }
-    if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      setError(
-        lang === "uz"
-          ? "Iltimos, mahsulot narxini so'mda to'g'ri ko'rsating."
-          : "Пожалуйста, укажите корректную стоимость товара в сумах."
-      );
-      setActiveTab("general");
-      return;
+
+    let finalUzsPrice: number;
+    let finalOldUzsPrice: number | undefined;
+
+    if (currencyMode === "USD") {
+      const parsedUsd = parseFloat(priceUsd.replace(",", "."));
+      if (isNaN(parsedUsd) || parsedUsd <= 0) {
+        setError(
+          lang === "uz"
+            ? "Iltimos, mahsulot narxini dollarda to'g'ri ko'rsating (masalan: 65 yoki 61.36)."
+            : "Пожалуйста, укажите корректную цену товара в долларах (например: 65 или 61.36)."
+        );
+        setActiveTab("general");
+        return;
+      }
+      finalUzsPrice = Math.round(parsedUsd * usdRate);
+
+      if (oldPriceUsd.trim()) {
+        const parsedOldUsd = parseFloat(oldPriceUsd.replace(",", "."));
+        if (!isNaN(parsedOldUsd) && parsedOldUsd > 0) {
+          finalOldUzsPrice = Math.round(parsedOldUsd * usdRate);
+        }
+      }
+    } else {
+      finalUzsPrice = parseFormattedNumber(price);
+      if (isNaN(finalUzsPrice) || finalUzsPrice <= 0) {
+        setError(
+          lang === "uz"
+            ? "Iltimos, mahsulot narxini so'mda to'g'ri ko'rsating."
+            : "Пожалуйста, укажите корректную стоимость товара в сумах."
+        );
+        setActiveTab("general");
+        return;
+      }
+      if (oldPrice.trim()) {
+        const parsedOld = parseFormattedNumber(oldPrice);
+        if (!isNaN(parsedOld) && parsedOld > 0) {
+          finalOldUzsPrice = parsedOld;
+        }
+      }
     }
 
     if (selectedCategories.length === 0) {
@@ -400,12 +516,25 @@ export default function ProductFormModal({
 
     const specsRecord: Record<string, string> = {};
     specsList.forEach((item) => {
-      if (item.key.trim() && item.value.trim()) {
+      if (item.key.trim() && item.value.trim() && !item.key.startsWith("_orig")) {
         specsRecord[item.key.trim()] = item.value.trim();
       }
     });
 
-    const parsedOldPrice = oldPrice ? parseFormattedNumber(oldPrice) : undefined;
+    if (currencyMode === "USD") {
+      specsRecord._origPrice = priceUsd.trim().replace(",", ".");
+      specsRecord._origCurrency = "USD";
+      if (oldPriceUsd.trim()) {
+        specsRecord._origOldPrice = oldPriceUsd.trim().replace(",", ".");
+      }
+    } else {
+      delete specsRecord._origPrice;
+      delete specsRecord._origCurrency;
+      delete specsRecord._origOldPrice;
+    }
+
+    const parsedOldPrice = finalOldUzsPrice;
+    const parsedPrice = finalUzsPrice;
     const primaryImage = imagesList[0] || "";
     const effectiveCategories = selectedCategories.length > 0 ? selectedCategories : [categories[0]?.key || "drills"];
     const effectiveCategory = effectiveCategories[0];
@@ -912,44 +1041,172 @@ export default function ProductFormModal({
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    {t.price} <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      required
-                      placeholder="850 000"
-                      value={price}
-                      onChange={(e) => handlePriceChange(e.target.value)}
-                      className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-                    />
-                    <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
-                      UZS
+              {/* Currency Selector Toolbar */}
+              <div className="p-3 bg-gradient-to-r from-gray-50 via-slate-50 to-emerald-50/40 rounded-2xl border border-gray-200/90 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-800">
+                      {lang === "uz" ? "Narx kiritish valyutasi:" : "Валюта ввода цены:"}
+                    </span>
+                    <div className="inline-flex p-0.5 bg-white border border-gray-200 rounded-xl shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => switchCurrencyMode("UZS")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          currencyMode === "UZS"
+                            ? "bg-red-600 text-white shadow-xs"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        }`}
+                      >
+                        <span>🇺🇿</span>
+                        <span>UZS ({lang === "uz" ? "so'm" : "в сумах"})</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => switchCurrencyMode("USD")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          currencyMode === "USD"
+                            ? "bg-emerald-600 text-white shadow-xs"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        }`}
+                      >
+                        <span>💵</span>
+                        <span>USD ($ {lang === "uz" ? "dollarda" : "в долларах"})</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600 bg-white px-3 py-1 rounded-xl border border-emerald-100 shadow-2xs self-start sm:self-auto">
+                    <span className="text-gray-400 font-medium">{lang === "uz" ? "Kurs:" : "Курс:"}</span>
+                    <span className="font-extrabold text-emerald-700">
+                      1$ = {formatNumberWithSpaces(usdRate)} {lang === "uz" ? "so'm" : "сум"}
                     </span>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    {t.oldPrice}
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="1 050 000"
-                      value={oldPrice}
-                      onChange={(e) => handleOldPriceChange(e.target.value)}
-                      className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
-                    />
-                    <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
-                      UZS
-                    </span>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {currencyMode === "USD" ? (
+                    <>
+                      {/* Price in USD */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          {lang === "uz" ? "Chakana narxi ($ USD)" : "Розничная цена ($ USD)"} <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            required
+                            placeholder="65.00"
+                            value={priceUsd}
+                            onChange={(e) => handlePriceUsdChange(e.target.value)}
+                            className="w-full text-sm font-semibold px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                          />
+                          <span className="absolute right-3 top-2.5 text-xs text-emerald-700 font-bold">
+                            $ USD
+                          </span>
+                        </div>
+                        {convertedPriceUzs > 0 ? (
+                          <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs flex items-center justify-between text-emerald-950 animate-fade-in">
+                            <span className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
+                              <span>⚡</span>
+                              <span>{lang === "uz" ? "Saytda so'mda bo'ladi:" : "На сайте сохранится:"}</span>
+                            </span>
+                            <span className="font-black text-sm text-emerald-900">
+                              {formatNumberWithSpaces(convertedPriceUzs)} UZS
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-[11px] text-gray-400">
+                            {lang === "uz"
+                              ? "Dollardagi narxni kiriting — sayt avtomatik so'mga aylantiradi"
+                              : "Введите цену в долларах — система пересчитает в сумы по курсу"}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Old Price in USD */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          {lang === "uz" ? "Eski narxi ($ USD)" : "Старая цена ($ USD)"}
+                          <span className="ml-1 text-gray-400 font-normal">({lang === "uz" ? "chegirma uchun" : "для скидки"})</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="80.00"
+                            value={oldPriceUsd}
+                            onChange={(e) => handleOldPriceUsdChange(e.target.value)}
+                            className="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                          />
+                          <span className="absolute right-3 top-2.5 text-xs text-emerald-700 font-bold">
+                            $ USD
+                          </span>
+                        </div>
+                        {convertedOldPriceUzs > 0 && (
+                          <div className="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded-xl text-xs flex items-center justify-between text-gray-700 animate-fade-in">
+                            <span className="text-[11px] font-medium text-gray-500">
+                              {lang === "uz" ? "Saytda (chizilgan):" : "На сайте (зачёркнутая):"}
+                            </span>
+                            <span className="font-bold line-through text-gray-800">
+                              {formatNumberWithSpaces(convertedOldPriceUzs)} UZS
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Price in UZS */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          {t.price} (UZS) <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            required
+                            placeholder="850 000"
+                            value={price}
+                            onChange={(e) => handlePriceChange(e.target.value)}
+                            className="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                          />
+                          <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
+                            UZS
+                          </span>
+                        </div>
+                        {approxUsd && parseFloat(approxUsd) > 0 && (
+                          <div className="mt-1 text-[11px] text-gray-400 flex items-center gap-1">
+                            <span>≈ ${approxUsd}</span>
+                            <span className="text-gray-400">({lang === "uz" ? "kurs bo'yicha" : "по текущему курсу"})</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Old Price in UZS */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          {t.oldPrice} (UZS)
+                          <span className="ml-1 text-gray-400 font-normal">({lang === "uz" ? "chegirma uchun" : "для скидки"})</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="1 050 000"
+                            value={oldPrice}
+                            onChange={(e) => handleOldPriceChange(e.target.value)}
+                            className="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                          />
+                          <span className="absolute right-3 top-2.5 text-xs text-gray-400 font-medium">
+                            UZS
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
