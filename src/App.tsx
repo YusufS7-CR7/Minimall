@@ -69,7 +69,7 @@ function ScrollToTop() {
 function AppLayout() {
   const { lang } = useApp();
   const { pathname } = useLocation();
-  const { isAuthenticated } = useAdminAuth();
+  const { isAuthenticated, loading: adminLoading } = useAdminAuth();
   const isAdminRoute = pathname.startsWith("/admin");
 
   const [infoModalOpen, setInfoModalOpen] = useState(false);
@@ -100,6 +100,12 @@ function AppLayout() {
   };
 
   if (isAdminRoute) {
+    // While we're verifying the session from Supabase, show a neutral spinner.
+    // This prevents flicker and ensures no one bypasses auth during the async check.
+    if (adminLoading) {
+      return <AdminLoadingSpinner />;
+    }
+
     if (!isAuthenticated) {
       return (
         <Suspense fallback={<AdminLoadingSpinner />}>
