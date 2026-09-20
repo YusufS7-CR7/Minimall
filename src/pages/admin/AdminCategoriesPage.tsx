@@ -50,18 +50,27 @@ export default function AdminCategoriesPage() {
   });
 
   // Custom Emojis State
-  const [customEmojis, setCustomEmojis] = useState<string[]>(() => {
+  // We store ONLY the extra (user-added) emojis in localStorage,
+  // and always merge them with DEFAULT_EMOJIS at runtime.
+  const [extraEmojis, setExtraEmojis] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem("minimall_category_emojis");
+      const saved = localStorage.getItem("minimall_category_extra_emojis");
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch {
       // fallback
     }
-    return DEFAULT_EMOJIS;
+    return [];
   });
+
+  // The full palette = user-added first, then defaults (deduped)
+  const customEmojis = [
+    ...extraEmojis,
+    ...DEFAULT_EMOJIS.filter((e) => !extraEmojis.includes(e)),
+  ];
+
   const [isAddingEmoji, setIsAddingEmoji] = useState(false);
   const [newEmojiInput, setNewEmojiInput] = useState("");
 
@@ -71,18 +80,22 @@ export default function AdminCategoriesPage() {
   const [catImageShowUrl, setCatImageShowUrl] = useState(false);
   const catImageInputRef = useRef<HTMLInputElement>(null);
 
+  const saveExtraEmojis = (updated: string[]) => {
+    setExtraEmojis(updated);
+    try {
+      localStorage.setItem("minimall_category_extra_emojis", JSON.stringify(updated));
+    } catch (err) {
+      console.error("Failed to save emojis to localStorage", err);
+    }
+  };
+
   const handleAddEmoji = () => {
     const trimmed = newEmojiInput.trim();
     if (!trimmed) return;
 
-    if (!customEmojis.includes(trimmed)) {
-      const updated = [trimmed, ...customEmojis];
-      setCustomEmojis(updated);
-      try {
-        localStorage.setItem("minimall_category_emojis", JSON.stringify(updated));
-      } catch (err) {
-        console.error("Failed to save emojis to localStorage", err);
-      }
+    // Add to extraEmojis only if it's not already there (default or custom)
+    if (!extraEmojis.includes(trimmed) && !DEFAULT_EMOJIS.includes(trimmed)) {
+      saveExtraEmojis([trimmed, ...extraEmojis]);
     }
 
     setCatForm((prev) => ({ ...prev, icon: trimmed }));
@@ -92,18 +105,13 @@ export default function AdminCategoriesPage() {
   };
 
   const handleAddSpecificEmoji = (emoji: string) => {
-    if (!customEmojis.includes(emoji)) {
-      const updated = [emoji, ...customEmojis];
-      setCustomEmojis(updated);
-      try {
-        localStorage.setItem("minimall_category_emojis", JSON.stringify(updated));
-      } catch (err) {
-        console.error("Failed to save emojis to localStorage", err);
-      }
+    // If it's not in defaults and not already extra, add it
+    if (!DEFAULT_EMOJIS.includes(emoji) && !extraEmojis.includes(emoji)) {
+      saveExtraEmojis([emoji, ...extraEmojis]);
     }
     setCatForm((prev) => ({ ...prev, icon: emoji }));
     setIsAddingEmoji(false);
-    showToast(lang === "uz" ? `Smaylik «${emoji}» qo'shildi va tanlandi!` : `Смайлик «${emoji}» добавлен и выбран!`);
+    showToast(lang === "uz" ? `Smaylik «${emoji}» qo'shildi va tanlandi!` : `Смайлик «${emoji}» выбран!`);
   };
 
   // Subcategory Modal State
