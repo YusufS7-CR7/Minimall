@@ -61,10 +61,6 @@ export default function CustomMultiSelect({
 
   const toggleOption = (optValue: string) => {
     if (values.includes(optValue)) {
-      // Don't allow unselecting all - keep at least one
-      if (values.length === 1) {
-        return;
-      }
       onChange(values.filter((v) => v !== optValue));
     } else {
       onChange([...values, optValue]);
@@ -73,7 +69,6 @@ export default function CustomMultiSelect({
 
   const removeValue = (valToRemove: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (values.length <= 1) return;
     onChange(values.filter((v) => v !== valToRemove));
   };
 
@@ -110,7 +105,7 @@ export default function CustomMultiSelect({
               <span className="truncate max-w-[140px] sm:max-w-[180px]">{label}</span>
 
               {isPrimary ? (
-                <span className="text-[10px] font-bold text-red-600 bg-red-100/80 px-1 py-0.2 rounded">
+                <span className="text-[10px] font-bold text-red-600 bg-red-100/80 px-1.5 py-0.5 rounded shadow-2xs">
                   {primaryLabel}
                 </span>
               ) : (
@@ -118,24 +113,23 @@ export default function CustomMultiSelect({
                   type="button"
                   onClick={(e) => setAsPrimary(val, e)}
                   title={makePrimaryTooltip}
-                  className="text-[10px] text-gray-400 hover:text-red-600 px-1 py-0.2 rounded hover:bg-gray-200/60 transition-colors"
+                  className="inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-700 hover:text-red-700 bg-amber-50 hover:bg-red-50 border border-amber-200/60 hover:border-red-200 px-1.5 py-0.5 rounded transition-all cursor-pointer"
                 >
-                  ☆
+                  <span>☆</span>
+                  <span className="hidden sm:inline">{makePrimaryTooltip}</span>
                 </button>
               )}
 
-              {values.length > 1 && (
-                <button
-                  type="button"
-                  onClick={(e) => removeValue(val, e)}
-                  className="text-gray-400 hover:text-red-500 rounded-full p-0.5 ml-0.5 transition-colors focus:outline-hidden"
-                  title="Удалить категорию"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={(e) => removeValue(val, e)}
+                className="text-gray-400 hover:text-red-500 rounded-full p-0.5 ml-0.5 transition-colors focus:outline-hidden cursor-pointer"
+                title="Удалить категорию"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </span>
           );
         })}
@@ -273,7 +267,7 @@ export default function CustomMultiSelect({
                     {isSelected && (
                       <div className="flex items-center gap-1 shrink-0 ml-2">
                         {isPrimary ? (
-                          <span className="text-[10px] text-red-600 bg-red-100 px-1.5 py-0.5 rounded font-bold">
+                          <span className="text-[10px] text-red-600 bg-red-100 px-2 py-0.5 rounded font-bold shadow-2xs">
                             {primaryLabel}
                           </span>
                         ) : (
@@ -281,9 +275,9 @@ export default function CustomMultiSelect({
                             type="button"
                             onClick={(e) => setAsPrimary(opt.value, e)}
                             title={makePrimaryTooltip}
-                            className="text-[10px] text-gray-400 hover:text-red-600 hover:bg-red-100 px-1.5 py-0.5 rounded transition-colors"
+                            className="text-[10px] font-semibold text-amber-700 hover:text-red-700 bg-amber-50 hover:bg-red-100 border border-amber-200/80 px-2 py-0.5 rounded transition-all cursor-pointer"
                           >
-                            Сделать главной
+                            {makePrimaryTooltip}
                           </button>
                         )}
                       </div>

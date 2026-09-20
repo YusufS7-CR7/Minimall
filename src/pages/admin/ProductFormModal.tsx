@@ -83,8 +83,8 @@ export default function ProductFormModal({
     );
     setTimeout(() => setBrandSuccessMsg(""), 3500);
   };
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(["drills"]);
-  const category = selectedCategories[0] || "drills";
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const category = selectedCategories[0] || "";
   const [subcategory, setSubcategory] = useState("");
 
   const availableSubcategories = useMemo(() => {
@@ -210,7 +210,7 @@ export default function ProductFormModal({
       setNameUz("");
       setBrand("Makita");
       setCustomBrand("");
-      setSelectedCategories(["drills"]);
+      setSelectedCategories([]);
       setSubcategory("");
       setPrice("");
       setOldPrice("");
@@ -378,6 +378,16 @@ export default function ProductFormModal({
         lang === "uz"
           ? "Iltimos, mahsulot narxini so'mda to'g'ri ko'rsating."
           : "Пожалуйста, укажите корректную стоимость товара в сумах."
+      );
+      setActiveTab("general");
+      return;
+    }
+
+    if (selectedCategories.length === 0) {
+      setError(
+        lang === "uz"
+          ? "Iltimos, mahsulot uchun kamida bitta kategoriya tanlang."
+          : "Пожалуйста, выберите хотя бы одну категорию для товара."
       );
       setActiveTab("general");
       return;
@@ -800,16 +810,81 @@ export default function ProductFormModal({
                     onChange={(vals) => {
                       setSelectedCategories(vals);
                     }}
-                    placeholder={lang === "uz" ? "Kategoriyalarni tanlang..." : "Выберите категории..."}
+                    placeholder={lang === "uz" ? "Kategoriyalarni tanlang (birinchi tanlangani asosiy bo'ladi)..." : "Выберите категории (первая выбранная станет основной)..."}
                     searchPlaceholder={lang === "uz" ? "🔍 Kategoriyani qidirish..." : "🔍 Поиск по категориям..."}
                     primaryLabel={lang === "uz" ? "★ Asosiy" : "★ Основная"}
-                    makePrimaryTooltip={lang === "uz" ? "Asosiy kategoriya qilish" : "Сделать основной категорией"}
+                    makePrimaryTooltip={lang === "uz" ? "Asosiy qilish" : "Сделать основной"}
                     options={categories.map((c) => ({
                       value: c.key,
                       label: lang === "uz" ? c.labelUz : c.labelRu,
                       icon: c.icon,
                     }))}
                   />
+
+                  {/* Primary category active state & quick switcher */}
+                  {selectedCategories.length === 1 && (
+                    <div className="mt-2 px-3 py-2 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-xs text-emerald-900 flex items-center gap-2">
+                      <span className="text-sm">⭐</span>
+                      <span>
+                        {lang === "uz" ? "Asosiy kategoriya:" : "Основная категория:"}{" "}
+                        <strong className="text-emerald-950 font-bold">
+                          {categories.find((c) => c.key === selectedCategories[0])?.labelRu || selectedCategories[0]}
+                        </strong>
+                        <span className="text-emerald-700 ml-1 text-[11px]">
+                          ({lang === "uz" ? "birinchi tanlandi" : "выбрана первой"})
+                        </span>
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedCategories.length > 1 && (
+                    <div className="mt-2.5 p-3 bg-gradient-to-r from-amber-50/80 via-orange-50/50 to-amber-50/80 border border-amber-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
+                          <span className="text-amber-500 text-sm">⭐</span>
+                          <span>{lang === "uz" ? "Asosiy kategoriya (bosing va o'zgartiring):" : "Основная категория (нажмите для смены):"}</span>
+                        </div>
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-md">
+                          {lang === "uz" ? "1-toifa vitrinada" : "Главная на витрине"}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedCategories.map((catKey, idx) => {
+                          const cat = categories.find((c) => c.key === catKey);
+                          const isMain = idx === 0;
+                          const label = cat ? (lang === "uz" ? cat.labelUz : cat.labelRu) : catKey;
+                          return (
+                            <button
+                              key={catKey}
+                              type="button"
+                              onClick={() => {
+                                setSelectedCategories([catKey, ...selectedCategories.filter((k) => k !== catKey)]);
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                isMain
+                                  ? "bg-red-600 text-white shadow-sm ring-2 ring-red-500/30 scale-102"
+                                  : "bg-white text-gray-700 border border-amber-200/90 hover:border-red-400 hover:text-red-600 hover:bg-white active:scale-98"
+                              }`}
+                            >
+                              <span>{isMain ? "★" : "☆"}</span>
+                              {cat?.icon && <span>{cat.icon}</span>}
+                              <span>{label}</span>
+                              {isMain && (
+                                <span className="text-[10px] bg-white/25 px-1.5 py-0.2 rounded font-black">
+                                  {lang === "uz" ? "Asosiy" : "Основная"}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[11px] text-amber-900/80 leading-tight">
+                        {lang === "uz"
+                          ? "Mahsulot barcha tanlangan toifalarda ko'rinadi, lekin do'kon vitrinasi va asosiy filtrlarda aynan asosiy kategoriya sifatida ko'rsatiladi."
+                          : "Товар будет отображаться во всех выбранных категориях, но на главной витрине магазина привязан к основной категории."}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Subcategory selector */}
