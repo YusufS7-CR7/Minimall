@@ -535,9 +535,9 @@ function DiscountProductsRow({ lang }: { lang: string }) {
       <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-3">
         {discountProducts.map((p) => (
           <div key={p.id} className="shrink-0 w-[180px] sm:w-[230px] bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 group hover:-translate-y-1">
-            <Link to={`/product/${p.slug}`} className="block relative bg-gradient-to-br from-gray-50 to-white overflow-hidden h-[145px] sm:h-[190px]">
-              <img src={p.image} alt={lang === "ru" ? p.name : p.nameUz} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute top-2 left-2">
+            <Link to={`/product/${p.slug}`} className="block relative bg-gradient-to-br from-gray-50 to-white overflow-hidden h-[145px] sm:h-[190px] p-2.5 flex items-center justify-center">
+              <img src={p.image} alt={lang === "ru" ? p.name : p.nameUz} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+              <div className="absolute top-2 left-2 pointer-events-none">
                 <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
                   -{Math.round((1 - p.price / p.oldPrice!) * 100)}%
                 </span>
@@ -683,14 +683,14 @@ function SaleCarousel({ lang }: { lang: string }) {
       </div>
 
       {/* Product Image */}
-      <div className="relative overflow-hidden mx-3 rounded-xl bg-gradient-to-br from-gray-50 to-white flex-1 min-h-[160px] max-h-[190px]">
-        <Link to={`/product/${p.slug}`} className="block w-full h-full">
+      <div className="relative overflow-hidden mx-3 rounded-xl bg-gradient-to-br from-gray-50 via-slate-50/50 to-white flex-1 min-h-[160px] max-h-[190px] p-2 flex items-center justify-center border border-gray-100/80">
+        <Link to={`/product/${p.slug}`} className="w-full h-full flex items-center justify-center p-1">
           {p.image && p.image.trim() !== "" ? (
             <img
               key={p.id}
               src={p.image}
               alt={name}
-              className="w-full h-full object-cover transition-all duration-500 hover:scale-105"
+              className="w-full h-full object-contain transition-all duration-300 hover:scale-105"
             />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-slate-50 to-red-50/30 p-3 select-none">
