@@ -11,6 +11,7 @@ export interface OrderItem {
   price: number;
   count: number;
   selectedSize?: string;
+  selectedSizePrice?: number;
 }
 
 export interface CustomerInfo {

@@ -104,10 +104,12 @@ export default function ProductPage() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"specs" | "desc">("specs");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize);
+  const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
 
   useEffect(() => {
     if (product?.sizes && product.sizes.length > 0) {
-      setSelectedSize(product.sizes[0]);
+      setSelectedSize(product.sizes[0].name);
     } else {
       setSelectedSize("");
     }
@@ -356,7 +358,7 @@ export default function ProductPage() {
 
           {/* Price */}
           <div className="mb-6">
-            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(product.price, usdRate)}</div>
+            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(displayedPrice, usdRate)}</div>
             {product.oldPrice && (
               <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice, usdRate)}</div>
             )}
@@ -377,20 +379,21 @@ export default function ProductPage() {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((s) => {
-                  const isSelected = selectedSize === s;
+                {product.sizes.map((size) => {
+                  const isSelected = selectedSize === size.name;
                   return (
                     <button
-                      key={s}
+                      key={size.name}
                       type="button"
-                      onClick={() => setSelectedSize(s)}
+                      onClick={() => setSelectedSize(size.name)}
                       className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isSelected
                           ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-105"
                           : "bg-white text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-600 shadow-2xs"
                       }`}
                     >
-                      {s}
+                      <span>{size.name}</span>
+                      <span className="ml-1 opacity-80">{formatPrice(size.price)}</span>
                     </button>
                   );
                 })}
@@ -403,7 +406,7 @@ export default function ProductPage() {
             <button
               onClick={() => {
                 if (!user) { openAuthModal("register"); return; }
-                addToCart(product, selectedSize || undefined);
+                addToCart(product, selectedSize || undefined, selectedSizeOption?.price);
               }}
               disabled={!product.inStock}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${

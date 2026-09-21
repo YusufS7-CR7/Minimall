@@ -56,8 +56,8 @@ interface AppContextValue {
   theme: "light" | "dark";
   setTheme: (t: "light" | "dark") => void;
   toggleTheme: () => void;
-  addToCart: (product: Product, selectedSize?: string) => void;
-  updateCartCount: (productId: number, delta: number, selectedSize?: string) => void;
+  addToCart: (product: Product, selectedSize?: string, selectedSizePrice?: number) => void;
+  updateCartCount: (productId: number, delta: number, selectedSize?: string, selectedSizePrice?: number) => void;
   clearCart: () => void;
   toggleFavorite: (productId: number) => void;
   removeFavorite: (productId: number) => void;
@@ -171,7 +171,7 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
 
   // ── Cart ──────────────────────────────────────────────────────────────────────
   const addToCart = useCallback(
-    (product: Product, selectedSize?: string) => {
+    (product: Product, selectedSize?: string, selectedSizePrice?: number) => {
       setCart((prev) => {
         const existing = prev.find(
           (i) => i.product.id === product.id && (i.selectedSize || "") === (selectedSize || "")
@@ -182,7 +182,7 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
                 ? { ...i, count: i.count + 1 }
                 : i
             )
-          : [...prev, { product, count: 1, selectedSize }];
+          : [...prev, { product, count: 1, selectedSize, selectedSizePrice }];
         saveCart(userId, next);
         return next;
       });
@@ -197,7 +197,7 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
   );
 
   const updateCartCount = useCallback(
-    (productId: number, delta: number, selectedSize?: string) => {
+    (productId: number, delta: number, selectedSize?: string, _selectedSizePrice?: number) => {
       setCart((prev) => {
         const next = prev
           .map((i) => {
@@ -256,7 +256,7 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
     [cart]
   );
   const totalCartPrice = useMemo(
-    () => cart.reduce((s, i) => s + i.product.price * i.count, 0),
+    () => cart.reduce((s, i) => s + (i.selectedSizePrice ?? i.product.price) * i.count, 0),
     [cart]
   );
 

@@ -486,7 +486,7 @@ export default function AdminOrdersPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <span className="text-gray-400 text-[11px]">{item.count} × </span>
-                            <span className="font-bold text-gray-900">{formatPrice(item.price)}</span>
+                            <span className="font-bold text-gray-900">{formatPrice(item.selectedSizePrice ?? item.price)}</span>
                           </div>
                         </div>
                       ))}

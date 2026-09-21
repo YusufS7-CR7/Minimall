@@ -7,7 +7,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { Product } from "@/data/types";
+import type { Product, ProductSize } from "@/data/types";
 import { slugify, BRANDS as INITIAL_BRANDS } from "@/data/products";
 import { supabase } from "@/lib/supabase";
 
@@ -45,19 +45,44 @@ function dbToProduct(row: DbProduct): Product {
     (specs as Record<string, any>)?.subcategory ||
     undefined;
 
-  let sizes: string[] | undefined = undefined;
+  let sizes: ProductSize[] | undefined = undefined;
   if (specs && typeof specs === "object") {
     const rawSizes = (specs as Record<string, any>)._sizes ?? (specs as Record<string, any>).sizes;
     if (Array.isArray(rawSizes)) {
-      sizes = rawSizes.map(String).filter((s) => s.trim().length > 0);
+      sizes = rawSizes
+        .map((item: unknown) => {
+          if (typeof item === "string") return { name: item, price: row.price };
+          if (!item || typeof item !== "object") return null;
+          const value = item as Record<string, unknown>;
+          const name = String(value.name ?? value.size ?? "").trim();
+          const price = Number(value.price ?? row.price);
+          return name && price > 0 ? {
+            name,
+            price,
+            currency: value.currency === "USD" ? "USD" : "UZS",
+            originalPrice: Number(value.originalPrice ?? price),
+          } : null;
+        })
+        .filter(Boolean) as ProductSize[];
     } else if (typeof rawSizes === "string") {
       try {
         const parsed = JSON.parse(rawSizes);
         if (Array.isArray(parsed)) {
-          sizes = parsed.map(String).filter((s) => s.trim().length > 0);
+          sizes = parsed.map((item: unknown) => {
+            if (typeof item === "string") return { name: item, price: row.price };
+            const value = item as Record<string, unknown>;
+            const name = String(value?.name ?? value?.size ?? "").trim();
+            const price = Number(value?.price ?? row.price);
+            return {
+              name,
+              price: price > 0 ? price : row.price,
+              currency: value?.currency === "USD" ? "USD" : "UZS",
+              originalPrice: Number(value?.originalPrice ?? price),
+            };
+          }).filter((s) => s.name);
         }
       } catch {
-        sizes = rawSizes.split(",").map((s) => s.trim()).filter(Boolean);
+        sizes = rawSizes.split(",").map((s) => ({ name: s.trim(), price: row.price })).filter((s) => s.name);
       }
     }
   }

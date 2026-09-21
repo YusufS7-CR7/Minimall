@@ -76,7 +76,7 @@ export function formatOrderForTelegram(order: Order): string {
   const itemsList = order.items
     .map((item, idx) => {
       const sizeTag = item.selectedSize ? ` 📏 <i>[Размер: ${escapeHtml(item.selectedSize)}]</i>` : "";
-      return `${idx + 1}. <b>${escapeHtml(item.name)}</b>${sizeTag}\n   └ ${item.count} шт. × ${formatPrice(item.price)} = <b>${formatPrice(item.price * item.count)}</b>`;
+      return `${idx + 1}. <b>${escapeHtml(item.name)}</b>${sizeTag}\n   └ ${item.count} шт. × ${formatPrice(item.selectedSizePrice ?? item.price)} = <b>${formatPrice((item.selectedSizePrice ?? item.price) * item.count)}</b>`;
     })
     .join("\n");
 

@@ -88,6 +88,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
       price: i.product.price,
       count: i.count,
       selectedSize: i.selectedSize,
+      selectedSizePrice: i.selectedSizePrice,
     }));
 
     const res = await placeOrder(

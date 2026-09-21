@@ -2,6 +2,13 @@
 
 export type Lang = "ru" | "uz";
 
+export interface ProductSize {
+  name: string;
+  price: number;
+  currency?: "UZS" | "USD";
+  originalPrice?: number;
+}
+
 export interface SubcategoryDef {
   key: string;
   slug: string;
@@ -37,8 +44,8 @@ export interface Product {
   badge?: string;
   inStock: boolean;
   rating?: number;
-  /** Available sizes/variations (e.g. ["3mm", "4mm", "6mm"] or ["100mm", "125mm"]) */
-  sizes?: string[];
+  /** Optional size/variation-specific prices, stored in UZS for customers. */
+  sizes?: ProductSize[];
 }
 
 export interface CategoryDef {
@@ -56,4 +63,5 @@ export interface CartItem {
   product: Product;
   count: number;
   selectedSize?: string;
+  selectedSizePrice?: number;
 }

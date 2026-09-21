@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { Product } from "@/data/types";
+import type { Product, ProductSize } from "@/data/types";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
@@ -184,21 +184,31 @@ export default function ProductFormModal({
 
   // Sizes / Variations state
   const [hasSizes, setHasSizes] = useState(false);
-  const [sizes, setSizes] = useState<string[]>([]);
+  const [sizes, setSizes] = useState<ProductSize[]>([]);
   const [newSizeInput, setNewSizeInput] = useState("");
+  const [newSizePrice, setNewSizePrice] = useState("");
+  const [newSizeCurrency, setNewSizeCurrency] = useState<"UZS" | "USD">("UZS");
 
   const handleAddSize = (val?: string) => {
     const text = (val !== undefined ? val : newSizeInput).trim();
-    if (!text) return;
+    const rawPrice = newSizePrice.replace(/\s/g, "").replace(",", ".");
+    const enteredPrice = parseFloat(rawPrice) || (val !== undefined
+      ? (currencyMode === "USD" ? parseFloat(priceUsd.replace(",", ".")) : parseFormattedNumber(price))
+      : 0);
+    if (!text || !enteredPrice || enteredPrice <= 0) return;
+    const finalPrice = newSizeCurrency === "USD" ? Math.round(enteredPrice * usdRate) : Math.round(enteredPrice);
     const parts = text.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
     setSizes((prev) => {
       const combined = [...prev];
       for (const part of parts) {
-        if (!combined.includes(part)) combined.push(part);
+        if (!combined.some((size) => size.name === part)) {
+          combined.push({ name: part, price: finalPrice, currency: newSizeCurrency, originalPrice: enteredPrice });
+        }
       }
       return combined;
     });
     setNewSizeInput("");
+    setNewSizePrice("");
   };
 
   const handleRemoveSize = (indexToRemove: number) => {
@@ -268,6 +278,7 @@ export default function ProductFormModal({
       setSizes(existingSizes);
       setHasSizes(existingSizes.length > 0);
       setNewSizeInput("");
+      setNewSizePrice("");
 
       const existingImages = productToEdit.images && productToEdit.images.length > 0
         ? productToEdit.images
@@ -305,6 +316,7 @@ export default function ProductFormModal({
       setSizes([]);
       setHasSizes(false);
       setNewSizeInput("");
+      setNewSizePrice("");
       setImagesList([]);
       setDescRu("");
       setDescUz("");
@@ -540,7 +552,7 @@ export default function ProductFormModal({
     const effectiveCategory = effectiveCategories[0];
 
     if (productToEdit) {
-      const effectiveSizes = hasSizes ? sizes.filter((s) => s.trim().length > 0) : undefined;
+      const effectiveSizes = hasSizes ? sizes.filter((s) => s.name.trim().length > 0 && s.price > 0) : undefined;
 
       await updateProduct(productToEdit.id, {
         name: name.trim(),
@@ -575,7 +587,7 @@ export default function ProductFormModal({
         sizes: effectiveSizes,
       });
     } else {
-      const effectiveSizes = hasSizes ? sizes.filter((s) => s.trim().length > 0) : undefined;
+      const effectiveSizes = hasSizes ? sizes.filter((s) => s.name.trim().length > 0 && s.price > 0) : undefined;
 
       const created = await addProduct({
         name: name.trim(),
@@ -1295,7 +1307,7 @@ export default function ProductFormModal({
                 {hasSizes && (
                   <div className="pt-2 border-t border-gray-200 space-y-3 animate-fadeIn">
                     {/* Input to add size */}
-                    <div className="flex items-center gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px_120px_auto] items-center gap-2">
                       <input
                         type="text"
                         value={newSizeInput}
@@ -1313,10 +1325,26 @@ export default function ProductFormModal({
                         }
                         className="flex-1 text-xs px-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
                       />
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={newSizePrice}
+                        onChange={(e) => setNewSizePrice(e.target.value.replace(/[^\d.,\s]/g, ""))}
+                        placeholder={lang === "uz" ? "Narx" : "Цена"}
+                        className="text-xs px-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                      />
+                      <select
+                        value={newSizeCurrency}
+                        onChange={(e) => setNewSizeCurrency(e.target.value as "UZS" | "USD")}
+                        className="text-xs px-3 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-red-500"
+                      >
+                        <option value="UZS">UZS ({lang === "uz" ? "so'm" : "сум"})</option>
+                        <option value="USD">USD ($)</option>
+                      </select>
                       <button
                         type="button"
                         onClick={() => handleAddSize()}
-                        disabled={!newSizeInput.trim()}
+                        disabled={!newSizeInput.trim() || !newSizePrice.trim()}
                         className="px-3.5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
                       >
                         + {lang === "uz" ? "Qo'shish" : "Добавить"}
@@ -1352,12 +1380,12 @@ export default function ProductFormModal({
                     {/* Tags List */}
                     {sizes.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5 pt-1">
-                        {sizes.map((s, idx) => (
+                        {sizes.map((size, idx) => (
                           <span
                             key={idx}
                             className="inline-flex items-center gap-1.5 bg-white border border-red-200 text-red-700 font-bold px-2.5 py-1 rounded-lg text-xs shadow-2xs group"
                           >
-                            <span>{s}</span>
+                            <span>{size.name}: {formatNumberWithSpaces(size.price)} UZS</span>
                             <button
                               type="button"
                               onClick={() => handleRemoveSize(idx)}

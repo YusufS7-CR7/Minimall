@@ -225,9 +225,9 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                     <td className="py-2.5 px-3 text-center font-bold text-gray-800">
                       {item.count} {lang === "uz" ? "dona" : "шт."}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-gray-700">{formatPrice(item.price)}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-gray-700">{formatPrice(item.selectedSizePrice ?? item.price)}</td>
                     <td className="py-2.5 px-3 text-right font-mono font-bold text-gray-900">
-                      {formatPrice(item.price * item.count)}
+                      {formatPrice((item.selectedSizePrice ?? item.price) * item.count)}
                     </td>
                   </tr>
                 ))}
