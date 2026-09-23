@@ -356,14 +356,6 @@ export default function ProductPage() {
             </span>
           </div>
 
-          {/* Price */}
-          <div className="mb-6">
-            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(displayedPrice, usdRate)}</div>
-            {product.oldPrice && (
-              <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice, usdRate)}</div>
-            )}
-          </div>
-
           {/* Sizes selector if available */}
           {product.sizes && product.sizes.length > 0 && (
             <div className="mb-6 bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80 space-y-2.5">
@@ -402,6 +394,14 @@ export default function ProductPage() {
               </div>
             </div>
           )}
+
+          {/* Price */}
+          <div className="mb-6">
+            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(displayedPrice, usdRate)}</div>
+            {product.oldPrice && (
+              <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice, usdRate)}</div>
+            )}
+          </div>
 
           {/* CTA — stacked on mobile */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
