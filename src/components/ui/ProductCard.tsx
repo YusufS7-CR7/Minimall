@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -26,8 +26,29 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   const name = lang === "uz" ? (product.nameUz || product.name) : product.name;
   const isFav = favorites.includes(product.id);
   const [imgError, setImgError] = useState(false);
-  const hasImage = Boolean(product.image && product.image.trim() !== "" && !imgError);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const galleryImages = (product.images && product.images.length > 0 ? product.images : [product.image]).filter(
+    (img): img is string => Boolean(img && img.trim() !== "")
+  );
+  const hasImage = galleryImages.length > 0 && !imgError;
   const hasSizes = Boolean(product.sizes && product.sizes.length > 0);
+
+  useEffect(() => {
+    setCurrentImageIndex(0);
+    setImgError(false);
+  }, [product.id, product.image, product.images]);
+
+  const goToPrevImage = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setCurrentImageIndex((prev) => (galleryImages.length > 0 ? (prev - 1 + galleryImages.length) % galleryImages.length : 0));
+  }, [galleryImages.length]);
+
+  const goToNextImage = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setCurrentImageIndex((prev) => (galleryImages.length > 0 ? (prev + 1) % galleryImages.length : 0));
+  }, [galleryImages.length]);
 
   const handleFavorite = useCallback(() => {
     if (!user) {
@@ -71,15 +92,41 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
       <Link to={`/product/${product.slug}`} tabIndex={-1} aria-hidden="true">
         <div className="relative bg-gradient-to-br from-gray-50 via-slate-50 to-white overflow-hidden" style={{ height: "clamp(130px, 36vw, 210px)" }}>
           {hasImage ? (
-            <img
-              src={product.image}
-              alt={name}
-              loading="lazy"
-              onError={() => setImgError(true)}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              width={400}
-              height={210}
-            />
+            <>
+              <img
+                src={galleryImages[currentImageIndex]}
+                alt={name}
+                loading="lazy"
+                onError={() => setImgError(true)}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                width={400}
+                height={210}
+              />
+
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={goToPrevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/85 text-gray-700 shadow-md flex items-center justify-center text-lg font-bold opacity-0 group-hover:opacity-100 transition-all hover:bg-white cursor-pointer"
+                    aria-label={lang === "uz" ? "Oldingi rasm" : "Предыдущее фото"}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/85 text-gray-700 shadow-md flex items-center justify-center text-lg font-bold opacity-0 group-hover:opacity-100 transition-all hover:bg-white cursor-pointer"
+                    aria-label={lang === "uz" ? "Keyingi rasm" : "Следующее фото"}
+                  >
+                    ›
+                  </button>
+                  <div className="absolute bottom-2 right-2 z-10 bg-black/55 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+                    {currentImageIndex + 1} / {galleryImages.length}
+                  </div>
+                </>
+              )}
+            </>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 via-slate-50 to-red-50/25 p-3 select-none relative group-hover:scale-[1.03] transition-transform duration-500">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white shadow-xs border border-gray-100 flex items-center justify-center text-2xl sm:text-3xl text-gray-400 group-hover:text-red-500 group-hover:border-red-100 group-hover:shadow-md transition-all duration-300 mb-1.5">
