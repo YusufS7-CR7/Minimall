@@ -356,45 +356,6 @@ export default function ProductPage() {
             </span>
           </div>
 
-          {/* Sizes selector if available */}
-          {product.sizes && product.sizes.length > 0 && (
-            <div className="mb-6 bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                  <span>📏</span>
-                  <span>{lang === "uz" ? "O'lchamni tanlang:" : "Выберите размер:"}</span>
-                </span>
-                {selectedSize && (
-                  <span className="text-xs font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
-                    {selectedSize}
-                  </span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => {
-                  const isSelected = selectedSize === size.name;
-                  return (
-                    <button
-                      key={size.name}
-                      type="button"
-                      onClick={() => setSelectedSize(size.name)}
-                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isSelected
-                          ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-105"
-                          : "bg-white text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-600 shadow-2xs"
-                      }`}
-                    >
-                      <span>{size.name}</span>
-                      <span className={`ml-1 font-black ${isSelected ? "text-red-100" : "text-amber-500"}`}>
-                        {formatPrice(size.price)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Price */}
           <div className="mb-6">
             <div className="text-3xl font-extrabold text-gray-900">{formatPrice(displayedPrice, usdRate)}</div>
@@ -484,6 +445,45 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {/* Sizes selector if available */}
+      {product.sizes && product.sizes.length > 0 && (
+        <div className="mb-6 bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80 space-y-2.5 max-w-3xl">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+              <span>📏</span>
+              <span>{lang === "uz" ? "O'lchamni tanlang:" : "Выберите размер:"}</span>
+            </span>
+            {selectedSize && (
+              <span className="text-xs font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
+                {selectedSize}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {product.sizes.map((size) => {
+              const isSelected = selectedSize === size.name;
+              return (
+                <button
+                  key={size.name}
+                  type="button"
+                  onClick={() => setSelectedSize(size.name)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isSelected
+                      ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-105"
+                      : "bg-white text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-600 shadow-2xs"
+                  }`}
+                >
+                  <span>{size.name}</span>
+                  <span className={`ml-1 font-black ${isSelected ? "text-red-100" : "text-amber-500"}`}>
+                    {formatPrice(size.price)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tabs: Specs / Description */}
       <div className="mb-12">
