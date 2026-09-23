@@ -211,6 +211,23 @@ export default function ProductFormModal({
     setNewSizePrice("");
   };
 
+  const handleUpdateSize = (indexToUpdate: number, updates: Partial<ProductSize>) => {
+    setSizes((prev) =>
+      prev.map((size, idx) => {
+        if (idx !== indexToUpdate) return size;
+
+        const nextName = updates.name !== undefined ? updates.name : size.name;
+        const nextPrice = updates.price !== undefined ? Math.max(0, Math.round(Number(updates.price) || 0)) : size.price;
+
+        return {
+          ...size,
+          name: nextName,
+          price: nextPrice,
+        };
+      })
+    );
+  };
+
   const handleRemoveSize = (indexToRemove: number) => {
     setSizes((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
@@ -1379,22 +1396,39 @@ export default function ProductFormModal({
 
                     {/* Tags List */}
                     {sizes.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
+                      <div className="space-y-2 pt-1">
                         {sizes.map((size, idx) => (
-                          <span
+                          <div
                             key={idx}
-                            className="inline-flex items-center gap-1.5 bg-white border border-red-200 text-red-700 font-bold px-2.5 py-1 rounded-lg text-xs shadow-2xs group"
+                            className="flex items-center gap-2 bg-white border border-red-200 rounded-xl px-2.5 py-2 text-xs shadow-2xs"
                           >
-                            <span>{size.name}: {formatNumberWithSpaces(size.price)} UZS</span>
+                            <input
+                              type="text"
+                              value={size.name}
+                              onChange={(e) => handleUpdateSize(idx, { name: e.target.value })}
+                              className="flex-1 min-w-0 bg-transparent text-red-700 font-bold outline-none"
+                              placeholder={lang === "uz" ? "O'lcham" : "Размер"}
+                            />
+                            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={size.price}
+                                onChange={(e) => handleUpdateSize(idx, { price: Number(e.target.value || 0) })}
+                                className="w-20 bg-transparent text-right font-bold text-gray-800 outline-none"
+                              />
+                              <span className="text-[10px] font-semibold text-gray-500 uppercase">UZS</span>
+                            </div>
                             <button
                               type="button"
                               onClick={() => handleRemoveSize(idx)}
-                              className="text-gray-400 hover:text-red-600 cursor-pointer font-bold text-sm leading-none"
+                              className="text-gray-400 hover:text-red-600 cursor-pointer font-bold text-lg leading-none px-1"
                               title={lang === "uz" ? "O'chirish" : "Удалить"}
                             >
                               ×
                             </button>
-                          </span>
+                          </div>
                         ))}
                       </div>
                     ) : (
