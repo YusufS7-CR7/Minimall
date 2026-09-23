@@ -54,10 +54,16 @@ export default function AdminProductsPage() {
 
   // Statistics
   const stats = useMemo(() => {
-    const total = products.length;
-    const inStock = products.filter((p) => p.inStock).length;
+    const variantCount = (product: Product) => (product.sizes && product.sizes.length > 0 ? product.sizes.length : 1);
+
+    const total = products.reduce((sum, product) => sum + variantCount(product), 0);
+    const inStock = products.reduce((sum, product) => sum + (product.inStock ? variantCount(product) : 0), 0);
     const outOfStock = total - inStock;
-    const totalCatalogValue = products.reduce((sum, p) => sum + p.price, 0);
+    const totalCatalogValue = products.reduce((sum, product) => {
+      const sizeEntries = product.sizes && product.sizes.length > 0 ? product.sizes : [{ name: product.name, price: product.price }];
+      return sum + sizeEntries.reduce((sizeSum, size) => sizeSum + size.price, 0);
+    }, 0);
+
     return { total, inStock, outOfStock, totalCatalogValue };
   }, [products]);
 

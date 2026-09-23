@@ -342,17 +342,65 @@ ${itemsList || "—"}
 
 // ─── Broadcast order to all verified admins ──────────────────────────────────
 
+async function syncAdminTelegramChatId(adminId, chatId) {
+  if (!adminId || !chatId) return;
+
+  try {
+    await supabase.from("mm_admins").update({ telegram_chat_id: String(chatId) }).eq("id", adminId);
+  } catch (err) {
+    console.warn("[Bot] Failed to sync telegram chat ID to admin record:", err.message);
+  }
+}
+
+async function clearAdminTelegramChatId(adminId) {
+  if (!adminId) return;
+
+  try {
+    await supabase.from("mm_admins").update({ telegram_chat_id: null }).eq("id", adminId);
+  } catch (err) {
+    console.warn("[Bot] Failed to clear telegram chat ID from admin record:", err.message);
+  }
+}
+
+async function getActiveAdminChatIdsFromDb() {
+  try {
+    const { data, error } = await supabase
+      .from("mm_admins")
+      .select("id, username, name, telegram_chat_id, is_active")
+      .not("telegram_chat_id", "is", null)
+      .eq("is_active", true);
+
+    if (error || !data) {
+      return [];
+    }
+
+    return data
+      .map((admin) => String(admin.telegram_chat_id).trim())
+      .filter(Boolean);
+  } catch (err) {
+    console.warn("[Bot] Failed to fetch active admin chat IDs from database:", err.message);
+    return [];
+  }
+}
+
 async function broadcastOrder(order) {
+  const dbChatIds = await getActiveAdminChatIdsFromDb();
   const activeSubs = Object.entries(subscribers);
-  if (activeSubs.length === 0) {
+  const targetChatIds = Array.from(new Set([
+    ...dbChatIds,
+    ...activeSubs.map(([chatId]) => chatId),
+  ]));
+
+  if (targetChatIds.length === 0) {
     console.log(`[Bot] New order ${order.id}, but no active admin subscribers yet.`);
     return;
   }
 
-  console.log(`[Bot] Broadcasting order ${order.id} to ${activeSubs.length} admins...`);
+  console.log(`[Bot] Broadcasting order ${order.id} to ${targetChatIds.length} admin chats...`);
 
-  for (const [chatId, sub] of activeSubs) {
-    const adminLang = sub.lang || userLanguages[chatId] || "uz";
+  for (const chatId of targetChatIds) {
+    const sub = subscribers[chatId];
+    const adminLang = sub?.lang || userLanguages[chatId] || "uz";
     const text = formatOrderMessage(order, adminLang);
     await sendTelegramMessage(chatId, text);
   }
@@ -558,6 +606,10 @@ async function handleIncomingMessage(msg) {
   // Command /logout
   if (text === "/logout") {
     if (subscribers[chatId]) {
+      const sub = subscribers[chatId];
+      if (sub?.adminId) {
+        await clearAdminTelegramChatId(sub.adminId);
+      }
       delete subscribers[chatId];
       saveSubscribers(subscribers);
       delete authSessions[chatId];
@@ -663,6 +715,7 @@ async function handleIncomingMessage(msg) {
       subscribedAt: new Date().toISOString(),
     };
     saveSubscribers(subscribers);
+    await syncAdminTelegramChatId(admin.id, chatId);
     delete authSessions[chatId];
 
     if (isUz) {

@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS public.mm_admins (
     is_super_admin BOOLEAN DEFAULT false,
     permissions JSONB DEFAULT '[]'::jsonb,
     is_active BOOLEAN DEFAULT true,
+    telegram_chat_id TEXT DEFAULT NULL,
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );

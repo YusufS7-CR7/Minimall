@@ -393,7 +393,9 @@ export default function ProductPage() {
                       }`}
                     >
                       <span>{size.name}</span>
-                      <span className="ml-1 opacity-80">{formatPrice(size.price)}</span>
+                      <span className={`ml-1 font-black ${isSelected ? "text-red-100" : "text-amber-500"}`}>
+                        {formatPrice(size.price)}
+                      </span>
                     </button>
                   );
                 })}
