@@ -19,3 +19,10 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# Деплой — секретные файлы (не добавлять в git)
+render.yaml
+deploy/.env.server
+deploy/ecosystem.config.json
+*.zip
+
