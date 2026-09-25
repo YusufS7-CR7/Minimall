@@ -25,4 +25,6 @@ render.yaml
 deploy/.env.server
 deploy/ecosystem.config.json
 *.zip
+*.tar.gz
+*.tar
 
