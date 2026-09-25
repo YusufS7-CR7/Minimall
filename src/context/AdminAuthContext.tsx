@@ -17,6 +17,7 @@ interface DbAdmin {
   is_super_admin: boolean;
   permissions: AdminPermission[];
   is_active: boolean;
+  telegram_chat_id?: string | null;
   last_login_at: string | null;
   created_at: string;
 }
@@ -31,6 +32,7 @@ function dbToAdmin(row: DbAdmin): AdminUser {
     isSuperAdmin: row.is_super_admin,
     permissions: row.permissions || [],
     isActive: row.is_active,
+    telegramChatId: row.telegram_chat_id ?? null,
     lastLoginAt: row.last_login_at ?? undefined,
     createdAt: row.created_at,
   };
@@ -52,6 +54,7 @@ interface UpdateAdminPayload {
   role?: "admin" | "manager";
   permissions?: AdminPermission[];
   isActive?: boolean;
+  telegramChatId?: string | null;
 }
 
 interface AdminAuthContextType {
@@ -81,7 +84,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const fetchAdmins = useCallback(async (): Promise<AdminUser[]> => {
     const { data, error } = await supabase
       .from("mm_admins")
-      .select("id, username, name, role, is_super_admin, permissions, is_active, last_login_at, created_at")
+      .select("id, username, name, role, is_super_admin, permissions, is_active, telegram_chat_id, last_login_at, created_at")
       .order("created_at", { ascending: true });
 
     if (!error && data && data.length > 0) {
@@ -300,6 +303,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     if (payload.password) {
       dbPatch.password = await hashPassword(payload.password);
     }
+    if (payload.telegramChatId !== undefined) {
+      dbPatch.telegram_chat_id = payload.telegramChatId ? payload.telegramChatId.trim() : null;
+    }
     if (!target.isSuperAdmin) {
       if (payload.role) dbPatch.role = payload.role;
       if (payload.permissions) dbPatch.permissions = payload.permissions;
@@ -327,6 +333,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
           role: a.isSuperAdmin ? "superadmin" : (payload.role || a.role),
           permissions: a.isSuperAdmin ? ALL_ADMIN_PERMISSIONS.map((p) => p.id) : (payload.permissions || a.permissions),
           isActive: a.isSuperAdmin ? true : (payload.isActive !== undefined ? payload.isActive : a.isActive),
+          telegramChatId: payload.telegramChatId !== undefined ? (payload.telegramChatId ? payload.telegramChatId.trim() : null) : a.telegramChatId,
         };
       })
     );

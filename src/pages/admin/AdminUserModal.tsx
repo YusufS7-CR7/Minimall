@@ -49,6 +49,7 @@ interface AdminUserModalProps {
     password: string;
     role: "admin" | "manager";
     permissions: AdminPermission[];
+    telegramChatId?: string | null;
   }) => Promise<{ success: boolean; error?: string }> | { success: boolean; error?: string };
 }
 
@@ -65,6 +66,7 @@ export default function AdminUserModal({
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [telegramChatId, setTelegramChatId] = useState("");
   const [role, setRole] = useState<"admin" | "manager">("admin");
   const [permissions, setPermissions] = useState<AdminPermission[]>([
     "products_view",
@@ -79,12 +81,14 @@ export default function AdminUserModal({
       setUsername(adminToEdit.username);
       setName(adminToEdit.name);
       setPassword(""); // Blank means don't change password
+      setTelegramChatId(adminToEdit.telegramChatId || "");
       setRole(adminToEdit.role === "manager" ? "manager" : "admin");
       setPermissions(adminToEdit.permissions);
     } else {
       setUsername("");
       setName("");
       setPassword("");
+      setTelegramChatId("");
       setRole("admin");
       setPermissions([
         "products_view",
@@ -148,6 +152,7 @@ export default function AdminUserModal({
         password,
         role,
         permissions: isSuperAdmin ? ALL_ADMIN_PERMISSIONS.map((p) => p.id) : permissions,
+        telegramChatId: telegramChatId ? telegramChatId.trim() : null,
       });
 
       if (!res.success) {
@@ -276,6 +281,50 @@ export default function AdminUserModal({
                       ]
                 }
               />
+            </div>
+
+            {/* Telegram Chat ID for Order Notifications */}
+            <div className="md:col-span-2 bg-blue-50/60 rounded-2xl p-4 border border-blue-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                  <span>📱</span>
+                  <span>{lang === "uz" ? "Telegram bildirishnomalari (Chat ID)" : "Telegram-уведомления (Chat ID)"}</span>
+                </label>
+                {telegramChatId ? (
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {lang === "uz" ? "Ulangan" : "Подключен"}
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full">
+                    {lang === "uz" ? "Ulanmagan" : "Не подключен"}
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={telegramChatId}
+                  onChange={(e) => setTelegramChatId(e.target.value)}
+                  placeholder={lang === "uz" ? "Masalan, 1837377724" : "Например, 1837377724"}
+                  className="flex-1 text-sm px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 bg-white font-mono text-gray-800"
+                />
+                {telegramChatId && (
+                  <button
+                    type="button"
+                    onClick={() => setTelegramChatId("")}
+                    className="text-xs px-2.5 py-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 transition-colors cursor-pointer"
+                    title={lang === "uz" ? "Telegram ulanishini bekor qilish" : "Отвязать Telegram"}
+                  >
+                    ✕ {lang === "uz" ? "Uzish" : "Отвязать"}
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
+                💡 {lang === "uz"
+                  ? "Avtomatik ulanish uchun administrator Telegram botga (@MiniMall_Uz_bot) kirib /start buyrug'ini yuborishi va o'z logini hamda parolini kiritishi kifoya."
+                  : "Для автоматической привязки администратору достаточно открыть бота @MiniMall_Uz_bot, нажать /start и ввести свой логин и пароль."}
+              </p>
             </div>
           </div>
 

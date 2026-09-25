@@ -603,8 +603,8 @@ async function handleIncomingMessage(msg) {
     return;
   }
 
-  // Command /logout
-  if (text === "/logout") {
+  // Command /logout or /unlink
+  if (text === "/logout" || text === "/unlink") {
     if (subscribers[chatId]) {
       const sub = subscribers[chatId];
       if (sub?.adminId) {
@@ -670,7 +670,8 @@ async function handleIncomingMessage(msg) {
       .maybeSingle();
 
     const hashedInput = hashPassword(password);
-    const isMatch = admin && (admin.password === hashedInput || admin.password === password);
+    const plainSha256 = crypto.createHash("sha256").update(password).digest("hex");
+    const isMatch = admin && (admin.password === hashedInput || admin.password === password || admin.password === plainSha256);
 
     if (error || !admin || !isMatch) {
       delete authSessions[chatId];
@@ -909,17 +910,6 @@ async function startBot() {
   pollUpdates();
   pollSupabaseOrders();
 }
-
-// HTTP Health check server required by cPanel / Phusion Passenger
-const port = process.env.PORT || 3000;
-const server = http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ status: "ok", service: "minimall-bot", time: new Date().toISOString() }));
-});
-
-server.listen(port, () => {
-  console.log(`🤖 [Minimall Bot Service] HTTP server listening on port ${port}`);
-});
-
 startBot();
+
 

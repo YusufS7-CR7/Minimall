@@ -202,7 +202,8 @@ export default function AdminUsersPage() {
     const total = admins.length;
     const active = admins.filter((a) => a.isActive).length;
     const superAdminObj = admins.find((a) => a.isSuperAdmin);
-    return { total, active, superAdminLogin: superAdminObj?.username || "admin" };
+    const telegramConnected = admins.filter((a) => a.telegramChatId && a.isActive).length;
+    return { total, active, superAdminLogin: superAdminObj?.username || "admin", telegramConnected };
   }, [admins]);
 
   const handleOpenCreate = () => {
@@ -266,6 +267,7 @@ export default function AdminUsersPage() {
     password: string;
     role: "admin" | "manager";
     permissions: AdminPermission[];
+    telegramChatId?: string | null;
   }) => {
     if (editingAdmin) {
       const res = await updateAdmin(editingAdmin.id, {
@@ -273,6 +275,7 @@ export default function AdminUsersPage() {
         password: data.password || undefined,
         role: data.role,
         permissions: data.permissions,
+        telegramChatId: data.telegramChatId,
       });
       if (res.success) {
         showToast(
@@ -379,16 +382,18 @@ export default function AdminUsersPage() {
 
         <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            {lang === "uz" ? "Faol hisoblar" : "Активных аккаунтов"}
+            {lang === "uz" ? "Telegram bildirishnomalar" : "Telegram-уведомления"}
           </div>
           <div
-            className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1"
+            className={`text-2xl sm:text-3xl font-black mt-1 ${stats.telegramConnected > 0 ? "text-emerald-600" : "text-amber-500"}`}
             style={{ fontFamily: "Barlow Condensed, sans-serif" }}
           >
-            {stats.active} / {stats.total}
+            {stats.telegramConnected} / {stats.total}
           </div>
-          <div className="text-[11px] text-emerald-600/80 mt-1">
-            {lang === "uz" ? "panelga kirish huquqi bor" : "имеют доступ к панели"}
+          <div className={`text-[11px] mt-1 ${stats.telegramConnected > 0 ? "text-emerald-600/80" : "text-amber-500/80"}`}>
+            {lang === "uz"
+              ? stats.telegramConnected > 0 ? "admin Telegram botga ulangan" : "hech kim Telegram botga ulanmagan"
+              : stats.telegramConnected > 0 ? "адм. подключены к Telegram боту" : "никто не подключён к боту"}
           </div>
         </div>
       </div>
@@ -520,6 +525,20 @@ export default function AdminUsersPage() {
                         );
                       })}
                     </div>
+                  )}
+                </div>
+
+                {/* Telegram Status */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  {target.telegramChatId ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                      📱 Telegram: {target.telegramChatId}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
+                      📵 {lang === "uz" ? "Telegram ulanmagan" : "Telegram не подключён"}
+                    </span>
                   )}
                 </div>
 

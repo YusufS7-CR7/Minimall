@@ -1,5 +1,6 @@
 import type { Order } from "@/data/orderTypes";
 import { formatPrice } from "@/utils/formatPrice";
+import { supabase } from "@/lib/supabase";
 
 export interface TelegramSettings {
   botToken: string;
@@ -8,9 +9,11 @@ export interface TelegramSettings {
 }
 
 const STORAGE_KEY = "minimall_telegram_settings";
+export const DEFAULT_TELEGRAM_BOT_TOKEN = "8809570303:AAGL-2UCGPLoGrx7NBwX0ZzHraMyqSzWvNA";
+export const DEFAULT_TELEGRAM_CHAT_ID = "1837377724";
 
 /**
- * Get current Telegram settings from localStorage or fallback to .env
+ * Get current Telegram settings from localStorage or fallback to defaults
  */
 export function getTelegramSettings(): TelegramSettings {
   try {
@@ -18,8 +21,8 @@ export function getTelegramSettings(): TelegramSettings {
     if (saved) {
       const parsed = JSON.parse(saved);
       return {
-        botToken: parsed.botToken || "",
-        chatId: parsed.chatId || (import.meta.env.VITE_TELEGRAM_CHAT_ID ?? ""),
+        botToken: parsed.botToken || (import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? DEFAULT_TELEGRAM_BOT_TOKEN),
+        chatId: parsed.chatId || (import.meta.env.VITE_TELEGRAM_CHAT_ID ?? DEFAULT_TELEGRAM_CHAT_ID),
         enabled: parsed.enabled !== undefined ? parsed.enabled : true,
       };
     }
@@ -28,8 +31,8 @@ export function getTelegramSettings(): TelegramSettings {
   }
 
   return {
-    botToken: "",
-    chatId: import.meta.env.VITE_TELEGRAM_CHAT_ID ?? "",
+    botToken: import.meta.env.VITE_TELEGRAM_BOT_TOKEN ?? DEFAULT_TELEGRAM_BOT_TOKEN,
+    chatId: import.meta.env.VITE_TELEGRAM_CHAT_ID ?? DEFAULT_TELEGRAM_CHAT_ID,
     enabled: true,
   };
 }
@@ -103,10 +106,10 @@ ${itemsList}
 }
 
 /**
- * Sends order notification to Telegram
+ * Sends order notification to Telegram - broadcasts to ALL verified admin accounts!
  */
 export async function sendOrderTelegramNotification(order: Order): Promise<{ success: boolean; error?: string }> {
-  // 1. Notify bot service (local or Render URL)
+  // 1. Notify bot service (local or remote URL)
   try {
     const botServiceUrl = (import.meta.env.VITE_BOT_SERVICE_URL || "http://localhost:8444").replace(/\/+$/, "");
     fetch(`${botServiceUrl}/api/notify-order`, {
@@ -119,39 +122,71 @@ export async function sendOrderTelegramNotification(order: Order): Promise<{ suc
   }
 
   const settings = getTelegramSettings();
+  const botToken = settings.botToken || import.meta.env.VITE_TELEGRAM_BOT_TOKEN || DEFAULT_TELEGRAM_BOT_TOKEN;
 
-  if (!settings.enabled || !settings.botToken || !settings.chatId) {
-    // If specific chat ID not set, local daemon handles it
+  if (!settings.enabled || !botToken) {
+    return { success: true };
+  }
+
+  // 2. Collect all active admin chat IDs from settings and database (mm_admins)
+  const targetChatIds = new Set<string>();
+  if (settings.chatId) {
+    targetChatIds.add(String(settings.chatId).trim());
+  }
+
+  try {
+    const { data: dbAdmins, error } = await supabase
+      .from("mm_admins")
+      .select("telegram_chat_id, is_active")
+      .eq("is_active", true)
+      .not("telegram_chat_id", "is", null);
+
+    if (!error && Array.isArray(dbAdmins)) {
+      for (const adm of dbAdmins) {
+        if (adm.telegram_chat_id) {
+          const cid = String(adm.telegram_chat_id).trim();
+          if (cid) targetChatIds.add(cid);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[Telegram Bot] Could not fetch active admin chat IDs from database:", err);
+  }
+
+  if (targetChatIds.size === 0) {
     return { success: true };
   }
 
   const text = formatOrderForTelegram(order);
 
-  try {
-    const url = `https://api.telegram.org/bot${settings.botToken}/sendMessage`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: settings.chatId,
-        text,
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }),
-    });
+  // 3. Broadcast to all verified admins in parallel
+  const sendPromises = Array.from(targetChatIds).map(async (chatId) => {
+    try {
+      const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        }),
+      });
 
-    const data = await response.json();
-    if (!data.ok) {
-      console.warn("[Telegram Bot] API error:", data.description);
-      return { success: false, error: data.description };
+      const data = await response.json();
+      if (!data.ok) {
+        console.warn(`[Telegram Bot] Send to ${chatId} failed:`, data.description);
+      }
+      return { chatId, ok: data.ok };
+    } catch (err: unknown) {
+      console.warn(`[Telegram Bot] Network error sending to ${chatId}:`, err);
+      return { chatId, ok: false };
     }
+  });
 
-    return { success: true };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Network error";
-    console.warn("[Telegram Bot] Send error:", message);
-    return { success: false, error: message };
-  }
+  await Promise.allSettled(sendPromises);
+  return { success: true };
 }
 
 /**

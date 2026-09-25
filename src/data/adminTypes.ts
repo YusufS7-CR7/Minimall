@@ -102,4 +102,5 @@ export interface AdminUser {
   createdAt: string;
   lastLoginAt?: string;
   isActive: boolean;
+  telegramChatId?: string | null;
 }
