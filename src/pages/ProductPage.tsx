@@ -16,7 +16,7 @@ export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const { lang, addToCart } = useApp();
   const { user, openAuthModal } = useAuth();
-  const { getProductBySlug, products } = useProducts();
+  const { getProductBySlug, products, loading: productsLoading } = useProducts();
   const { usdRate } = useCurrency();
   const t = T[lang];
 
@@ -78,6 +78,18 @@ export default function ProductPage() {
         }
       : undefined,
   });
+
+  // Wait for products to load before deciding 404 — prevents false redirect when page opens in new tab
+  if (productsLoading && !product) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-gray-400">
+          <div className="w-10 h-10 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm font-medium">Загрузка товара...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) return <Navigate to="/404" replace />;
 
