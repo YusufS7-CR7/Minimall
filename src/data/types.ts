@@ -7,6 +7,7 @@ export interface ProductSize {
   price: number;
   currency?: "UZS" | "USD";
   originalPrice?: number;
+  displayPrice?: string;
 }
 
 export interface SubcategoryDef {

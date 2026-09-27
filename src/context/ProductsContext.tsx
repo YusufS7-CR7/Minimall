@@ -139,14 +139,22 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
     : (p.category ? [p.category.trim()] : []);
   const primaryCategory = cats[0] || p.category || "";
 
-  // Only store user-defined specs (no automatic _sizes/_categories/_subcategory injection).
-  // These system fields are derived from the product's own columns at read time.
+  // Store clean specs plus system fields in specs JSONB (as the table schema uses specs for these)
   const rawSpecs = p.specs ?? {};
   const specs: Record<string, string> = {};
   for (const [k, v] of Object.entries(rawSpecs)) {
     // Skip any auto-generated underscore system keys
     if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory") continue;
     specs[k] = v;
+  }
+  if (p.subcategory) {
+    specs._subcategory = p.subcategory;
+  }
+  if (cats.length > 0) {
+    specs._categories = JSON.stringify(cats);
+  }
+  if (p.sizes && p.sizes.length > 0) {
+    specs._sizes = JSON.stringify(p.sizes);
   }
   return {
     ...(p.id ? { id: p.id } : {}),
@@ -417,31 +425,38 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           ...(patch.specs || {}),
         };
 
-        if (patch.subcategory !== undefined) {
-          // subcategory stored in its own column, not in specs
-          if (patch.subcategory) dbPatch.subcategory = patch.subcategory;
-        }
-
-        if (patch.sizes !== undefined) {
-          // sizes are stored in the product's own field, not in specs
-          // (no _sizes injection needed)
-        }
-
-        if (patch.categories !== undefined) {
-          const cats = patch.categories.map((c) => c.trim()).filter(Boolean);
-          if (cats.length > 0) {
-            dbPatch.category = cats[0];
-          }
-        } else if (patch.category !== undefined) {
-          dbPatch.category = patch.category;
-        }
-
-        // Build clean specs without any auto-generated system keys
+        // Build clean specs without any old auto-generated system keys
         const cleanSpecs: Record<string, string> = {};
         for (const [k, v] of Object.entries(mergedSpecs)) {
           if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory") continue;
           cleanSpecs[k] = v;
         }
+
+        // Subcategory is preserved in specs._subcategory
+        const effectiveSubcat = patch.subcategory !== undefined ? patch.subcategory : currentProd?.subcategory;
+        if (effectiveSubcat) {
+          cleanSpecs._subcategory = effectiveSubcat;
+        }
+
+        // Categories are preserved in specs._categories and dbPatch.category
+        if (patch.categories !== undefined) {
+          const cats = patch.categories.map((c) => c.trim()).filter(Boolean);
+          if (cats.length > 0) {
+            dbPatch.category = cats[0];
+            cleanSpecs._categories = JSON.stringify(cats);
+          }
+        } else if (patch.category !== undefined) {
+          dbPatch.category = patch.category;
+        } else if (currentProd?.categories && currentProd.categories.length > 0) {
+          cleanSpecs._categories = JSON.stringify(currentProd.categories);
+        }
+
+        // Sizes are preserved in specs._sizes
+        const effectiveSizes = patch.sizes !== undefined ? patch.sizes : currentProd?.sizes;
+        if (effectiveSizes && effectiveSizes.length > 0) {
+          cleanSpecs._sizes = JSON.stringify(effectiveSizes);
+        }
+
         dbPatch.specs = cleanSpecs;
       }
       if (patch.badge !== undefined) dbPatch.badge = patch.badge;

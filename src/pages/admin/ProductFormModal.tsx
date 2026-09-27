@@ -211,19 +211,72 @@ export default function ProductFormModal({
     setNewSizePrice("");
   };
 
-  const handleUpdateSize = (indexToUpdate: number, updates: Partial<ProductSize>) => {
+  const handleUpdateSize = (indexToUpdate: number, updates: Partial<ProductSize> & { currency?: "UZS" | "USD"; originalPrice?: number; displayPrice?: string }) => {
     setSizes((prev) =>
       prev.map((size, idx) => {
         if (idx !== indexToUpdate) return size;
 
         const nextName = updates.name !== undefined ? updates.name : size.name;
-        const nextPrice = updates.price !== undefined ? Math.max(0, Math.round(Number(updates.price) || 0)) : size.price;
+        const currentCurrency = size.currency || "UZS";
 
-        return {
-          ...size,
-          name: nextName,
-          price: nextPrice,
-        };
+        // Handle currency switch
+        if (updates.currency !== undefined && updates.currency !== currentCurrency) {
+          const newCurrency = updates.currency;
+          if (newCurrency === "USD") {
+            // Switching to USD: convert stored UZS price to USD for display
+            const usdVal = usdRate > 0 ? parseFloat((size.price / usdRate).toFixed(2)) : 0;
+            return {
+              ...size,
+              name: nextName,
+              currency: "USD",
+              originalPrice: usdVal,
+              displayPrice: usdVal > 0 ? String(usdVal) : "",
+            };
+          } else {
+            // Switching back to UZS: keep the UZS price as-is
+            return {
+              ...size,
+              name: nextName,
+              currency: "UZS",
+              originalPrice: size.price,
+              displayPrice: size.price > 0 ? String(size.price) : "",
+            };
+          }
+        }
+
+        // Handle direct text price change
+        if (updates.displayPrice !== undefined) {
+          const raw = updates.displayPrice;
+          const numVal = parseFloat(raw.replace(",", ".")) || 0;
+          const finalPrice = currentCurrency === "USD"
+            ? Math.round(numVal * usdRate)
+            : Math.round(numVal);
+          return {
+            ...size,
+            name: nextName,
+            displayPrice: raw,
+            originalPrice: numVal,
+            price: finalPrice,
+          };
+        }
+
+        // Handle price change
+        if (updates.originalPrice !== undefined) {
+          const origPrice = updates.originalPrice;
+          const finalPrice = currentCurrency === "USD"
+            ? Math.round(origPrice * usdRate)
+            : Math.round(origPrice);
+          return {
+            ...size,
+            name: nextName,
+            originalPrice: origPrice,
+            price: finalPrice,
+            displayPrice: origPrice > 0 ? String(origPrice) : "",
+          };
+        }
+
+        const nextPrice = updates.price !== undefined ? Math.max(0, Math.round(Number(updates.price) || 0)) : size.price;
+        return { ...size, name: nextName, price: nextPrice, displayPrice: nextPrice > 0 ? String(nextPrice) : "" };
       })
     );
   };
@@ -1395,39 +1448,65 @@ export default function ProductFormModal({
                     {/* Tags List */}
                     {sizes.length > 0 ? (
                       <div className="space-y-2 pt-1">
-                        {sizes.map((size, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 bg-white border border-red-200 rounded-xl px-2.5 py-2 text-xs shadow-2xs"
-                          >
-                            <input
-                              type="text"
-                              value={size.name}
-                              onChange={(e) => handleUpdateSize(idx, { name: e.target.value })}
-                              className="flex-1 min-w-0 bg-transparent text-red-700 font-bold outline-none"
-                              placeholder={lang === "uz" ? "O'lcham" : "Размер"}
-                            />
-                            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                              <input
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={size.price}
-                                onChange={(e) => handleUpdateSize(idx, { price: Number(e.target.value || 0) })}
-                                className="w-20 bg-transparent text-right font-bold text-gray-800 outline-none"
-                              />
-                              <span className="text-[10px] font-semibold text-gray-500 uppercase">UZS</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSize(idx)}
-                              className="text-gray-400 hover:text-red-600 cursor-pointer font-bold text-lg leading-none px-1"
-                              title={lang === "uz" ? "O'chirish" : "Удалить"}
+                        {sizes.map((size, idx) => {
+                          const sizeCurrency = size.currency || "UZS";
+                          const currentVal = size.displayPrice !== undefined
+                            ? size.displayPrice
+                            : sizeCurrency === "USD"
+                              ? (size.originalPrice !== undefined
+                                  ? String(size.originalPrice)
+                                  : (usdRate > 0 ? (size.price / usdRate).toFixed(2) : ""))
+                              : (size.price > 0 ? String(size.price) : "");
+                          const convertedHint = sizeCurrency === "USD"
+                            ? `≈ ${size.price.toLocaleString("ru-RU")} сум`
+                            : usdRate > 0 ? `≈ $${(size.price / usdRate).toFixed(2)}` : "";
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 bg-white border border-red-200 rounded-xl px-2.5 py-2 text-xs shadow-2xs flex-wrap sm:flex-nowrap"
                             >
-                              ×
-                            </button>
-                          </div>
-                        ))}
+                              <input
+                                type="text"
+                                value={size.name}
+                                onChange={(e) => handleUpdateSize(idx, { name: e.target.value })}
+                                className="flex-1 min-w-[80px] bg-transparent text-red-700 font-bold outline-none"
+                                placeholder={lang === "uz" ? "O'lcham" : "Размер"}
+                              />
+                              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 shrink-0">
+                                <input
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={currentVal}
+                                  onChange={(e) => {
+                                    const cleaned = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
+                                    handleUpdateSize(idx, { displayPrice: cleaned });
+                                  }}
+                                  className="w-20 bg-transparent text-right font-bold text-gray-800 outline-none"
+                                  placeholder={sizeCurrency === "USD" ? "0.00" : "0"}
+                                />
+                                <select
+                                  value={sizeCurrency}
+                                  onChange={(e) => handleUpdateSize(idx, { currency: e.target.value as "UZS" | "USD" })}
+                                  className="text-[10px] font-bold text-gray-500 bg-transparent outline-none cursor-pointer border-l border-gray-200 pl-1 ml-1"
+                                >
+                                  <option value="UZS">UZS</option>
+                                  <option value="USD">USD</option>
+                                </select>
+                              </div>
+                              {convertedHint && (
+                                <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap shrink-0">{convertedHint}</span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSize(idx)}
+                                className="text-gray-400 hover:text-red-600 cursor-pointer font-bold text-lg leading-none px-1 shrink-0"
+                                title={lang === "uz" ? "O'chirish" : "Удалить"}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
