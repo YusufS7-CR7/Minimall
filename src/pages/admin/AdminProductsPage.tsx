@@ -474,11 +474,13 @@ export default function AdminProductsPage() {
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">{t.colProduct}</th>
-                <th className="py-3 px-4">{t.colCategory} / {t.allBrands.replace("Все ", "").replace("Barcha ", "")}</th>
-                <th className="py-3 px-4">{t.colPrice}</th>
-                <th className="py-3 px-4">{t.colStatus}</th>
-                <th className="py-3 px-4 text-right">{t.colActions}</th>
+                <th className="py-3 px-3 min-w-[200px]">{t.colProduct}</th>
+                <th className="py-3 px-3 min-w-[140px] max-w-[210px]">{t.colCategory} / {t.allBrands.replace("Все ", "").replace("Barcha ", "")}</th>
+                <th className="py-3 px-3 w-[110px] min-w-[105px] whitespace-nowrap">{t.colPrice}</th>
+                <th className="py-3 px-3 w-[125px] min-w-[120px] whitespace-nowrap">{t.colStatus}</th>
+                <th className="py-3 px-3 w-[160px] min-w-[160px] text-right sticky right-0 bg-gray-50/95 backdrop-blur-xs z-20 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.06)] border-l border-gray-100">
+                  {t.colActions}
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -510,36 +512,36 @@ export default function AdminProductsPage() {
                       className="hover:bg-gray-50/60 transition-colors group"
                     >
                       {/* Product details */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3 px-3 min-w-[200px] max-w-[280px]">
+                        <div className="flex items-center gap-2.5">
                           {p.image && p.image.trim() !== "" ? (
                             <img
                               src={p.image}
                               alt={pName}
-                              className="w-12 h-12 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
+                              className="w-11 h-11 rounded-xl object-contain border border-gray-100 bg-white p-1 shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).src =
                                   "https://images.unsplash.com/photo-1504148455328-c376907d081c?w=100&h=100&fit=crop";
                               }}
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 text-base" title="Нет фото">
+                            <div className="w-11 h-11 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 text-base" title="Нет фото">
                               📦
                             </div>
                           )}
-                          <div className="min-w-0">
-                            <div className="font-semibold text-gray-900 line-clamp-1 text-xs sm:text-sm">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-gray-900 line-clamp-1 text-xs sm:text-sm" title={pName}>
                               {pName}
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="font-mono text-[11px] text-gray-400">
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="font-mono text-[11px] text-gray-400 shrink-0">
                                 #{p.id}
                               </span>
-                              <span className="text-[11px] text-gray-400 font-mono truncate max-w-[150px]">
+                              <span className="text-[11px] text-gray-400 font-mono truncate max-w-[120px]" title={`/${p.slug}`}>
                                 /{p.slug}
                               </span>
                               {p.badge && (
-                                <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.2 rounded">
+                                <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.2 rounded shrink-0">
                                   {p.badge}
                                 </span>
                               )}
@@ -549,23 +551,23 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Category & Brand */}
-                      <td className="py-3 px-4">
-                        <div className="text-xs font-medium text-gray-900 mb-1">
+                      <td className="py-3 px-3 min-w-[140px] max-w-[210px]">
+                        <div className="text-xs font-medium text-gray-900 mb-1 truncate">
                           {p.brand}
                         </div>
-                        <div className="text-[11px] text-gray-500 flex items-center gap-1.5 flex-wrap max-w-xs">
+                        <div className="text-[11px] text-gray-500 flex items-center gap-1 flex-wrap">
                           {productCats.map((cKey) => {
                             const cObj = categories.find((c) => c.key === cKey);
                             const cLabel = lang === "uz" ? cObj?.labelUz || cObj?.labelRu || cKey : cObj?.labelRu || cKey;
                             return (
-                              <span key={cKey} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap">
+                              <span key={cKey} className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded-md text-[10px] font-medium max-w-[120px] truncate" title={cLabel}>
                                 {cObj?.icon && <span>{cObj.icon}</span>}
-                                <span>{cLabel}</span>
+                                <span className="truncate">{cLabel}</span>
                               </span>
                             );
                           })}
                           {p.subcategory && (
-                            <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded-md font-medium border border-red-100 whitespace-nowrap">
+                            <span className="text-[10px] bg-red-50 text-red-700 px-1.5 py-0.5 rounded-md font-medium border border-red-100 max-w-[120px] truncate" title={subLabel}>
                               {subLabel}
                             </span>
                           )}
@@ -573,7 +575,7 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Price */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3 px-3 w-[110px] min-w-[105px] whitespace-nowrap">
                         <div className="text-xs sm:text-sm font-bold text-gray-900">
                           {formatPrice(p.price, usdRate)}
                         </div>
@@ -585,7 +587,7 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Stock toggle */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3 px-3 w-[125px] min-w-[120px] whitespace-nowrap">
                         <button
                           disabled={!canEdit}
                           onClick={() => canEdit && handleToggleStock(p)}
@@ -607,15 +609,15 @@ export default function AdminProductsPage() {
                         </button>
                       </td>
 
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                      {/* Actions - sticky pinned right */}
+                      <td className="py-3 px-3 text-right whitespace-nowrap sticky right-0 bg-white group-hover:bg-gray-50/95 transition-colors z-10 shadow-[-6px_0_12px_-4px_rgba(0,0,0,0.06)] border-l border-gray-100 w-[160px] min-w-[160px]">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* View on Storefront */}
                           <Link
                             to={`/product/${p.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors"
+                            className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center justify-center text-xs transition-colors shrink-0"
                             title={lang === "uz" ? "Do'konda tovar sahifasini ochish" : "Открыть страницу товара на витрине"}
                           >
                             👁️
@@ -624,8 +626,9 @@ export default function AdminProductsPage() {
                           {/* Edit */}
                           {canEdit && (
                             <button
+                              type="button"
                               onClick={() => handleOpenEdit(p)}
-                              className="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                              className="w-8 h-8 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center text-xs transition-colors cursor-pointer shrink-0"
                               title={t.edit}
                             >
                               ✏️
@@ -635,8 +638,9 @@ export default function AdminProductsPage() {
                           {/* Duplicate */}
                           {canEdit && (
                             <button
+                              type="button"
                               onClick={() => handleDuplicate(p)}
-                              className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                              className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center text-xs transition-colors cursor-pointer shrink-0"
                               title={lang === "uz" ? "Nusxa yaratish" : "Сделать копию товара"}
                             >
                               📄
@@ -646,8 +650,9 @@ export default function AdminProductsPage() {
                           {/* Delete */}
                           {canDelete && (
                             <button
+                              type="button"
                               onClick={() => handleDelete(p.id, pName)}
-                              className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                              className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center text-xs transition-colors cursor-pointer shrink-0"
                               title={t.delete}
                             >
                               🗑️

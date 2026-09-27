@@ -94,6 +94,8 @@ export default function AdminUserModal({
         "products_view",
         "products_create",
         "products_edit",
+        "products_delete",
+        "products_export",
       ]);
     }
     setError(null);
