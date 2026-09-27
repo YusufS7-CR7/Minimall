@@ -423,44 +423,42 @@ export default function AdminProductsPage() {
                 </div>
 
                 {/* Mobile action bar */}
-                <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-1.5 pt-2 border-t border-gray-100">
                   <Link
                     to={`/product/${p.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200"
+                    className="w-9 h-9 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm rounded-xl border border-gray-200 shrink-0"
                     title={lang === "uz" ? "Do'konda ko'rish" : "Смотреть"}
                   >
-                    <span>👁️</span>
+                    👁️
                   </Link>
                   {canEdit && (
                     <button
                       onClick={() => handleOpenEdit(p)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl border border-blue-200 cursor-pointer min-w-0"
                       title={t.edit}
                     >
-                      <span>✏️</span>
-                      <span className="text-[10px]">{t.edit}</span>
+                      <span className="text-sm">✏️</span>
+                      <span className="text-[10px] truncate">{lang === "uz" ? "Tahrirl." : "Изменить"}</span>
                     </button>
                   )}
                   {canEdit && (
                     <button
                       onClick={() => handleDuplicate(p)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 cursor-pointer"
+                      className="w-9 h-9 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-700 text-sm rounded-xl border border-gray-200 cursor-pointer shrink-0"
                       title={lang === "uz" ? "Nusxa olish" : "Копия"}
                     >
-                      <span>📄</span>
-                      <span className="text-[10px]">{lang === "uz" ? "Nusxa" : "Копия"}</span>
+                      📄
                     </button>
                   )}
                   {canDelete && (
                     <button
                       onClick={() => handleDelete(p.id, pName)}
-                      className="flex-1 flex items-center justify-center gap-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold rounded-xl border border-red-200 cursor-pointer"
+                      className="w-9 h-9 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-700 text-sm rounded-xl border border-red-200 cursor-pointer shrink-0"
                       title={t.delete}
                     >
-                      <span>🗑️</span>
-                      <span className="text-[10px]">{t.delete}</span>
+                      🗑️
                     </button>
                   )}
                 </div>
