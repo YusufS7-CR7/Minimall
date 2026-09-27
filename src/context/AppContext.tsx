@@ -62,6 +62,10 @@ interface AppContextValue {
   toggleFavorite: (productId: number) => void;
   removeFavorite: (productId: number) => void;
   showToast: (msg: string) => void;
+  catalogOpen: boolean;
+  setCatalogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  openCatalog: () => void;
+  closeCatalog: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -101,6 +105,10 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
   const [favorites, setFavorites] = useState<number[]>(() => loadFavsForUser(userId));
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const openCatalog = useCallback(() => setCatalogOpen(true), []);
+  const closeCatalog = useCallback(() => setCatalogOpen(false), []);
 
   // ── Sync cart & favorites when userId changes (login / logout) ────────────
   const prevUserIdRef = useRef(userId);
@@ -279,6 +287,10 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
         toggleFavorite,
         removeFavorite,
         showToast,
+        catalogOpen,
+        setCatalogOpen,
+        openCatalog,
+        closeCatalog,
       }}
     >
       {children}

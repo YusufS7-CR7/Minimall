@@ -17,7 +17,7 @@ interface HeaderProps {
 
 export default function Header({ lang }: HeaderProps) {
   const t = T[lang];
-  const { totalCartCount, favorites, showToast, setLang } = useApp();
+  const { totalCartCount, favorites, showToast, setLang, catalogOpen, setCatalogOpen } = useApp();
   const { user, openAuthModal, logout } = useAuth();
   const [search, setSearch] = useState("");
 
@@ -25,7 +25,6 @@ export default function Header({ lang }: HeaderProps) {
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
-  const [catalogOpen, setCatalogOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 

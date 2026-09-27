@@ -49,6 +49,7 @@ interface CreateAdminPayload {
 }
 
 interface UpdateAdminPayload {
+  username?: string;
   name?: string;
   password?: string;
   role?: "admin" | "manager";
@@ -299,6 +300,29 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const dbPatch: Record<string, unknown> = {};
+    if (payload.username !== undefined) {
+      const cleanUsername = payload.username.trim().toLowerCase();
+      if (!cleanUsername) {
+        return { success: false, error: "err_admin_username_empty" };
+      }
+      if (cleanUsername.length < 3) {
+        return { success: false, error: "err_admin_username_short" };
+      }
+      if (cleanUsername !== target.username.toLowerCase()) {
+        const { data: existingUser } = await supabase
+          .from("mm_admins")
+          .select("id")
+          .eq("username", cleanUsername)
+          .neq("id", id)
+          .maybeSingle();
+
+        if (existingUser) {
+          return { success: false, error: "err_admin_username_exists" };
+        }
+      }
+      dbPatch.username = cleanUsername;
+    }
+
     if (payload.name !== undefined) dbPatch.name = payload.name.trim();
     if (payload.password) {
       dbPatch.password = await hashPassword(payload.password);
@@ -328,6 +352,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         if (a.id !== id) return a;
         return {
           ...a,
+          username: payload.username !== undefined ? payload.username.trim().toLowerCase() : a.username,
           name: payload.name !== undefined ? payload.name.trim() : a.name,
           password: "",
           role: a.isSuperAdmin ? "superadmin" : (payload.role || a.role),
@@ -338,8 +363,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       })
     );
 
-    if (adminUser.id === id && payload.name !== undefined) {
-      setAdminUser((prev) => prev ? { ...prev, name: payload.name!.trim() } : null);
+    if (adminUser.id === id) {
+      setAdminUser((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          username: payload.username !== undefined ? payload.username.trim().toLowerCase() : prev.username,
+          name: payload.name !== undefined ? payload.name.trim() : prev.name,
+        };
+      });
     }
 
     return { success: true };

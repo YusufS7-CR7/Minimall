@@ -9,7 +9,7 @@ import OrderHistoryModal from "@/components/ui/OrderHistoryModal";
 
 export default function MobileNavBar() {
   const location = useLocation();
-  const { lang, totalCartCount, favorites } = useApp();
+  const { lang, totalCartCount, favorites, catalogOpen, setCatalogOpen } = useApp();
   const { user, openAuthModal } = useAuth();
   const t = T[lang];
 
@@ -17,8 +17,9 @@ export default function MobileNavBar() {
   const [favOpen, setFavOpen] = useState(false);
   const [ordersOpen, setOrdersOpen] = useState(false);
 
-  const isHome = location.pathname === "/";
+  const isHome = location.pathname === "/" && !catalogOpen;
   const isCatalog =
+    catalogOpen ||
     location.pathname.startsWith("/catalog") ||
     location.pathname.startsWith("/brand") ||
     location.pathname.startsWith("/search");
@@ -37,6 +38,7 @@ export default function MobileNavBar() {
           {/* Home */}
           <Link
             to="/"
+            onClick={() => setCatalogOpen(false)}
             aria-label="Главная"
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform ${
               isHome ? "text-red-600 font-bold" : "text-gray-400 hover:text-gray-700"
@@ -54,8 +56,9 @@ export default function MobileNavBar() {
           </Link>
 
           {/* Catalog */}
-          <Link
-            to="/catalog"
+          <button
+            type="button"
+            onClick={() => setCatalogOpen((prev) => !prev)}
             aria-label={t.catalog}
             className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform ${
               isCatalog ? "text-red-600 font-bold" : "text-gray-400 hover:text-gray-700"
@@ -68,7 +71,7 @@ export default function MobileNavBar() {
               {isCatalog && <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-red-600" />}
             </div>
             <span className="text-[10px] font-semibold leading-none mt-0.5">{t.catalog}</span>
-          </Link>
+          </button>
 
           {/* Cart — center, prominent */}
           <button

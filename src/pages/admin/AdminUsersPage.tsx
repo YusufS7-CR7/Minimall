@@ -42,66 +42,151 @@ function translateAdminError(code: string, lang: string): string {
   return map[code] ?? code;
 }
 
-// ── Superadmin own-password change form ───────────────────────────────────────
-function SuperAdminPasswordSection() {
+// ── Superadmin own-profile (Name, Login, Password) change form ────────────────
+function SuperAdminProfileSection() {
   const { adminUser, updateAdmin } = useAdminAuth();
   const { showToast, lang } = useApp();
-  const t = ADMIN_TRANSLATIONS[lang].users;
+  const [name, setName] = useState(adminUser?.name || "");
+  const [username, setUsername] = useState(adminUser?.username || "");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPwd, setShowPwd] = useState(false);
 
+  useEffect(() => {
+    if (adminUser) {
+      setName(adminUser.name);
+      setUsername(adminUser.username);
+    }
+  }, [adminUser]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (newPassword.length < 4) {
-      setError(
-        lang === "uz"
-          ? "Parol kamida 4 ta belgidan iborat bo'lishi kerak"
-          : "Пароль должен содержать минимум 4 символа"
-      );
+
+    const cleanName = name.trim();
+    const cleanUsername = username.trim().toLowerCase();
+
+    if (!cleanName) {
+      setError(lang === "uz" ? "Administrator ismi bo'sh bo'lishi mumkin emas" : "Имя администратора не может быть пустым");
       return;
     }
-    if (newPassword !== confirmPwd) {
-      setError(lang === "uz" ? "Parollar mos kelmaydi" : "Пароли не совпадают");
+
+    if (!cleanUsername) {
+      setError(lang === "uz" ? "Login bo'sh bo'lishi mumkin emas" : "Логин не может быть пустым");
       return;
     }
+
+    if (cleanUsername.length < 3) {
+      setError(lang === "uz" ? "Login kamida 3 ta belgidan iborat bo'lishi kerak" : "Логин должен содержать минимум 3 символа");
+      return;
+    }
+
+    if (newPassword) {
+      if (newPassword.length < 4) {
+        setError(
+          lang === "uz"
+            ? "Parol kamida 4 ta belgidan iborat bo'lishi kerak"
+            : "Пароль должен содержать минимум 4 символа"
+        );
+        return;
+      }
+      if (newPassword !== confirmPwd) {
+        setError(lang === "uz" ? "Parollar mos kelmaydi" : "Пароли не совпадают");
+        return;
+      }
+    }
+
     setSaving(true);
-    const res = await updateAdmin(adminUser!.id, { password: newPassword });
+    const payload: { name: string; username: string; password?: string } = {
+      name: cleanName,
+      username: cleanUsername,
+    };
+    if (newPassword) {
+      payload.password = newPassword;
+    }
+
+    const res = await updateAdmin(adminUser!.id, payload);
     setSaving(false);
     if (res.success) {
       showToast(
         lang === "uz"
-          ? "Bosh Administrator paroli muvaffaqiyatli o'zgartirildi!"
-          : "Пароль Главного Администратора успешно изменён!"
+          ? "Bosh Administrator ma'lumotlari muvaffaqiyatli saqlandi!"
+          : "Данные Главного Администратора успешно сохранены!"
       );
       setNewPassword("");
       setConfirmPwd("");
     } else {
-      setError(res.error || (lang === "uz" ? "Saqlash xatosi" : "Ошибка сохранения"));
+      setError(res.error ? translateAdminError(res.error, lang) : (lang === "uz" ? "Saqlash xatosi" : "Ошибка сохранения"));
     }
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-amber-200 shadow-xs overflow-hidden">
-      <div className="px-6 py-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center gap-3">
-        <span className="text-xl">👑</span>
-        <div>
-          <h3 className="text-sm font-bold text-gray-900">{t.superAdminPwdTitle}</h3>
-          <p className="text-xs text-gray-500">{t.superAdminPwdDesc}</p>
+    <div className="bg-white rounded-3xl border border-amber-200/90 shadow-xs overflow-hidden">
+      <div className="px-6 py-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">👑</span>
+          <div>
+            <h3 className="text-sm font-extrabold text-gray-900">
+              {lang === "uz" ? "Bosh Administrator Profili" : "Профиль Главного Администратора"}
+            </h3>
+            <p className="text-xs text-gray-500">
+              {lang === "uz"
+                ? "Ismingiz, kirish loginingiz va parolingizni o'zgartiring"
+                : "Здесь вы можете изменить своё имя, логин для входа и пароль"}
+            </p>
+          </div>
         </div>
+        <span className="text-[11px] font-bold text-amber-700 bg-amber-100/70 border border-amber-200/80 px-2.5 py-1 rounded-full">
+          SuperAdmin
+        </span>
       </div>
+
       <form onSubmit={handleSubmit} className="p-6">
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 text-red-700 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
             <span>⚠️</span><span>{error}</span>
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          {/* Admin Name */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">{t.newPassword} *</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              {lang === "uz" ? "Administrator ismi *" : "Имя Главного Администратора *"}
+            </label>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={lang === "uz" ? "Masalan, Administrator" : "например, Главный Администратор"}
+              className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors"
+            />
+          </div>
+
+          {/* Admin Login */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              {lang === "uz" ? "Kirish uchun login *" : "Логин для входа в панель *"}
+            </label>
+            <input
+              type="text"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="admin"
+              className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors font-mono"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              {lang === "uz" ? "Yangi parol (o'zgartirishni istamasangiz, bo'sh qoldiring)" : "Новый пароль (оставьте пустым, если не меняете)"}
+            </label>
             <div className="relative">
               <input
                 type={showPwd ? "text" : "password"}
@@ -113,33 +198,36 @@ function SuperAdminPasswordSection() {
               <button
                 type="button"
                 onClick={() => setShowPwd((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 text-xs cursor-pointer"
               >
                 {showPwd ? "🙈" : "👁️"}
               </button>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">{t.confirmPassword} *</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+              {lang === "uz" ? "Parolni tasdiqlang" : "Подтвердите новый пароль"}
+            </label>
             <input
               type={showPwd ? "text" : "password"}
               value={confirmPwd}
               onChange={(e) => setConfirmPwd(e.target.value)}
-              placeholder={lang === "uz" ? "Parolni takrorlang" : "Повторите пароль"}
+              placeholder={lang === "uz" ? "Parolni takrorlang" : "Повторите новый пароль"}
               className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors font-mono"
             />
           </div>
         </div>
-        <div className="mt-4 flex justify-end">
+
+        <div className="mt-5 flex justify-end">
           <button
             type="submit"
-            disabled={saving || !newPassword || !confirmPwd}
-            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+            disabled={saving}
+            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-2"
           >
             {saving ? (
               <><span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />{lang === "uz" ? "Saqlanmoqda..." : "Сохранение..."}</>
             ) : (
-              `🔐 ${t.savePassword}`
+              lang === "uz" ? "💾 Profil ma'lumotlarini saqlash" : "💾 Сохранить изменения профиля"
             )}
           </button>
         </div>
@@ -271,6 +359,7 @@ export default function AdminUsersPage() {
   }) => {
     if (editingAdmin) {
       const res = await updateAdmin(editingAdmin.id, {
+        username: data.username,
         name: data.name,
         password: data.password || undefined,
         role: data.role,
@@ -398,8 +487,8 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
-      {/* Superadmin: Change own password */}
-      {isSuperAdmin && <SuperAdminPasswordSection />}
+      {/* Superadmin: Change own profile (name, login, password) */}
+      {isSuperAdmin && <SuperAdminProfileSection />}
 
       {/* Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center gap-3">

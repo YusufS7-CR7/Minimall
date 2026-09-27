@@ -435,7 +435,10 @@ export default function ProductPage() {
           {/* Key specs preview */}
           <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-              {Object.entries(product.specs).slice(0, 4).map(([k, v]) => (
+              {Object.entries(product.specs)
+                .filter(([k]) => !k.startsWith("_"))
+                .slice(0, 4)
+                .map(([k, v]) => (
                 <div key={k}>
                   <div className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{k}</div>
                   <div className="text-sm font-semibold text-gray-900">{v}</div>
@@ -506,7 +509,9 @@ export default function ProductPage() {
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
             <table className="w-full text-sm">
               <tbody>
-                {Object.entries(product.specs).map(([k, v], i) => (
+                {Object.entries(product.specs)
+                  .filter(([k]) => !k.startsWith("_"))
+                  .map(([k, v], i) => (
                   <tr key={k} className={i % 2 === 0 ? "bg-gray-50/50" : "bg-white"}>
                     <td className="px-5 py-3 text-gray-500 font-medium w-1/2">{k}</td>
                     <td className="px-5 py-3 text-gray-900 font-semibold">{v}</td>

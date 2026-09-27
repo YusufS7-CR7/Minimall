@@ -128,7 +128,7 @@ const DEFAULT_PRECONFIGURED_ADMINS = {
   "1837377724": {
     adminId: "superadmin-1",
     username: "admin",
-    name: "Юсуф (Главный Администратор)",
+    name: "Главный Администратор",
     role: "superadmin",
     isSuperAdmin: true,
     lang: "ru",
@@ -443,58 +443,64 @@ async function pollUpdates() {
   }
 }
 
-// ─── Handle Inline Keyboard Callbacks (Language selection) ───────────────────
+async function handleLanguageSelected(chatId, lang, callbackQueryId = null) {
+  userLanguages[chatId] = lang;
+  saveUserLanguages(userLanguages);
 
-async function handleCallbackQuery(callbackQuery) {
-  const chatId = String(callbackQuery.message?.chat?.id);
-  const data = callbackQuery.data;
+  if (subscribers[chatId]) {
+    subscribers[chatId].lang = lang;
+    saveSubscribers(subscribers);
+  }
 
-  if (data === "setlang_ru" || data === "setlang_uz") {
-    const lang = data === "setlang_uz" ? "uz" : "ru";
-    userLanguages[chatId] = lang;
-    saveUserLanguages(userLanguages);
-
-    if (subscribers[chatId]) {
-      subscribers[chatId].lang = lang;
-      saveSubscribers(subscribers);
-    }
-
-    const isUz = lang === "uz";
+  const isUz = lang === "uz";
+  if (callbackQueryId) {
     await answerCallbackQuery(
-      callbackQuery.id,
+      callbackQueryId,
       isUz ? "Til O'zbekcha 🇺🇿 ga o'rnatildi" : "Выбран Русский язык 🇷🇺"
     );
+  }
 
-    // If user is already an authorized subscriber
-    if (subscribers[chatId]) {
-      const sub = subscribers[chatId];
-      if (isUz) {
-        await sendTelegramMessage(
-          chatId,
-          `✅ <b>Til O'zbekcha 🇺🇿 ga muvaffaqiyatli o'zgartirildi!</b>\n\nSiz <b>${escapeHtml(sub.name)}</b> (@${escapeHtml(sub.username)}) sifatida ulangan holatdasiz.\nYangi buyurtmalar ushbu chatga o'zbek tilida yuboriladi.\n\n/status — holatni tekshirish\n/lang — tilni o'zgartirish\n/logout — chiqish`
-        );
-      } else {
-        await sendTelegramMessage(
-          chatId,
-          `✅ <b>Язык успешно изменен на Русский 🇷🇺!</b>\n\nВы подключены как <b>${escapeHtml(sub.name)}</b> (@${escapeHtml(sub.username)}).\nНовые заказы приходят на русском языке.\n\n/status — проверить статус\n/lang — сменить язык\n/logout — выйти`
-        );
-      }
-      return;
-    }
-
-    // Unauthenticated user -> start admin authentication flow in selected language
-    authSessions[chatId] = { step: "awaiting_login" };
+  // If user is already an authorized subscriber
+  if (subscribers[chatId]) {
+    const sub = subscribers[chatId];
     if (isUz) {
       await sendTelegramMessage(
         chatId,
-        `✅ <b>O'zbek tili tanlandi 🇺🇿</b>\n\n👋 <b>Minimall buyurtmalar tizimiga xush kelibsiz!</b>\n\nUshbu bot do'kon administratorlari uchun mo'ljallangan. Yangi buyurtmalar haqida tezkor bildirishnomalarni olish uchun profilingizni tasdiqlang.\n\n👤 <b>Administrator loginingizni kiriting:</b>`
+        `✅ <b>Til O'zbekcha 🇺🇿 ga muvaffaqiyatli o'zgartirildi!</b>\n\nSiz <b>${escapeHtml(sub.name)}</b> (@${escapeHtml(sub.username)}) sifatida ulangan holatdasiz.\nYangi buyurtmalar ushbu chatga o'zbek tilida yuboriladi.\n\n/status — holatni tekshirish\n/lang — tilni o'zgartirish\n/logout — chiqish`
       );
     } else {
       await sendTelegramMessage(
         chatId,
-        `✅ <b>Выбран Русский язык 🇷🇺</b>\n\n👋 <b>Добро пожаловать в систему заказов Minimall!</b>\n\nЭтот бот предназначен для администраторов магазина. Чтобы получать оповещения о новых заказах, подтвердите вашу учетную запись.\n\n👤 <b>Введите ваш логин администратора:</b>`
+        `✅ <b>Язык успешно изменен на Русский 🇷🇺!</b>\n\nВы подключены как <b>${escapeHtml(sub.name)}</b> (@${escapeHtml(sub.username)}).\nНовые заказы приходят на русском языке.\n\n/status — проверить статус\n/lang — сменить язык\n/logout — выйти`
       );
     }
+    return;
+  }
+
+  // Unauthenticated user -> start admin authentication flow in selected language
+  authSessions[chatId] = { step: "awaiting_login" };
+  if (isUz) {
+    await sendTelegramMessage(
+      chatId,
+      `✅ <b>O'zbek tili tanlandi 🇺🇿</b>\n\n👋 <b>Minimall buyurtmalar tizimiga xush kelibsiz!</b>\n\nUshbu bot do'kon administratorlari uchun mo'ljallangan. Yangi buyurtmalar haqida tezkor bildirishnomalarni olish uchun profilingizni tasdiqlang.\n\n👤 <b>Administrator loginingizni kiriting:</b>`
+    );
+  } else {
+    await sendTelegramMessage(
+      chatId,
+      `✅ <b>Выбран Русский язык 🇷🇺</b>\n\n👋 <b>Добро пожаловать в систему заказов Minimall!</b>\n\nЭтот бот предназначен для администраторов магазина. Чтобы получать оповещения о новых заказах, подтвердите вашу учетную запись.\n\n👤 <b>Введите ваш логин администратора:</b>`
+    );
+  }
+}
+
+// ─── Handle Inline Keyboard Callbacks (Language selection) ───────────────────
+
+async function handleCallbackQuery(callbackQuery) {
+  const chatId = String(callbackQuery.message?.chat?.id || callbackQuery.from?.id);
+  const data = callbackQuery.data;
+
+  if (data === "setlang_ru" || data === "setlang_uz") {
+    const lang = data === "setlang_uz" ? "uz" : "ru";
+    await handleLanguageSelected(chatId, lang, callbackQuery.id);
   }
 }
 
@@ -503,6 +509,7 @@ async function handleCallbackQuery(callbackQuery) {
 async function handleIncomingMessage(msg) {
   const chatId = String(msg.chat.id);
   const text = (msg.text || "").trim();
+  const lowerText = text.toLowerCase();
 
   // Command /start: Always prompt language selection first (Russian / Uzbek)
   if (text === "/start" || text.startsWith("/start")) {
@@ -513,6 +520,30 @@ async function handleIncomingMessage(msg) {
   // Command /lang or /language: allows changing language at any time
   if (text === "/lang" || text === "/language") {
     await promptLanguageSelection(chatId);
+    return;
+  }
+
+  // Support typing language directly in text
+  if (
+    lowerText === "🇷🇺 русский" ||
+    lowerText === "русский" ||
+    lowerText === "ру" ||
+    lowerText === "ru" ||
+    lowerText === "1"
+  ) {
+    await handleLanguageSelected(chatId, "ru");
+    return;
+  }
+
+  if (
+    lowerText === "🇺🇿 o'zbekcha" ||
+    lowerText === "o'zbekcha" ||
+    lowerText === "uzbekcha" ||
+    lowerText === "uzbek" ||
+    lowerText === "uz" ||
+    lowerText === "2"
+  ) {
+    await handleLanguageSelected(chatId, "uz");
     return;
   }
 
@@ -883,6 +914,7 @@ async function startBot() {
         body: JSON.stringify({
           url: webhookUrl,
           drop_pending_updates: false,
+          allowed_updates: ["message", "callback_query"],
         }),
       });
       const data = await res.json();

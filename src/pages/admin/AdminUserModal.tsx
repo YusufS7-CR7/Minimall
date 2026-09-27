@@ -236,17 +236,14 @@ export default function AdminUserModal({
               <input
                 type="text"
                 required
-                disabled={isEditing}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="логин, например, aziz_admin"
-                className={`w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 transition-colors ${
-                  isEditing ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-gray-50/50 focus:bg-white"
-                }`}
+                placeholder="логин, например, admin"
+                className="w-full text-sm px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-gray-50/50 focus:bg-white transition-colors"
               />
-              {isEditing && (
-                <span className="text-[11px] text-gray-400 mt-1 block">Логин нельзя изменить после создания</span>
-              )}
+              <span className="text-[11px] text-gray-400 mt-1 block">
+                {lang === "uz" ? "Tizimga kirish uchun noyob login" : "Уникальный логин для входа в панель управления"}
+              </span>
             </div>
 
             {/* Password */}

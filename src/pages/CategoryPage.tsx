@@ -20,7 +20,7 @@ export default function CategoryPage() {
 
   const { lang } = useApp();
   const { products: allProducts, brands } = useProducts();
-  const { getCategoryBySlug } = useCategories();
+  const { categories, getCategoryBySlug } = useCategories();
   const t = T[lang];
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
@@ -242,6 +242,64 @@ export default function CategoryPage() {
           />
         )}
       </div>
+
+      {/* If viewing all catalog (/catalog): Show Visual Categories Section */}
+      {!category && (
+        <section className="mb-6 sm:mb-8 bg-gray-50/70 rounded-3xl p-3.5 sm:p-5 border border-gray-100/90 shadow-2xs">
+          <div className="flex items-center justify-between mb-3.5 px-1">
+            <div>
+              <h2 className="text-sm sm:text-base font-extrabold text-gray-900 leading-tight">
+                {lang === "uz" ? "Katalog bo'limlari" : "Категории каталога"}
+              </h2>
+              <p className="text-[11px] text-gray-400 font-medium">
+                {lang === "uz" ? "Barcha toifalarni ko'rish va tanlash" : "Выберите категорию для быстрого перехода"}
+              </p>
+            </div>
+            <span className="text-xs text-red-600 font-bold bg-red-50 px-2.5 py-1 rounded-full border border-red-100">
+              {categories.length} {lang === "ru" ? "категорий" : "ta toifa"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+            {categories.map((cat) => {
+              const label = lang === "ru" ? cat.labelRu : cat.labelUz;
+              const count = allProducts.filter((p) => {
+                const cats = (p.categories && p.categories.length > 0)
+                  ? p.categories
+                  : (p.category ? [p.category] : []);
+                return cats.includes(cat.key);
+              }).length;
+
+              return (
+                <Link
+                  key={cat.key}
+                  to={`/catalog/${cat.slug}`}
+                  className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3.5 bg-white rounded-2xl border border-gray-200/80 hover:border-red-300 hover:shadow-md transition-all group active:scale-[0.98]"
+                >
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center text-xl sm:text-2xl group-hover:scale-105 transition-transform">
+                    {cat.image ? (
+                      <img src={cat.image} alt={label} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{cat.icon}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs sm:text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors line-clamp-1">
+                      {label}
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-gray-400 mt-0.5 font-medium">
+                      {count} {lang === "ru" ? "товаров" : "ta tovar"}
+                    </div>
+                  </div>
+                  <span className="text-gray-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-transform text-sm font-bold mr-0.5">
+                    ›
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Subcategory Pills / Chips Carousel */}
       {category && category.subcategories && category.subcategories.length > 0 && (

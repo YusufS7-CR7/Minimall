@@ -246,8 +246,7 @@ export default function ProductFormModal({
 
   // Specs state: array of { key, value }
   const [specsList, setSpecsList] = useState<{ key: string; value: string }[]>([
-    { key: "Мощность", value: "750 Вт" },
-    { key: "Вес", value: "2.1 кг" },
+    { key: "", value: "" },
   ]);
 
   const [error, setError] = useState<string | null>(null);
@@ -308,7 +307,7 @@ export default function ProductFormModal({
       setSlugManuallyEdited(true);
 
       const parsedSpecs = Object.entries(productToEdit.specs || {})
-        .filter(([k]) => !k.startsWith("_orig"))
+        .filter(([k]) => !k.startsWith("_"))
         .map(([k, v]) => ({
           key: k,
           value: v,
@@ -340,8 +339,7 @@ export default function ProductFormModal({
       setSlug("");
       setSlugManuallyEdited(false);
       setSpecsList([
-        { key: "Мощность", value: "" },
-        { key: "Вес", value: "" },
+        { key: "", value: "" },
       ]);
     }
     setError(null);
@@ -1726,6 +1724,7 @@ export default function ProductFormModal({
                       : "Добавьте ключевые параметры (Мощность, Обороты, Вес, Тип патрона и т.д.)"}
                   </p>
                 </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleAddSpec}
@@ -1733,6 +1732,24 @@ export default function ProductFormModal({
                 >
                   {t.addSpec}
                 </button>
+                {specsList.some((s) => s.key.trim() || s.value.trim()) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(
+                        lang === "uz"
+                          ? "Barcha xususiyatlarni o'chirishni xohlaysizmi?"
+                          : "Удалить все характеристики?"
+                      )) {
+                        setSpecsList([{ key: "", value: "" }]);
+                      }
+                    }}
+                    className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors cursor-pointer border border-red-200"
+                  >
+                    {lang === "uz" ? "Barchasini o'chirish" : "Удалить все"}
+                  </button>
+                )}
+              </div>
               </div>
 
               <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">

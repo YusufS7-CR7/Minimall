@@ -68,7 +68,7 @@ function dbToProduct(row: DbProduct): Product {
       try {
         const parsed = JSON.parse(rawSizes);
         if (Array.isArray(parsed)) {
-          sizes = parsed.map((item: unknown) => {
+          sizes = (parsed.map((item: unknown) => {
             if (typeof item === "string") return { name: item, price: row.price };
             const value = item as Record<string, unknown>;
             const name = String(value?.name ?? value?.size ?? "").trim();
@@ -76,10 +76,10 @@ function dbToProduct(row: DbProduct): Product {
             return {
               name,
               price: price > 0 ? price : row.price,
-              currency: value?.currency === "USD" ? "USD" : "UZS",
+              currency: (value?.currency === "USD" ? "USD" : "UZS") as "USD" | "UZS",
               originalPrice: Number(value?.originalPrice ?? price),
             };
-          }).filter((s) => s.name);
+          }) as ProductSize[]).filter((s) => s.name);
         }
       } catch {
         sizes = rawSizes.split(",").map((s) => ({ name: s.trim(), price: row.price })).filter((s) => s.name);
@@ -139,12 +139,15 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
     : (p.category ? [p.category.trim()] : []);
   const primaryCategory = cats[0] || p.category || "";
 
-  const specs = {
-    ...(p.specs ?? {}),
-    ...(p.subcategory ? { _subcategory: p.subcategory } : {}),
-    ...(p.sizes && p.sizes.length > 0 ? { _sizes: JSON.stringify(p.sizes) } : {}),
-    ...(cats.length > 0 ? { _categories: JSON.stringify(cats) } : {}),
-  };
+  // Only store user-defined specs (no automatic _sizes/_categories/_subcategory injection).
+  // These system fields are derived from the product's own columns at read time.
+  const rawSpecs = p.specs ?? {};
+  const specs: Record<string, string> = {};
+  for (const [k, v] of Object.entries(rawSpecs)) {
+    // Skip any auto-generated underscore system keys
+    if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory") continue;
+    specs[k] = v;
+  }
   return {
     ...(p.id ? { id: p.id } : {}),
     slug: p.slug,
@@ -191,22 +194,62 @@ const ProductsContext = createContext<ProductsContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
+const CACHE_KEY = "minimall_products_cache_v3";
+
+function loadCachedProducts(): Product[] {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load products from cache", e);
+  }
+  return [];
+}
+
+function saveCachedProducts(prods: Product[]) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(prods));
+  } catch {
+    // Ignore storage quota or private-browsing errors
+  }
+}
+
 export function ProductsProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<Product[]>(loadCachedProducts);
+  const [loading, setLoading] = useState<boolean>(() => products.length === 0);
+
+  // Sync state to cache whenever products change
+  useEffect(() => {
+    if (products.length > 0) {
+      saveCachedProducts(products);
+    }
+  }, [products]);
 
   // ── Fetch all products from Supabase ───────────────────────────────────────
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
+    // Only display loading screen if we have no cached data at all
+    setProducts((current) => {
+      if (current.length === 0) setLoading(true);
+      return current;
+    });
+
     const { data, error } = await supabase
       .from("products")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setProducts((data as DbProduct[]).map(dbToProduct));
+      const mapped = (data as DbProduct[]).map(dbToProduct);
+      setProducts(mapped);
+      saveCachedProducts(mapped);
     } else if (error) {
       console.error("Failed to fetch products:", error.message);
+      // Notice: we DO NOT clear `products`, we keep existing cached products!
     }
     setLoading(false);
   }, []);
@@ -375,35 +418,31 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         };
 
         if (patch.subcategory !== undefined) {
-          if (patch.subcategory) {
-            mergedSpecs._subcategory = patch.subcategory;
-          } else {
-            delete mergedSpecs._subcategory;
-          }
+          // subcategory stored in its own column, not in specs
+          if (patch.subcategory) dbPatch.subcategory = patch.subcategory;
         }
 
         if (patch.sizes !== undefined) {
-          if (patch.sizes && patch.sizes.length > 0) {
-            mergedSpecs._sizes = JSON.stringify(patch.sizes);
-          } else {
-            delete mergedSpecs._sizes;
-          }
+          // sizes are stored in the product's own field, not in specs
+          // (no _sizes injection needed)
         }
 
         if (patch.categories !== undefined) {
           const cats = patch.categories.map((c) => c.trim()).filter(Boolean);
           if (cats.length > 0) {
-            mergedSpecs._categories = JSON.stringify(cats);
             dbPatch.category = cats[0];
-          } else {
-            delete mergedSpecs._categories;
           }
         } else if (patch.category !== undefined) {
           dbPatch.category = patch.category;
-          mergedSpecs._categories = JSON.stringify([patch.category]);
         }
 
-        dbPatch.specs = mergedSpecs;
+        // Build clean specs without any auto-generated system keys
+        const cleanSpecs: Record<string, string> = {};
+        for (const [k, v] of Object.entries(mergedSpecs)) {
+          if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory") continue;
+          cleanSpecs[k] = v;
+        }
+        dbPatch.specs = cleanSpecs;
       }
       if (patch.badge !== undefined) dbPatch.badge = patch.badge;
       if (patch.inStock !== undefined) dbPatch.in_stock = patch.inStock;
