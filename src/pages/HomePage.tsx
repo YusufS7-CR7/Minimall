@@ -576,11 +576,18 @@ function SaleCarousel({ lang }: { lang: string }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  const saleProducts = products.filter(
-    (p) =>
-      (p.oldPrice && p.oldPrice > p.price) ||
-      (p.badge && /скидк|sale|акци/i.test(p.badge))
-  );
+  const saleProducts = products
+    .filter(
+      (p) =>
+        (p.oldPrice && p.oldPrice > p.price) ||
+        (p.badge && /скидк|sale|акци/i.test(p.badge))
+    )
+    .sort((a, b) => {
+      const discA = a.oldPrice ? (1 - a.price / a.oldPrice) : 0;
+      const discB = b.oldPrice ? (1 - b.price / b.oldPrice) : 0;
+      return discB - discA;
+    })
+    .slice(0, 5);
 
   useEffect(() => {
     if (active >= saleProducts.length && saleProducts.length > 0) {
