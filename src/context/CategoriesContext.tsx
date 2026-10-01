@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   createContext,
   useContext,
   useState,
@@ -53,11 +53,32 @@ function saveLocalCategories(cats: CategoryDef[]) {
   }
 }
 
+function dbRowToCategory(row: any, existing?: CategoryDef): CategoryDef {
+  let remoteSubs: any[] = [];
+  if (Array.isArray(row.subcategories) && row.subcategories.length > 0) {
+    remoteSubs = row.subcategories;
+  } else if (typeof row.subcategories === "string" && row.subcategories) {
+    try {
+      remoteSubs = JSON.parse(row.subcategories);
+    } catch {}
+  }
+  const subcategories =
+    remoteSubs.length > 0 ? remoteSubs : existing?.subcategories || [];
+  return {
+    key: row.key,
+    slug: row.slug || row.key,
+    icon: row.icon || existing?.icon || "📦",
+    image: row.image || existing?.image || "",
+    labelRu: row.label_ru || existing?.labelRu || row.key,
+    labelUz: row.label_uz || existing?.labelUz || row.key,
+    subcategories,
+  };
+}
+
 export function CategoriesProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<CategoryDef[]>(loadLocalCategories);
   const [loading, setLoading] = useState(false);
 
-  // Sync with Supabase on mount
   const fetchRemoteCategories = useCallback(async () => {
     try {
       setLoading(true);
@@ -68,35 +89,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
       if (!error && data && data.length > 0) {
         setCategories((prev) => {
-          // Merge remote categories with existing subcategories / icons
           const prevMap = new Map(prev.map((c) => [c.key, c]));
-          const merged: CategoryDef[] = data.map((row: any) => {
-            const existing = prevMap.get(row.key);
-            // Prefer Supabase subcategories if available, fall back to local
-            let remoteSubs: any[] = [];
-            if (Array.isArray(row.subcategories) && row.subcategories.length > 0) {
-              remoteSubs = row.subcategories;
-            } else if (typeof row.subcategories === "string" && row.subcategories) {
-              try { remoteSubs = JSON.parse(row.subcategories); } catch {}
-            }
-            const subcategories = remoteSubs.length > 0
-              ? remoteSubs
-              : (existing?.subcategories || []);
-            return {
-              key: row.key,
-              slug: row.slug || row.key,
-              icon: row.icon || existing?.icon || "📦",
-              image: row.image || existing?.image || "",
-              labelRu: row.label_ru || existing?.labelRu || row.key,
-              labelUz: row.label_uz || existing?.labelUz || row.key,
-              subcategories,
-            };
-          });
-
-          // Also keep any local-only categories that haven't synced yet
+          const merged: CategoryDef[] = data.map((row: any) =>
+            dbRowToCategory(row, prevMap.get(row.key))
+          );
           const remoteKeys = new Set(data.map((r: any) => r.key));
           const localOnly = prev.filter((c) => !remoteKeys.has(c.key));
-
           const combined = [...merged, ...localOnly];
           saveLocalCategories(combined);
           return combined;
@@ -112,7 +110,42 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     fetchRemoteCategories();
 
-    // Listen to updates from other tabs
+    // Realtime subscription: all devices get instant updates when admin changes categories
+    const channel = supabase
+      .channel("categories_realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "categories" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newCat = dbRowToCategory(payload.new as any);
+            setCategories((prev) => {
+              if (prev.some((c) => c.key === newCat.key)) return prev;
+              const updated = [...prev, newCat];
+              saveLocalCategories(updated);
+              return updated;
+            });
+          } else if (payload.eventType === "UPDATE") {
+            const updatedRow = payload.new as any;
+            setCategories((prev) => {
+              const updated = prev.map((c) =>
+                c.key === updatedRow.key ? dbRowToCategory(updatedRow, c) : c
+              );
+              saveLocalCategories(updated);
+              return updated;
+            });
+          } else if (payload.eventType === "DELETE") {
+            const deletedKey = (payload.old as any).key;
+            setCategories((prev) => {
+              const updated = prev.filter((c) => c.key !== deletedKey);
+              saveLocalCategories(updated);
+              return updated;
+            });
+          }
+        }
+      )
+      .subscribe();
+
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
@@ -121,10 +154,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       }
     };
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [fetchRemoteCategories]);
 
-  // ── Category CRUD ──────────────────────────────────────────────────────────
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [fetchRemoteCategories]);
 
   const addCategory = useCallback(
     async (newCat: Omit<CategoryDef, "key"> & { key?: string }): Promise<CategoryDef> => {
@@ -145,16 +180,14 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       };
 
       setCategories((prev) => {
-        // Prevent duplicate keys
         const filtered = prev.filter((c) => c.key !== key);
         const updated = [...filtered, created];
         saveLocalCategories(updated);
         return updated;
       });
 
-      // Attempt Supabase insert
       try {
-        await supabase.from("categories").insert([
+        const { error } = await supabase.from("categories").insert([
           {
             key: created.key,
             slug: created.slug,
@@ -165,6 +198,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
             subcategories: JSON.stringify(created.subcategories || []),
           },
         ]);
+        if (error) console.error("Supabase insert category error:", error);
       } catch (e) {
         console.error("Failed to sync category to Supabase", e);
       }
@@ -182,7 +216,6 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         return updated;
       });
 
-      // Attempt Supabase update
       try {
         const dbPatch: Record<string, any> = {};
         if (patch.slug !== undefined) dbPatch.slug = patch.slug;
@@ -192,7 +225,11 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         if (patch.image !== undefined) dbPatch.image = patch.image;
 
         if (Object.keys(dbPatch).length > 0) {
-          await supabase.from("categories").update(dbPatch).eq("key", key);
+          const { error } = await supabase
+            .from("categories")
+            .update(dbPatch)
+            .eq("key", key);
+          if (error) console.error("Supabase update category error:", error);
         }
       } catch (e) {
         console.error("Failed to sync category update to Supabase", e);
@@ -209,13 +246,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     });
 
     try {
-      await supabase.from("categories").delete().eq("key", key);
+      const { error } = await supabase.from("categories").delete().eq("key", key);
+      if (error) console.error("Supabase delete category error:", error);
     } catch (e) {
       console.error("Failed to sync category deletion to Supabase", e);
     }
   }, []);
-
-  // ── Subcategory CRUD ───────────────────────────────────────────────────────
 
   const addSubcategory = useCallback(
     async (categoryKey: string, sub: SubcategoryDef) => {
@@ -231,12 +267,12 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         saveLocalCategories(updated);
         return updated;
       });
-      // Persist to Supabase
       try {
-        await supabase
+        const { error } = await supabase
           .from("categories")
           .update({ subcategories: JSON.stringify(updatedSubs) })
           .eq("key", categoryKey);
+        if (error) console.error("Supabase add subcategory error:", error);
       } catch (e) {
         console.error("Failed to sync subcategory add to Supabase", e);
       }
@@ -251,18 +287,20 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         const updated = prev.map((c) => {
           if (c.key !== categoryKey) return c;
           const currentSubs = c.subcategories || [];
-          updatedSubs = currentSubs.map((s) => (s.key === subKey ? { ...s, ...patch } : s));
+          updatedSubs = currentSubs.map((s) =>
+            s.key === subKey ? { ...s, ...patch } : s
+          );
           return { ...c, subcategories: updatedSubs };
         });
         saveLocalCategories(updated);
         return updated;
       });
-      // Persist to Supabase
       try {
-        await supabase
+        const { error } = await supabase
           .from("categories")
           .update({ subcategories: JSON.stringify(updatedSubs) })
           .eq("key", categoryKey);
+        if (error) console.error("Supabase update subcategory error:", error);
       } catch (e) {
         console.error("Failed to sync subcategory update to Supabase", e);
       }
@@ -282,20 +320,18 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
         saveLocalCategories(updated);
         return updated;
       });
-      // Persist to Supabase
       try {
-        await supabase
+        const { error } = await supabase
           .from("categories")
           .update({ subcategories: JSON.stringify(updatedSubs) })
           .eq("key", categoryKey);
+        if (error) console.error("Supabase delete subcategory error:", error);
       } catch (e) {
         console.error("Failed to sync subcategory delete to Supabase", e);
       }
     },
     []
   );
-
-  // ── Lookups ────────────────────────────────────────────────────────────────
 
   const getCategoryBySlug = useCallback(
     (slug: string) => {

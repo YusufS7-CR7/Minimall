@@ -125,12 +125,16 @@ export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps)
                       )}
                       <span
                         className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                          p.inStock
+                          p.stockStatus === "on_question"
+                            ? "bg-amber-100 text-amber-800"
+                            : p.inStock
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
-                        {p.inStock
+                        {p.stockStatus === "on_question"
+                          ? "❓ " + (lang === "ru" ? "Под вопросом" : "Под вопросом")
+                          : p.inStock
                           ? lang === "ru" ? "В наличии" : "Mavjud"
                           : lang === "ru" ? "Нет на складе" : "Mavjud emas"}
                       </span>
@@ -141,15 +145,21 @@ export default function FavoritesModal({ isOpen, onClose }: FavoritesModalProps)
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => addToCart(p)}
-                      disabled={!p.inStock}
+                      disabled={!p.inStock && p.stockStatus !== "on_question"}
                       className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                        p.inStock
+                        p.stockStatus === "on_question"
+                          ? "bg-amber-500 hover:bg-amber-600 text-white shadow-xs cursor-pointer active:scale-95"
+                          : p.inStock
                           ? "bg-red-600 hover:bg-red-700 text-white shadow-xs cursor-pointer active:scale-95"
                           : "bg-gray-200 text-gray-400 cursor-not-allowed"
                       }`}
                     >
-                      <span>🛒</span>
-                      <span className="hidden sm:inline">{lang === "ru" ? "В корзину" : "Savatga"}</span>
+                      <span>{p.stockStatus === "on_question" ? "❓" : "🛒"}</span>
+                      <span className="hidden sm:inline">
+                        {p.stockStatus === "on_question"
+                          ? lang === "ru" ? "Уточнить" : "So'rash"
+                          : lang === "ru" ? "В корзину" : "Savatga"}
+                      </span>
                     </button>
 
                     <button

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import type { Product, ProductSize } from "@/data/types";
+import type { Product, ProductSize, StockStatus } from "@/data/types";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
@@ -179,6 +179,7 @@ export default function ProductFormModal({
     setCurrencyMode(newMode);
   };
   const [inStock, setInStock] = useState(true);
+  const [stockStatus, setStockStatus] = useState<StockStatus>("in_stock");
   const [badge, setBadge] = useState<string>("");
   const [rating, setRating] = useState<number>(5);
 
@@ -339,7 +340,12 @@ export default function ProductFormModal({
           setOldPriceUsd("");
         }
       }
-      setInStock(productToEdit.inStock);
+      const initialStockStatus: StockStatus =
+        productToEdit.stockStatus ||
+        ((productToEdit.specs as Record<string, any>)?._stockStatus as StockStatus) ||
+        (productToEdit.inStock ? "in_stock" : "out_of_stock");
+      setStockStatus(initialStockStatus);
+      setInStock(initialStockStatus !== "out_of_stock");
       setBadge(productToEdit.badge || "");
       setRating(productToEdit.rating || 5);
 
@@ -379,6 +385,7 @@ export default function ProductFormModal({
       setOldPrice("");
       setPriceUsd("");
       setOldPriceUsd("");
+      setStockStatus("in_stock");
       setInStock(true);
       setBadge("");
       setRating(5);
@@ -613,11 +620,14 @@ export default function ProductFormModal({
       delete specsRecord._origOldPrice;
     }
 
+    specsRecord._stockStatus = stockStatus;
+
     const parsedOldPrice = finalOldUzsPrice;
     const parsedPrice = finalUzsPrice;
     const primaryImage = imagesList[0] || "";
     const effectiveCategories = selectedCategories.length > 0 ? selectedCategories : [categories[0]?.key || "drills"];
     const effectiveCategory = effectiveCategories[0];
+    const effectiveInStock = stockStatus !== "out_of_stock";
 
     if (productToEdit) {
       const effectiveSizes = hasSizes ? sizes.filter((s) => s.name.trim().length > 0 && s.price > 0) : undefined;
@@ -631,7 +641,8 @@ export default function ProductFormModal({
         subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
-        inStock,
+        inStock: effectiveInStock,
+        stockStatus,
         badge: badge || undefined,
         rating,
         image: primaryImage,
@@ -653,6 +664,8 @@ export default function ProductFormModal({
         categories: effectiveCategories,
         slug: slug.trim() || slugify(name.trim()),
         sizes: effectiveSizes,
+        inStock: effectiveInStock,
+        stockStatus,
       });
     } else {
       const effectiveSizes = hasSizes ? sizes.filter((s) => s.name.trim().length > 0 && s.price > 0) : undefined;
@@ -666,7 +679,8 @@ export default function ProductFormModal({
         subcategory: subcategory || undefined,
         price: parsedPrice,
         oldPrice: parsedOldPrice,
-        inStock,
+        inStock: effectiveInStock,
+        stockStatus,
         badge: badge || undefined,
         rating,
         image: primaryImage,
@@ -1290,7 +1304,7 @@ export default function ProductFormModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     {t.badge}
@@ -1321,19 +1335,113 @@ export default function ProductFormModal({
                     ]}
                   />
                 </div>
+              </div>
 
-                <div className="flex items-center gap-3 pt-6">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+              {/* Availability & Stock Status Section */}
+              <div className="p-4 bg-gray-50/90 rounded-2xl border border-gray-200/90 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <span>📦</span>
+                      <span>{t.stockStatusLabel || (lang === "uz" ? "Tovarning mavjudlik holati" : "Статус наличия товара")}</span>
+                    </label>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      {t.stockStatusDesc || (lang === "uz"
+                        ? "Mavjudlik holatini tanlang yoki tovar bo'yicha «Под вопросом» rejimini yoqing"
+                        : "Укажите наличие или включите режим «Под вопросом» в зависимости от товара")}
+                    </p>
+                  </div>
+
+                  {/* Toggle button for 'Под вопросом' */}
+                  <label className="inline-flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100/80 transition-all shadow-2xs">
                     <input
                       type="checkbox"
-                      checked={inStock}
-                      onChange={(e) => setInStock(e.target.checked)}
-                      className="w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500"
+                      checked={stockStatus === "on_question"}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setStockStatus("on_question");
+                        } else {
+                          setStockStatus(inStock ? "in_stock" : "out_of_stock");
+                        }
+                      }}
+                      className="w-4 h-4 text-amber-600 rounded border-amber-300 focus:ring-amber-500 cursor-pointer"
                     />
-                    <span className="text-xs font-semibold text-gray-800">
-                      {t.inStock}
+                    <span className="text-xs font-bold text-amber-900 flex items-center gap-1">
+                      <span>❓</span>
+                      <span>{t.questionToggleLabel || (lang === "uz" ? "Holat «Под вопросом»" : "Наличие «Под вопросом»")}</span>
                     </span>
                   </label>
+                </div>
+
+                {/* 3 Status Buttons */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+                  {/* Button 1: В наличии */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStockStatus("in_stock");
+                      setInStock(true);
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      stockStatus === "in_stock"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-200"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${stockStatus === "in_stock" ? "bg-white" : "bg-emerald-500"}`} />
+                    <span>{t.inStockBadge || (lang === "uz" ? "Mavjud" : "В наличии")}</span>
+                  </button>
+
+                  {/* Button 2: Под вопросом */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStockStatus("on_question");
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      stockStatus === "on_question"
+                        ? "bg-amber-500 text-white border-amber-600 shadow-sm ring-2 ring-amber-200"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-amber-50/50"
+                    }`}
+                  >
+                    <span>❓</span>
+                    <span>{t.onQuestionLabel || (lang === "uz" ? "Под вопросом" : "Под вопросом")}</span>
+                  </button>
+
+                  {/* Button 3: Нет в наличии */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStockStatus("out_of_stock");
+                      setInStock(false);
+                    }}
+                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      stockStatus === "out_of_stock"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-sm ring-2 ring-rose-200"
+                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className={`w-2 h-2 rounded-full ${stockStatus === "out_of_stock" ? "bg-white" : "bg-rose-500"}`} />
+                    <span>{t.outOfStockBadge || (lang === "uz" ? "Mavjud emas" : "Нет в наличии")}</span>
+                  </button>
+                </div>
+
+                {/* Status description banner */}
+                <div className={`text-[11px] px-3 py-2 rounded-xl flex items-center gap-2 ${
+                  stockStatus === "in_stock"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-100"
+                    : stockStatus === "on_question"
+                    ? "bg-amber-50 text-amber-800 border border-amber-200"
+                    : "bg-gray-100 text-gray-600 border border-gray-200"
+                }`}>
+                  <span className="text-sm">
+                    {stockStatus === "in_stock" ? "✅" : stockStatus === "on_question" ? "⚠️" : "⛔"}
+                  </span>
+                  <span>
+                    {stockStatus === "in_stock" && (lang === "uz" ? "Tovar saytda «В наличии» yashil belgisi bilan chiqadi va savatga qo'shiladi." : "Товар отображается с зелёным бейджем «В наличии» и доступен для заказа.")}
+                    {stockStatus === "on_question" && (lang === "uz" ? "Tovar sariq «Под вопросом» belgisi bilan chiqadi, xaridorga Telegram orqali aniqlash taklif etiladi." : "Товар отображается с бейджем «Под вопросом», на карточке появляется кнопка «Уточнить» с прямым переходом в Telegram.")}
+                    {stockStatus === "out_of_stock" && (lang === "uz" ? "Tovar «Нет в наличии» belgisi bilan chiqadi, savatga qo'shish o'chiriladi." : "Товар отображается со статусом «Нет в наличии», заказ временно недоступен.")}
+                  </span>
                 </div>
               </div>
 

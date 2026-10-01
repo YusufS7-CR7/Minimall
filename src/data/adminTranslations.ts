@@ -36,6 +36,7 @@ export interface AdminProductsTranslations {
   exportBtn: string;
   statTotal: string;
   statInStock: string;
+  statOnQuestion: string;
   statOutOfStock: string;
   statValue: string;
   searchPlaceholder: string;
@@ -43,6 +44,7 @@ export interface AdminProductsTranslations {
   allBrands: string;
   allStatuses: string;
   statusInStock: string;
+  statusOnQuestion: string;
   statusOutOfStock: string;
   resetFilters: string;
   colProduct: string;
@@ -55,9 +57,11 @@ export interface AdminProductsTranslations {
   deleteConfirm: string;
   deletedToast: string;
   inStockBadge: string;
+  onQuestionBadge: string;
   outOfStockBadge: string;
   toggleStockToOut: string;
   toggleStockToIn: string;
+  toggleStockToQuestion: string;
   emptyTitle: string;
   emptyDesc: string;
 }
@@ -78,6 +82,12 @@ export interface AdminProductFormTranslations {
   oldPrice: string;
   badge: string;
   inStock: string;
+  stockStatusLabel: string;
+  stockStatusDesc: string;
+  inStockLabel: string;
+  onQuestionLabel: string;
+  outOfStockLabel: string;
+  questionToggleLabel: string;
   descRu: string;
   descUz: string;
   translateToUz: string;
@@ -322,6 +332,7 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       exportBtn: "Экспорт",
       statTotal: "Всего товаров",
       statInStock: "В наличии",
+      statOnQuestion: "Под вопросом",
       statOutOfStock: "Нет в наличии",
       statValue: "Общая стоимость каталога",
       searchPlaceholder: "Поиск по названию, бренду, артикулу...",
@@ -329,6 +340,7 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       allBrands: "Все бренды",
       allStatuses: "Все статусы",
       statusInStock: "Только в наличии",
+      statusOnQuestion: "Под вопросом",
       statusOutOfStock: "Нет в наличии",
       resetFilters: "Сбросить фильтры",
       colProduct: "Товар",
@@ -341,9 +353,11 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       deleteConfirm: "Вы уверены, что хотите удалить товар",
       deletedToast: "удален",
       inStockBadge: "В наличии",
+      onQuestionBadge: "Под вопросом",
       outOfStockBadge: "Нет в наличии",
       toggleStockToOut: "Товар переведен в статус «Нет в наличии»",
       toggleStockToIn: "Товар переведен в статус «В наличии»",
+      toggleStockToQuestion: "Товар переведен в статус «Под вопросом»",
       emptyTitle: "Товары не найдены",
       emptyDesc: "Попробуйте изменить параметры поиска или фильтрации",
     },
@@ -363,6 +377,12 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       oldPrice: "Старая цена (сум)",
       badge: "Бейдж (акция, хит...)",
       inStock: "В наличии на складе",
+      stockStatusLabel: "Статус наличия товара",
+      stockStatusDesc: "В наличии, нет в наличии или под вопросом (уточняйте)",
+      inStockLabel: "В наличии",
+      onQuestionLabel: "Под вопросом",
+      outOfStockLabel: "Нет в наличии",
+      questionToggleLabel: "Наличие под вопросом (уточнять)",
       descRu: "Описание (русский)",
       descUz: "Описание (узбекский)",
       translateToUz: "Перевести на узбекский",
@@ -590,6 +610,7 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       exportBtn: "Eksport",
       statTotal: "Jami tovarlar",
       statInStock: "Mavjud",
+      statOnQuestion: "Под вопросом",
       statOutOfStock: "Mavjud emas",
       statValue: "Katalogning umumiy qiymati",
       searchPlaceholder: "Nomi, brendi yoki artikul bo'yicha qidirish...",
@@ -597,6 +618,7 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       allBrands: "Barcha brendlar",
       allStatuses: "Barcha holatlar",
       statusInStock: "Faqat mavjud",
+      statusOnQuestion: "Под вопросом",
       statusOutOfStock: "Mavjud emas",
       resetFilters: "Filtrlarni tozalash",
       colProduct: "Tovar",
@@ -609,9 +631,11 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       deleteConfirm: "Haqiqatan ham ushbu tovarni o'chirmoqchimisiz",
       deletedToast: "o'chirildi",
       inStockBadge: "Mavjud",
+      onQuestionBadge: "Под вопросом",
       outOfStockBadge: "Mavjud emas",
       toggleStockToOut: "Tovar «Mavjud emas» holatiga o'tkazildi",
       toggleStockToIn: "Tovar «Mavjud» holatiga o'tkazildi",
+      toggleStockToQuestion: "Tovar «Под вопросом» holatiga o'tkazildi",
       emptyTitle: "Tovarlar topilmadi",
       emptyDesc: "Qidiruv yoki filtr parametrlarini o'zgartirib ko'ring",
     },
@@ -631,6 +655,12 @@ export const ADMIN_TRANSLATIONS: Record<Lang, AdminTranslations> = {
       oldPrice: "Eski narxi (so'm)",
       badge: "Nishon (aksiya, xit...)",
       inStock: "Omborda mavjud",
+      stockStatusLabel: "Tovarning mavjudlik holati",
+      stockStatusDesc: "Mavjud, mavjud emas yoki holati noaniq («Под вопросом»)",
+      inStockLabel: "Mavjud",
+      onQuestionLabel: "Под вопросом",
+      outOfStockLabel: "Mavjud emas",
+      questionToggleLabel: "Mavjudligi «Под вопросом» (so'ralsin)",
       descRu: "Tavsif (ruscha)",
       descUz: "Tavsif (o'zbekcha)",
       translateToUz: "O'zbek tiliga tarjima qilish",

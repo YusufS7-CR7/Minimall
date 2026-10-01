@@ -157,9 +157,16 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
             )}
           </div>
           <div className="absolute bottom-2 left-2 z-10 pointer-events-none">
-            <span className={`text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg backdrop-blur-md shadow-2xs ${product.inStock ? "bg-emerald-600/90 text-white" : "bg-gray-900/85 text-gray-200"}`}>
-              {product.inStock ? t.inStock : t.outOfStock}
-            </span>
+            {product.stockStatus === "on_question" ? (
+              <span className="text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg backdrop-blur-md shadow-2xs bg-amber-500/95 text-white flex items-center gap-1">
+                <span>❓</span>
+                <span>{lang === "uz" ? "Под вопросом" : "Под вопросом"}</span>
+              </span>
+            ) : (
+              <span className={`text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg backdrop-blur-md shadow-2xs ${product.inStock ? "bg-emerald-600/90 text-white" : "bg-gray-900/85 text-gray-200"}`}>
+                {product.inStock ? t.inStock : t.outOfStock}
+              </span>
+            )}
           </div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
@@ -212,23 +219,41 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
             )}
           </div>
           <button
-            onClick={handleAddToCart}
-            disabled={!product.inStock}
-            aria-label={`${t.addToCart}: ${name}`}
+            onClick={(e) => {
+              if (product.stockStatus === "on_question") {
+                e.preventDefault();
+                navigate(`/product/${product.slug}`);
+                return;
+              }
+              handleAddToCart();
+            }}
+            disabled={!product.inStock && product.stockStatus !== "on_question"}
+            aria-label={product.stockStatus === "on_question" ? (lang === "uz" ? "Mavjudligini so'rash" : "Уточнить наличие") : `${t.addToCart}: ${name}`}
             className={`w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all touch-manipulation cursor-pointer ${
-              product.inStock
+              product.stockStatus === "on_question"
+                ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
+                : product.inStock
                 ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
-            </svg>
-            <span>
-              {hasSizes
-                ? (lang === "uz" ? "Tanlash" : "Выбрать")
-                : t.addToCart}
-            </span>
+            {product.stockStatus === "on_question" ? (
+              <>
+                <span className="text-xs">❓</span>
+                <span>{lang === "uz" ? "So'rash" : "Уточнить"}</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
+                </svg>
+                <span>
+                  {hasSizes
+                    ? (lang === "uz" ? "Tanlash" : "Выбрать")
+                    : t.addToCart}
+                </span>
+              </>
+            )}
           </button>
         </div>
       </div>

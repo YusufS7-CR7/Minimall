@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import type { Product } from "@/data/types";
+import type { Product, StockStatus } from "@/data/types";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
@@ -50,21 +50,31 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedBrand, setSelectedBrand] = useState("all");
-  const [stockFilter, setStockFilter] = useState<"all" | "in" | "out">("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "in" | "question" | "out">("all");
 
   // Statistics
   const stats = useMemo(() => {
     const variantCount = (product: Product) => (product.sizes && product.sizes.length > 0 ? product.sizes.length : 1);
 
     const total = products.reduce((sum, product) => sum + variantCount(product), 0);
-    const inStock = products.reduce((sum, product) => sum + (product.inStock ? variantCount(product) : 0), 0);
-    const outOfStock = total - inStock;
+    const inStock = products.reduce(
+      (sum, p) => sum + (p.stockStatus === "in_stock" || (!p.stockStatus && p.inStock) ? variantCount(p) : 0),
+      0
+    );
+    const onQuestion = products.reduce(
+      (sum, p) => sum + (p.stockStatus === "on_question" ? variantCount(p) : 0),
+      0
+    );
+    const outOfStock = products.reduce(
+      (sum, p) => sum + (p.stockStatus === "out_of_stock" || (!p.stockStatus && !p.inStock) ? variantCount(p) : 0),
+      0
+    );
     const totalCatalogValue = products.reduce((sum, product) => {
       const sizeEntries = product.sizes && product.sizes.length > 0 ? product.sizes : [{ name: product.name, price: product.price }];
       return sum + sizeEntries.reduce((sizeSum, size) => sizeSum + size.price, 0);
     }, 0);
 
-    return { total, inStock, outOfStock, totalCatalogValue };
+    return { total, inStock, onQuestion, outOfStock, totalCatalogValue };
   }, [products]);
 
   // Filtered Products
@@ -98,8 +108,10 @@ export default function AdminProductsPage() {
       }
 
       // Stock
-      if (stockFilter === "in" && !p.inStock) return false;
-      if (stockFilter === "out" && p.inStock) return false;
+      const effectiveStatus: StockStatus = p.stockStatus || (p.inStock ? "in_stock" : "out_of_stock");
+      if (stockFilter === "in" && effectiveStatus !== "in_stock") return false;
+      if (stockFilter === "question" && effectiveStatus !== "on_question") return false;
+      if (stockFilter === "out" && effectiveStatus !== "out_of_stock") return false;
 
       return true;
     });
@@ -123,14 +135,25 @@ export default function AdminProductsPage() {
   };
 
   const handleToggleStock = (product: Product) => {
-    const nextStatus = !product.inStock;
-    updateProduct(product.id, { inStock: nextStatus });
+    const current: StockStatus = product.stockStatus || (product.inStock ? "in_stock" : "out_of_stock");
+    let next: StockStatus = "in_stock";
+    if (current === "in_stock") next = "on_question";
+    else if (current === "on_question") next = "out_of_stock";
+    else next = "in_stock";
+
+    updateProduct(product.id, {
+      stockStatus: next,
+      inStock: next !== "out_of_stock",
+    });
+
     const pName = lang === "uz" ? product.nameUz || product.name : product.name;
-    showToast(
-      nextStatus
-        ? lang === "uz" ? `"${pName}" endi mavjud` : `"${product.name}" теперь в наличии`
-        : lang === "uz" ? `"${pName}" mavjud emas deb belgilandi` : `"${product.name}" отмечен как "Нет в наличии"`
-    );
+    if (next === "in_stock") {
+      showToast(lang === "uz" ? `"${pName}" endi mavjud` : `"${product.name}" теперь в наличии`);
+    } else if (next === "on_question") {
+      showToast(lang === "uz" ? `"${pName}" «Под вопросом» holatiga o'tkazildi` : `"${product.name}" переведен в статус «Под вопросом»`);
+    } else {
+      showToast(lang === "uz" ? `"${pName}" mavjud emas deb belgilandi` : `"${product.name}" отмечен как "Нет в наличии"`);
+    }
   };
 
   const handleDuplicate = async (product: Product) => {
@@ -202,8 +225,8 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             {t.statTotal}
           </div>
@@ -218,7 +241,7 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             {t.statInStock}
           </div>
@@ -233,17 +256,32 @@ export default function AdminProductsPage() {
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
+          <div className="text-xs font-semibold text-amber-600/90 uppercase tracking-wider">
+            {t.statOnQuestion || (lang === "uz" ? "Под вопросом" : "Под вопросом")}
+          </div>
+          <div
+            className="text-2xl sm:text-3xl font-black text-amber-500 mt-1"
+            style={{ fontFamily: "Barlow Condensed, sans-serif" }}
+          >
+            {stats.onQuestion}
+          </div>
+          <div className="text-[11px] text-amber-600/80 mt-1">
+            {lang === "uz" ? "aniqlashtirilmoqda" : "уточняются"}
+          </div>
+        </div>
+
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-xs">
           <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             {t.statOutOfStock}
           </div>
           <div
-            className="text-2xl sm:text-3xl font-black text-amber-600 mt-1"
+            className="text-2xl sm:text-3xl font-black text-rose-500 mt-1"
             style={{ fontFamily: "Barlow Condensed, sans-serif" }}
           >
             {stats.outOfStock}
           </div>
-          <div className="text-[11px] text-amber-600/80 mt-1">
+          <div className="text-[11px] text-rose-500/80 mt-1">
             {lang === "uz" ? "to'ldirish talab etiladi" : "требуют пополнения"}
           </div>
         </div>
@@ -323,10 +361,11 @@ export default function AdminProductsPage() {
         <div className="w-full md:w-44">
           <CustomSelect
             value={stockFilter}
-            onChange={(val) => setStockFilter(val as "all" | "in" | "out")}
+            onChange={(val) => setStockFilter(val as "all" | "in" | "question" | "out")}
             options={[
               { value: "all", label: t.allStatuses },
               { value: "in", label: t.statusInStock, icon: "🟢" },
+              { value: "question", label: t.statusOnQuestion || "Под вопросом", icon: "🟡" },
               { value: "out", label: t.statusOutOfStock, icon: "🔴" },
             ]}
           />
@@ -409,16 +448,30 @@ export default function AdminProductsPage() {
                   <button
                     disabled={!canEdit}
                     onClick={() => canEdit && handleToggleStock(p)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                      canEdit ? "cursor-pointer" : "cursor-default opacity-80"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                      canEdit ? "cursor-pointer active:scale-95" : "cursor-default opacity-80"
                     } ${
-                      p.inStock
+                      p.stockStatus === "on_question"
+                        ? "bg-amber-50 text-amber-800 border border-amber-200"
+                        : p.inStock
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-amber-50 text-amber-700 border border-amber-200"
+                        : "bg-rose-50 text-rose-700 border border-rose-200"
                     }`}
                   >
-                    <span className={`w-2 h-2 rounded-full ${p.inStock ? "bg-emerald-500" : "bg-amber-500"}`} />
-                    <span>{p.inStock ? t.inStockBadge : t.outOfStockBadge}</span>
+                    <span className={`w-2 h-2 rounded-full ${
+                      p.stockStatus === "on_question"
+                        ? "bg-amber-500"
+                        : p.inStock
+                        ? "bg-emerald-500"
+                        : "bg-rose-500"
+                    }`} />
+                    <span>
+                      {p.stockStatus === "on_question"
+                        ? (lang === "uz" ? "Под вопросом" : "Под вопросом")
+                        : p.inStock
+                        ? t.inStockBadge
+                        : t.outOfStockBadge}
+                    </span>
                   </button>
                 </div>
 
@@ -587,25 +640,37 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Stock toggle */}
-                      <td className="py-3 px-3 w-[125px] min-w-[120px] whitespace-nowrap">
+                      <td className="py-3 px-3 w-[140px] min-w-[130px] whitespace-nowrap">
                         <button
                           disabled={!canEdit}
                           onClick={() => canEdit && handleToggleStock(p)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
-                            canEdit ? "cursor-pointer" : "cursor-default opacity-80"
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+                            canEdit ? "cursor-pointer active:scale-95" : "cursor-default opacity-80"
                           } ${
-                            p.inStock
+                            p.stockStatus === "on_question"
+                              ? "bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200"
+                              : p.inStock
                               ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
-                              : "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200"
+                              : "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
                           }`}
                           title={canEdit ? (lang === "uz" ? "Mavjudlik holatini o'zgartirish uchun bosing" : "Нажмите, чтобы переключить статус наличия") : t.colStatus}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              p.inStock ? "bg-emerald-500" : "bg-amber-500"
+                              p.stockStatus === "on_question"
+                                ? "bg-amber-500"
+                                : p.inStock
+                                ? "bg-emerald-500"
+                                : "bg-rose-500"
                             }`}
                           />
-                          <span>{p.inStock ? t.inStockBadge : t.outOfStockBadge}</span>
+                          <span>
+                            {p.stockStatus === "on_question"
+                              ? (lang === "uz" ? "Под вопросом" : "Под вопросом")
+                              : p.inStock
+                              ? t.inStockBadge
+                              : t.outOfStockBadge}
+                          </span>
                         </button>
                       </td>
 

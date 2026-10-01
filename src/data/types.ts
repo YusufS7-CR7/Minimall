@@ -17,6 +17,8 @@ export interface SubcategoryDef {
   labelUz: string;
 }
 
+export type StockStatus = "in_stock" | "out_of_stock" | "on_question";
+
 export interface Product {
   id: number;
   /** Slug used in URLs — auto-generated from name, must be unique */
@@ -44,6 +46,7 @@ export interface Product {
   specs: Record<string, string>;
   badge?: string;
   inStock: boolean;
+  stockStatus?: StockStatus;
   rating?: number;
   /** Optional size/variation-specific prices, stored in UZS for customers. */
   sizes?: ProductSize[];

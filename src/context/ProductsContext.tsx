@@ -7,7 +7,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { Product, ProductSize } from "@/data/types";
+import type { Product, ProductSize, StockStatus } from "@/data/types";
 import { slugify, BRANDS as INITIAL_BRANDS } from "@/data/products";
 import { supabase } from "@/lib/supabase";
 
@@ -107,6 +107,9 @@ function dbToProduct(row: DbProduct): Product {
     categories = [row.category];
   }
 
+  const rawStockStatus = (specs as Record<string, any>)?._stockStatus as StockStatus | undefined;
+  const stockStatus: StockStatus = rawStockStatus || (row.in_stock ? "in_stock" : "out_of_stock");
+
   return {
     id: row.id,
     slug: row.slug,
@@ -127,7 +130,8 @@ function dbToProduct(row: DbProduct): Product {
     descUz: row.desc_uz ?? "",
     specs,
     badge: row.badge ?? undefined,
-    inStock: row.in_stock,
+    inStock: stockStatus !== "out_of_stock",
+    stockStatus,
     rating: row.rating ?? undefined,
     sizes: sizes && sizes.length > 0 ? sizes : undefined,
   };
@@ -144,7 +148,7 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
   const specs: Record<string, string> = {};
   for (const [k, v] of Object.entries(rawSpecs)) {
     // Skip any auto-generated underscore system keys
-    if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory") continue;
+    if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory" || k === "_stockStatus") continue;
     specs[k] = v;
   }
   if (p.subcategory) {
@@ -156,6 +160,9 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
   if (p.sizes && p.sizes.length > 0) {
     specs._sizes = JSON.stringify(p.sizes);
   }
+  const stockStatus: StockStatus = p.stockStatus || (p.inStock ? "in_stock" : "out_of_stock");
+  specs._stockStatus = stockStatus;
+
   return {
     ...(p.id ? { id: p.id } : {}),
     slug: p.slug,
@@ -174,7 +181,7 @@ function productToDb(p: Omit<Product, "id"> & { id?: number }): Omit<DbProduct, 
     desc_uz: p.descUz ?? null,
     specs,
     badge: p.badge ?? null,
-    in_stock: p.inStock ?? true,
+    in_stock: stockStatus !== "out_of_stock",
     rating: p.rating ?? null,
   };
 }
@@ -411,12 +418,13 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       if (patch.descRu !== undefined) dbPatch.desc_ru = patch.descRu;
       if (patch.descUz !== undefined) dbPatch.desc_uz = patch.descUz;
 
-      // Handle category, categories, subcategory, sizes and specs
+      // Handle category, categories, subcategory, sizes, stockStatus and specs
       if (
         patch.categories !== undefined ||
         patch.category !== undefined ||
         patch.subcategory !== undefined ||
         patch.sizes !== undefined ||
+        patch.stockStatus !== undefined ||
         patch.specs !== undefined
       ) {
         const currentProd = products.find((p) => p.id === id);
@@ -428,7 +436,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         // Build clean specs without any old auto-generated system keys
         const cleanSpecs: Record<string, string> = {};
         for (const [k, v] of Object.entries(mergedSpecs)) {
-          if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory") continue;
+          if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory" || k === "_stockStatus") continue;
           cleanSpecs[k] = v;
         }
 
@@ -457,10 +465,20 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           cleanSpecs._sizes = JSON.stringify(effectiveSizes);
         }
 
+        // Stock status is preserved in specs._stockStatus
+        const effectiveStockStatus = patch.stockStatus !== undefined ? patch.stockStatus : currentProd?.stockStatus;
+        if (effectiveStockStatus) {
+          cleanSpecs._stockStatus = effectiveStockStatus;
+        }
+
         dbPatch.specs = cleanSpecs;
       }
       if (patch.badge !== undefined) dbPatch.badge = patch.badge;
-      if (patch.inStock !== undefined) dbPatch.in_stock = patch.inStock;
+      if (patch.stockStatus !== undefined) {
+        dbPatch.in_stock = patch.stockStatus !== "out_of_stock";
+      } else if (patch.inStock !== undefined) {
+        dbPatch.in_stock = patch.inStock;
+      }
       if (patch.rating !== undefined) dbPatch.rating = patch.rating;
 
       const { error } = await supabase
@@ -488,9 +506,18 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
             ? nextCategories[0]
             : (patch.category || p.category);
 
+          const nextStockStatus = patch.stockStatus !== undefined
+            ? patch.stockStatus
+            : (patch.inStock !== undefined ? (patch.inStock ? "in_stock" : "out_of_stock") : p.stockStatus);
+          const nextInStock = patch.stockStatus !== undefined
+            ? patch.stockStatus !== "out_of_stock"
+            : (patch.inStock !== undefined ? patch.inStock : p.inStock);
+
           return {
             ...p,
             ...patch,
+            inStock: nextInStock,
+            stockStatus: nextStockStatus,
             category: nextCategory,
             categories: nextCategories,
             slug: nextSlug,

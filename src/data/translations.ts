@@ -17,6 +17,7 @@ type Translations = {
   addToCart: string;
   inStock: string;
   outOfStock: string;
+  onQuestion: string;
   characteristics: string;
   description: string;
   from: string;
@@ -77,6 +78,7 @@ export const T: Record<Lang, Translations> = {
     addToCart: "В корзину",
     inStock: "В наличии",
     outOfStock: "Нет в наличии",
+    onQuestion: "Под вопросом",
     characteristics: "Характеристики",
     description: "Описание",
     from: "от",
@@ -170,6 +172,7 @@ export const T: Record<Lang, Translations> = {
     addToCart: "Savatga",
     inStock: "Mavjud",
     outOfStock: "Mavjud emas",
+    onQuestion: "Aniqlanmoqda",
     characteristics: "Xususiyatlar",
     description: "Tavsif",
     from: "dan",

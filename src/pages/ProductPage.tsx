@@ -363,9 +363,16 @@ export default function ProductPage() {
           <div className="flex items-center gap-3 mb-4">
             <StarRating rating={product.rating} size="md" />
             <span className="text-xs text-gray-400">42 {lang === "ru" ? "отзыва" : "ta sharh"}</span>
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${product.inStock ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-              {product.inStock ? t.inStock : t.outOfStock}
-            </span>
+            {product.stockStatus === "on_question" ? (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
+                <span>❓</span>
+                <span>{lang === "uz" ? "Под вопросом (aniqlashtirilmoqda)" : "Под вопросом (уточняйте наличие)"}</span>
+              </span>
+            ) : (
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${product.inStock ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                {product.inStock ? t.inStock : t.outOfStock}
+              </span>
+            )}
           </div>
 
           {/* Price */}
@@ -376,6 +383,23 @@ export default function ProductPage() {
             )}
           </div>
 
+          {/* Status info banner when under question */}
+          {product.stockStatus === "on_question" && (
+            <div className="mb-5 p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
+              <span className="text-base shrink-0 mt-0.5">⚠️</span>
+              <div>
+                <div className="font-bold mb-0.5">
+                  {lang === "uz" ? "Tovarning mavjudligi «Под вопросом»:" : "Наличие товара под вопросом:"}
+                </div>
+                <div>
+                  {lang === "uz"
+                    ? "Hozirda tovar omborda bor-yo'qligini aniqlashtirish kerak. Quyidagi tugma orqali Telegramda yoki telefon orqali tezda so'rab bilishingiz mumkin."
+                    : "Точное наличие на складе уточняется. Вы можете написать нам в Telegram или позвонить, менеджер сразу проверит склад."}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* CTA — stacked on mobile */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
@@ -383,26 +407,45 @@ export default function ProductPage() {
                 if (!user) { openAuthModal("register"); return; }
                 addToCart(product, selectedSize || undefined, selectedSizeOption?.price);
               }}
-              disabled={!product.inStock}
+              disabled={!product.inStock && product.stockStatus !== "on_question"}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                product.inStock
+                product.stockStatus === "on_question"
+                  ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
+                  : product.inStock
                   ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" /></svg>
-              {t.addToCart}
+              {product.stockStatus === "on_question" ? (
+                <>
+                  <span className="text-base">❓</span>
+                  <span>{lang === "uz" ? "Buyurtma berish (aniqlash)" : "Заказать (с уточнением)"}</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" /></svg>
+                  <span>{t.addToCart}</span>
+                </>
+              )}
             </button>
             <div className="flex gap-2 sm:gap-3">
               <a
-                href={`https://t.me/minimall_uzb?text=${encodeURIComponent(`Здравствуйте! Интересует товар: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`)}`}
+                href={`https://t.me/minimall_uzb?text=${encodeURIComponent(
+                  product.stockStatus === "on_question"
+                    ? `Здравствуйте! Хочу уточнить наличие товара под вопросом: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
+                    : `Здравствуйте! Интересует товар: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
+                )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700 text-sm font-bold transition-all shadow-xs"
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl text-sm font-bold transition-all shadow-xs ${
+                  product.stockStatus === "on_question"
+                    ? "border-2 border-sky-400 bg-sky-500 hover:bg-sky-600 text-white shadow-md"
+                    : "border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700"
+                }`}
                 title="Задать вопрос по товару в Telegram"
               >
                 <span>✈️</span>
-                <span>Telegram</span>
+                <span>{product.stockStatus === "on_question" ? (lang === "uz" ? "Telegramda so'rash" : "Уточнить в Telegram") : "Telegram"}</span>
               </a>
               <a
                 href="tel:+998970363636"
