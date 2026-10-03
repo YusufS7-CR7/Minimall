@@ -18,7 +18,7 @@ jobs:
       - name: ⚙️ Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
           cache: 'npm'
 
       - name: 📦 Install dependencies
@@ -32,7 +32,9 @@ jobs:
           VITE_TELEGRAM_CHAT_ID: ${{ secrets.VITE_TELEGRAM_CHAT_ID }}
         run: npm run build
 
-      - name: 🚀 Sync files via FTP
+      - name: 🚀 Sync files via FTP (attempt 1)
+        id: ftp_deploy
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER || 'uz01.ahost.uz' }}
@@ -40,3 +42,24 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
           server-dir: ./public_html/
+          protocol: ftp
+          port: 21
+          timeout: 60000
+          log-level: verbose
+          security: loose
+
+      - name: 🔁 Retry FTP deploy (attempt 2 if failed)
+        if: steps.ftp_deploy.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER || 'uz01.ahost.uz' }}
+          username: ${{ secrets.FTP_USERNAME || 'minimall' }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ./public_html/
+          protocol: ftps
+          port: 21
+          timeout: 90000
+          log-level: verbose
+          security: loose
+          dangerous-clean-slate: false
