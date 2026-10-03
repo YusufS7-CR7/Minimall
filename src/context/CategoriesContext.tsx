@@ -1,4 +1,4 @@
-﻿import React, {
+import React, {
   createContext,
   useContext,
   useState,
@@ -25,6 +25,7 @@ interface CategoriesContextType {
   getCategoryByKey: (key: string) => CategoryDef | undefined;
   resetCategories: () => Promise<void>;
   refreshCategories: () => Promise<void>;
+  syncAllCategoriesToDB: () => Promise<{ success: number; errors: number }>;
 }
 
 const CategoriesContext = createContext<CategoriesContextType | undefined>(undefined);
@@ -255,18 +256,26 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const addSubcategory = useCallback(
     async (categoryKey: string, sub: SubcategoryDef) => {
-      let updatedSubs: SubcategoryDef[] = [];
-      setCategories((prev) => {
-        const updated = prev.map((c) => {
-          if (c.key !== categoryKey) return c;
-          const currentSubs = c.subcategories || [];
-          if (currentSubs.some((s) => s.key === sub.key)) return c;
-          updatedSubs = [...currentSubs, sub];
-          return { ...c, subcategories: updatedSubs };
+      // Read current subs directly from state snapshot before mutation
+      const currentCats = await new Promise<CategoryDef[]>((resolve) => {
+        setCategories((prev) => {
+          resolve(prev);
+          return prev;
         });
+      });
+      const currentCat = currentCats.find((c) => c.key === categoryKey);
+      const currentSubs = currentCat?.subcategories || [];
+      if (currentSubs.some((s) => s.key === sub.key)) return;
+      const updatedSubs = [...currentSubs, sub];
+
+      setCategories((prev) => {
+        const updated = prev.map((c) =>
+          c.key === categoryKey ? { ...c, subcategories: updatedSubs } : c
+        );
         saveLocalCategories(updated);
         return updated;
       });
+
       try {
         const { error } = await supabase
           .from("categories")
@@ -282,19 +291,22 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const updateSubcategory = useCallback(
     async (categoryKey: string, subKey: string, patch: Partial<SubcategoryDef>) => {
-      let updatedSubs: SubcategoryDef[] = [];
+      const currentCats = await new Promise<CategoryDef[]>((resolve) => {
+        setCategories((prev) => { resolve(prev); return prev; });
+      });
+      const currentCat = currentCats.find((c) => c.key === categoryKey);
+      const updatedSubs = (currentCat?.subcategories || []).map((s) =>
+        s.key === subKey ? { ...s, ...patch } : s
+      );
+
       setCategories((prev) => {
-        const updated = prev.map((c) => {
-          if (c.key !== categoryKey) return c;
-          const currentSubs = c.subcategories || [];
-          updatedSubs = currentSubs.map((s) =>
-            s.key === subKey ? { ...s, ...patch } : s
-          );
-          return { ...c, subcategories: updatedSubs };
-        });
+        const updated = prev.map((c) =>
+          c.key === categoryKey ? { ...c, subcategories: updatedSubs } : c
+        );
         saveLocalCategories(updated);
         return updated;
       });
+
       try {
         const { error } = await supabase
           .from("categories")
@@ -310,16 +322,20 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
   const deleteSubcategory = useCallback(
     async (categoryKey: string, subKey: string) => {
-      let updatedSubs: SubcategoryDef[] = [];
+      const currentCats = await new Promise<CategoryDef[]>((resolve) => {
+        setCategories((prev) => { resolve(prev); return prev; });
+      });
+      const currentCat = currentCats.find((c) => c.key === categoryKey);
+      const updatedSubs = (currentCat?.subcategories || []).filter((s) => s.key !== subKey);
+
       setCategories((prev) => {
-        const updated = prev.map((c) => {
-          if (c.key !== categoryKey) return c;
-          updatedSubs = (c.subcategories || []).filter((s) => s.key !== subKey);
-          return { ...c, subcategories: updatedSubs };
-        });
+        const updated = prev.map((c) =>
+          c.key === categoryKey ? { ...c, subcategories: updatedSubs } : c
+        );
         saveLocalCategories(updated);
         return updated;
       });
+
       try {
         const { error } = await supabase
           .from("categories")
@@ -332,6 +348,44 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
     },
     []
   );
+
+  // Bulk-upsert ALL local categories to Supabase so all users see them
+  const syncAllCategoriesToDB = useCallback(async (): Promise<{ success: number; errors: number }> => {
+    const currentCats = await new Promise<CategoryDef[]>((resolve) => {
+      setCategories((prev) => { resolve(prev); return prev; });
+    });
+
+    let success = 0;
+    let errors = 0;
+
+    for (const cat of currentCats) {
+      try {
+        const { error } = await supabase.from("categories").upsert(
+          {
+            key: cat.key,
+            slug: cat.slug,
+            label_ru: cat.labelRu,
+            label_uz: cat.labelUz,
+            icon: cat.icon,
+            image: cat.image || "",
+            subcategories: JSON.stringify(cat.subcategories || []),
+          },
+          { onConflict: "key" }
+        );
+        if (error) {
+          console.error(`Supabase upsert error for category "${cat.key}":`, error);
+          errors++;
+        } else {
+          success++;
+        }
+      } catch (e) {
+        console.error(`Failed to upsert category "${cat.key}":`, e);
+        errors++;
+      }
+    }
+
+    return { success, errors };
+  }, []);
 
   const getCategoryBySlug = useCallback(
     (slug: string) => {
@@ -370,6 +424,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       getCategoryByKey,
       resetCategories,
       refreshCategories: fetchRemoteCategories,
+      syncAllCategoriesToDB,
     }),
     [
       categories,
@@ -384,6 +439,7 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       getCategoryByKey,
       resetCategories,
       fetchRemoteCategories,
+      syncAllCategoriesToDB,
     ]
   );
 

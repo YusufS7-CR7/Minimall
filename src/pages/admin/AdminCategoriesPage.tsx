@@ -28,6 +28,7 @@ export default function AdminCategoriesPage() {
     updateSubcategory,
     deleteSubcategory,
     resetCategories,
+    syncAllCategoriesToDB,
   } = useCategories();
 
   const { products } = useProducts();
@@ -36,6 +37,7 @@ export default function AdminCategoriesPage() {
 
   const [search, setSearch] = useState("");
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Category Modal State
   const [catModalOpen, setCatModalOpen] = useState(false);
@@ -408,6 +410,29 @@ export default function AdminCategoriesPage() {
     );
   };
 
+  // Sync all categories to Supabase DB
+  const handleSyncAll = async () => {
+    setIsSyncing(true);
+    try {
+      const { success, errors } = await syncAllCategoriesToDB();
+      if (errors === 0) {
+        showToast(
+          lang === "uz"
+            ? `✅ Barcha ${success} ta toifa muvaffaqiyatli bazaga saqlandi!`
+            : `✅ Все ${success} категорий успешно сохранены в базу данных!`
+        );
+      } else {
+        showToast(
+          lang === "uz"
+            ? `⚠️ ${success} ta saqlandi, ${errors} ta xato bilan saqlandi. Konsolni tekshiring.`
+            : `⚠️ ${success} сохранено, ${errors} с ошибкой. Проверьте консоль.`
+        );
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Reset to default
   const handleReset = async () => {
     if (
@@ -454,6 +479,15 @@ export default function AdminCategoriesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={handleSyncAll}
+            disabled={isSyncing || loading}
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-2xl shadow-md shadow-emerald-600/20 text-xs sm:text-sm transition-all cursor-pointer"
+            title={lang === "uz" ? "Barcha toifalarni bazaga upsert qilish" : "Принудительно сохранить все категории в базу данных (upsert)"}
+          >
+            <span>{isSyncing ? "⏳" : "☁️"}</span>
+            <span>{isSyncing ? (lang === "uz" ? "Saqlanmoqda..." : "Сохранение...") : (lang === "uz" ? "Bazaga saqlash" : "Сохранить в БД")}</span>
+          </button>
           <button
             onClick={handleOpenCreateCategory}
             className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-2xl shadow-md shadow-red-600/20 text-xs sm:text-sm transition-all cursor-pointer"
