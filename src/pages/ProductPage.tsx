@@ -443,23 +443,16 @@ export default function ProductPage() {
                 if (!user) { openAuthModal("register"); return; }
                 addToCart(product, selectedSize || undefined, selectedSizeOption?.price);
               }}
-              disabled={!product.inStock && product.stockStatus !== "on_question" && !product.priceOnQuestion}
+              disabled={!product.inStock && product.stockStatus !== "on_question"}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                product.priceOnQuestion
-                  ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
-                  : product.stockStatus === "on_question"
+                product.stockStatus === "on_question"
                   ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                   : product.inStock
                   ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
-              {product.priceOnQuestion ? (
-                <>
-                  <span className="text-base">💬</span>
-                  <span>{lang === "uz" ? "Narxni so'rash" : "Уточнить цену"}</span>
-                </>
-              ) : product.stockStatus === "on_question" ? (
+              {product.stockStatus === "on_question" ? (
                 <>
                   <span className="text-base">❓</span>
                   <span>{lang === "uz" ? "Buyurtma berish (aniqlash)" : "Заказать (с уточнением)"}</span>
@@ -467,7 +460,7 @@ export default function ProductPage() {
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" /></svg>
-                  <span>{t.addToCart}</span>
+                  <span>{product.priceOnQuestion ? (lang === "uz" ? "Savatga qo'shish (narx aniqlanadi)" : "В корзину (цена уточняется)") : t.addToCart}</span>
                 </>
               )}
             </button>

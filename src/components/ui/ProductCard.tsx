@@ -235,37 +235,24 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
           </div>
           <button
             onClick={(e) => {
-              if (product.stockStatus === "on_question" || product.priceOnQuestion) {
+              if (product.stockStatus === "on_question") {
                 e.preventDefault();
                 navigate(`/product/${product.slug}`);
                 return;
               }
               handleAddToCart();
             }}
-            disabled={!product.inStock && product.stockStatus !== "on_question" && !product.priceOnQuestion}
-            aria-label={
-              product.priceOnQuestion
-                ? (lang === "uz" ? "Narxni so'rash" : "Уточнить цену")
-                : product.stockStatus === "on_question"
-                ? (lang === "uz" ? "Mavjudligini so'rash" : "Уточнить наличие")
-                : `${t.addToCart}: ${name}`
-            }
+            disabled={!product.inStock && product.stockStatus !== "on_question"}
+            aria-label={product.stockStatus === "on_question" ? (lang === "uz" ? "Mavjudligini so'rash" : "Уточнить наличие") : `${t.addToCart}: ${name}`}
             className={`w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all touch-manipulation cursor-pointer ${
-              product.priceOnQuestion
-                ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
-                : product.stockStatus === "on_question"
+              product.stockStatus === "on_question"
                 ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
                 : product.inStock
                 ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {product.priceOnQuestion ? (
-              <>
-                <span className="text-xs">💬</span>
-                <span>{lang === "uz" ? "Narxni so'rash" : "Уточнить цену"}</span>
-              </>
-            ) : product.stockStatus === "on_question" ? (
+            {product.stockStatus === "on_question" ? (
               <>
                 <span className="text-xs">❓</span>
                 <span>{lang === "uz" ? "So'rash" : "Уточнить"}</span>
