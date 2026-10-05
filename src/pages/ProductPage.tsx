@@ -377,13 +377,32 @@ export default function ProductPage() {
 
           {/* Price */}
           <div className="mb-6">
-            <div className="text-3xl font-extrabold text-gray-900">{formatPrice(displayedPrice, usdRate)}</div>
-            {product.oldPrice && (
-              <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice, usdRate)}</div>
+            {product.priceOnQuestion ? (
+              <div className="flex flex-col gap-1">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border-2 border-amber-300 rounded-2xl w-fit">
+                  <span className="text-xl">❓</span>
+                  <div>
+                    <div className="text-base font-extrabold text-amber-800">
+                      {lang === "uz" ? "Narx so'rov bo'yicha" : "Цена под вопросом"}
+                    </div>
+                    <div className="text-xs text-amber-700">
+                      {lang === "uz" ? "Taxminiy narx:" : "Ориентировочно:"}{" "}
+                      <span className="line-through font-semibold">{formatPrice(displayedPrice, usdRate)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-3xl font-extrabold text-gray-900">{formatPrice(displayedPrice, usdRate)}</div>
+                {product.oldPrice && (
+                  <div className="text-sm text-gray-400 line-through mt-0.5">{formatPrice(product.oldPrice, usdRate)}</div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Status info banner when under question */}
+          {/* Status info banner when stock under question */}
           {product.stockStatus === "on_question" && (
             <div className="mb-5 p-3.5 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
               <span className="text-base shrink-0 mt-0.5">⚠️</span>
@@ -400,6 +419,23 @@ export default function ProductPage() {
             </div>
           )}
 
+          {/* Info banner when price is under question */}
+          {product.priceOnQuestion && (
+            <div className="mb-5 p-3.5 bg-amber-50/90 border border-amber-300 rounded-2xl flex items-start gap-2.5 text-xs text-amber-900">
+              <span className="text-base shrink-0 mt-0.5">💬</span>
+              <div>
+                <div className="font-bold mb-0.5">
+                  {lang === "uz" ? "Narx aniqlashtirish talab etiladi:" : "Цена требует уточнения:"}
+                </div>
+                <div>
+                  {lang === "uz"
+                    ? "Bu tovarning narxi taxminiy bo'lib, so'rov asosida aniqlanadi. Telegram yoki telefon orqali aniq narxni bilib olishingiz mumkin."
+                    : "Указанная цена является ориентировочной и требует подтверждения у менеджера. Напишите в Telegram или позвоните — уточним актуальную цену."}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* CTA — stacked on mobile */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
@@ -407,16 +443,23 @@ export default function ProductPage() {
                 if (!user) { openAuthModal("register"); return; }
                 addToCart(product, selectedSize || undefined, selectedSizeOption?.price);
               }}
-              disabled={!product.inStock && product.stockStatus !== "on_question"}
+              disabled={!product.inStock && product.stockStatus !== "on_question" && !product.priceOnQuestion}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                product.stockStatus === "on_question"
+                product.priceOnQuestion
+                  ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
+                  : product.stockStatus === "on_question"
                   ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                   : product.inStock
                   ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
-              {product.stockStatus === "on_question" ? (
+              {product.priceOnQuestion ? (
+                <>
+                  <span className="text-base">💬</span>
+                  <span>{lang === "uz" ? "Narxni so'rash" : "Уточнить цену"}</span>
+                </>
+              ) : product.stockStatus === "on_question" ? (
                 <>
                   <span className="text-base">❓</span>
                   <span>{lang === "uz" ? "Buyurtma berish (aniqlash)" : "Заказать (с уточнением)"}</span>
@@ -431,21 +474,29 @@ export default function ProductPage() {
             <div className="flex gap-2 sm:gap-3">
               <a
                 href={`https://t.me/minimall_uzb?text=${encodeURIComponent(
-                  product.stockStatus === "on_question"
+                  product.priceOnQuestion
+                    ? `Здравствуйте! Хочу уточнить цену товара: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
+                    : product.stockStatus === "on_question"
                     ? `Здравствуйте! Хочу уточнить наличие товара под вопросом: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
                     : `Здравствуйте! Интересует товар: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-xl text-sm font-bold transition-all shadow-xs ${
-                  product.stockStatus === "on_question"
+                  product.priceOnQuestion || product.stockStatus === "on_question"
                     ? "border-2 border-sky-400 bg-sky-500 hover:bg-sky-600 text-white shadow-md"
                     : "border-2 border-sky-200 hover:border-sky-400 bg-sky-50 hover:bg-sky-100/80 text-sky-700"
                 }`}
                 title="Задать вопрос по товару в Telegram"
               >
                 <span>✈️</span>
-                <span>{product.stockStatus === "on_question" ? (lang === "uz" ? "Telegramda so'rash" : "Уточнить в Telegram") : "Telegram"}</span>
+                <span>
+                  {product.priceOnQuestion
+                    ? (lang === "uz" ? "Narxni so'rash" : "Уточнить цену")
+                    : product.stockStatus === "on_question"
+                    ? (lang === "uz" ? "Telegramda so'rash" : "Уточнить в Telegram")
+                    : "Telegram"}
+                </span>
               </a>
               <a
                 href="tel:+998970363636"

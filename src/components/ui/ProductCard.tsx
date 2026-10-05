@@ -213,31 +213,59 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
         {/* Price + CTA */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mt-auto pt-1">
           <div>
-            <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-tight">{formatPrice(product.price)}</div>
-            {product.oldPrice && (
-              <div className="text-[10px] sm:text-xs text-gray-400 line-through">{formatPrice(product.oldPrice)}</div>
+            {product.priceOnQuestion ? (
+              <div className="flex flex-col gap-0.5">
+                <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">
+                  <span>❓</span>
+                  <span>{lang === "uz" ? "Narx so'rov bo'yicha" : "Цена под вопросом"}</span>
+                </span>
+                <div className="text-[10px] text-gray-400 mt-0.5">
+                  {lang === "uz" ? "Taxminan: " : "Ориентировочно: "}
+                  <span className="font-semibold text-gray-500 line-through">{formatPrice(product.price)}</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-tight">{formatPrice(product.price)}</div>
+                {product.oldPrice && (
+                  <div className="text-[10px] sm:text-xs text-gray-400 line-through">{formatPrice(product.oldPrice)}</div>
+                )}
+              </>
             )}
           </div>
           <button
             onClick={(e) => {
-              if (product.stockStatus === "on_question") {
+              if (product.stockStatus === "on_question" || product.priceOnQuestion) {
                 e.preventDefault();
                 navigate(`/product/${product.slug}`);
                 return;
               }
               handleAddToCart();
             }}
-            disabled={!product.inStock && product.stockStatus !== "on_question"}
-            aria-label={product.stockStatus === "on_question" ? (lang === "uz" ? "Mavjudligini so'rash" : "Уточнить наличие") : `${t.addToCart}: ${name}`}
+            disabled={!product.inStock && product.stockStatus !== "on_question" && !product.priceOnQuestion}
+            aria-label={
+              product.priceOnQuestion
+                ? (lang === "uz" ? "Narxni so'rash" : "Уточнить цену")
+                : product.stockStatus === "on_question"
+                ? (lang === "uz" ? "Mavjudligini so'rash" : "Уточнить наличие")
+                : `${t.addToCart}: ${name}`
+            }
             className={`w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all touch-manipulation cursor-pointer ${
-              product.stockStatus === "on_question"
+              product.priceOnQuestion
+                ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
+                : product.stockStatus === "on_question"
                 ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
                 : product.inStock
                 ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:shadow-md shadow-xs active:scale-[0.96]"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
-            {product.stockStatus === "on_question" ? (
+            {product.priceOnQuestion ? (
+              <>
+                <span className="text-xs">💬</span>
+                <span>{lang === "uz" ? "Narxni so'rash" : "Уточнить цену"}</span>
+              </>
+            ) : product.stockStatus === "on_question" ? (
               <>
                 <span className="text-xs">❓</span>
                 <span>{lang === "uz" ? "So'rash" : "Уточнить"}</span>

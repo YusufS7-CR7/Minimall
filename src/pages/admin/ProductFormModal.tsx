@@ -180,6 +180,7 @@ export default function ProductFormModal({
   };
   const [inStock, setInStock] = useState(true);
   const [stockStatus, setStockStatus] = useState<StockStatus>("in_stock");
+  const [priceOnQuestion, setPriceOnQuestion] = useState(false);
   const [badge, setBadge] = useState<string>("");
   const [rating, setRating] = useState<number>(5);
 
@@ -346,6 +347,11 @@ export default function ProductFormModal({
         (productToEdit.inStock ? "in_stock" : "out_of_stock");
       setStockStatus(initialStockStatus);
       setInStock(initialStockStatus !== "out_of_stock");
+      setPriceOnQuestion(
+        productToEdit.priceOnQuestion ||
+        (productToEdit.specs as Record<string, any>)?._priceOnQuestion === "true" ||
+        false
+      );
       setBadge(productToEdit.badge || "");
       setRating(productToEdit.rating || 5);
 
@@ -387,6 +393,7 @@ export default function ProductFormModal({
       setOldPriceUsd("");
       setStockStatus("in_stock");
       setInStock(true);
+      setPriceOnQuestion(false);
       setBadge("");
       setRating(5);
       setSizes([]);
@@ -621,6 +628,11 @@ export default function ProductFormModal({
     }
 
     specsRecord._stockStatus = stockStatus;
+    if (priceOnQuestion) {
+      specsRecord._priceOnQuestion = "true";
+    } else {
+      delete specsRecord._priceOnQuestion;
+    }
 
     const parsedOldPrice = finalOldUzsPrice;
     const parsedPrice = finalUzsPrice;
@@ -643,6 +655,7 @@ export default function ProductFormModal({
         oldPrice: parsedOldPrice,
         inStock: effectiveInStock,
         stockStatus,
+        priceOnQuestion,
         badge: badge || undefined,
         rating,
         image: primaryImage,
@@ -681,6 +694,7 @@ export default function ProductFormModal({
         oldPrice: parsedOldPrice,
         inStock: effectiveInStock,
         stockStatus,
+        priceOnQuestion,
         badge: badge || undefined,
         rating,
         image: primaryImage,
@@ -1303,6 +1317,55 @@ export default function ProductFormModal({
                   )}
                 </div>
               </div>
+
+              {/* Price on Question toggle */}
+              <label
+                className={`flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer select-none transition-all ${
+                  priceOnQuestion
+                    ? "bg-amber-50 border-amber-300 shadow-sm ring-1 ring-amber-200"
+                    : "bg-gray-50 border-gray-200 hover:border-amber-200 hover:bg-amber-50/40"
+                }`}
+              >
+                {/* Custom toggle switch */}
+                <div className="relative shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={priceOnQuestion}
+                    onChange={(e) => setPriceOnQuestion(e.target.checked)}
+                  />
+                  <div
+                    className={`w-10 h-5 rounded-full transition-colors duration-200 ${
+                      priceOnQuestion ? "bg-amber-500" : "bg-gray-300"
+                    }`}
+                  />
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                      priceOnQuestion ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                    <span>❓</span>
+                    <span>
+                      {lang === "uz" ? "Narx «Под вопросом»" : "Цена «Под вопросом»"}
+                    </span>
+                    {priceOnQuestion && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full">ВКЛ</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {priceOnQuestion
+                      ? (lang === "uz"
+                          ? "Xaridor narxni Telegram orqali admindan so'rashi kerak bo'ladi."
+                          : "Покупатель увидит кнопку «Уточнить цену» — цена отображается как приблизительная.")
+                      : (lang === "uz"
+                          ? "Yoqing — narx taxminiy yoki so'rov bo'yicha degan belgi qo'yiladi."
+                          : "Включите, если цена ориентировочная и требует уточнения у администратора.")}
+                  </p>
+                </div>
+              </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div>

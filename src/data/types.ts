@@ -36,6 +36,8 @@ export interface Product {
   subcategories?: string[];
   price: number;
   oldPrice?: number;
+  /** When true, the price is approximate / needs clarification — displayed as "Цена под вопросом" */
+  priceOnQuestion?: boolean;
   image: string;
   images?: string[];
   voltage?: string;
