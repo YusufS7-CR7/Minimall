@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS public.categories (
     label_uz TEXT NOT NULL,
     icon TEXT,
     image TEXT,
+    subcategories JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Добавляем колонку subcategories если её нет (для уже существующих баз данных)
+ALTER TABLE public.categories ADD COLUMN IF NOT EXISTS subcategories JSONB DEFAULT '[]'::jsonb;
 
 -- 2. ТАБЛИЦА ТОВАРОВ (products)
 CREATE TABLE IF NOT EXISTS public.products (

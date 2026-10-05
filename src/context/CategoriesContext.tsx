@@ -76,6 +76,45 @@ function dbRowToCategory(row: any, existing?: CategoryDef): CategoryDef {
   };
 }
 
+// Smart upsert that handles missing 'subcategories' column gracefully
+export async function smartUpsertCategoryToDB(cat: CategoryDef): Promise<{ success: boolean; error?: any }> {
+  const baseRow = {
+    key: cat.key,
+    slug: cat.slug || cat.key,
+    label_ru: cat.labelRu,
+    label_uz: cat.labelUz || cat.labelRu,
+    icon: cat.icon || "📦",
+    image: cat.image || "",
+  };
+
+  // 1. Try with subcategories first (if Supabase schema has the column)
+  const fullRow = {
+    ...baseRow,
+    subcategories: JSON.stringify(cat.subcategories || []),
+  };
+
+  let { error } = await supabase.from("categories").upsert(fullRow, { onConflict: "key" });
+
+  // 2. If 'subcategories' column does not exist in Supabase (PGRST204), fallback to baseRow
+  if (
+    error &&
+    (error.code === "PGRST204" || (error.message && error.message.toLowerCase().includes("subcategories")))
+  ) {
+    console.warn(
+      `[Categories] 'subcategories' column not found in Supabase schema. Upserting '${cat.key}' without subcategories.`
+    );
+    const fallback = await supabase.from("categories").upsert(baseRow, { onConflict: "key" });
+    error = fallback.error;
+  }
+
+  if (error) {
+    console.error(`[Categories] Failed to upsert category '${cat.key}':`, error);
+    return { success: false, error };
+  }
+
+  return { success: true };
+}
+
 export function CategoriesProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<CategoryDef[]>(loadLocalCategories);
   const [loading, setLoading] = useState(false);
@@ -188,18 +227,10 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
       });
 
       try {
-        const { error } = await supabase.from("categories").insert([
-          {
-            key: created.key,
-            slug: created.slug,
-            label_ru: created.labelRu,
-            label_uz: created.labelUz,
-            icon: created.icon,
-            image: created.image,
-            subcategories: JSON.stringify(created.subcategories || []),
-          },
-        ]);
-        if (error) console.error("Supabase insert category error:", error);
+        const res = await smartUpsertCategoryToDB(created);
+        if (!res.success) {
+          console.error("Supabase insert category error:", res.error);
+        }
       } catch (e) {
         console.error("Failed to sync category to Supabase", e);
       }
@@ -360,23 +391,11 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
 
     for (const cat of currentCats) {
       try {
-        const { error } = await supabase.from("categories").upsert(
-          {
-            key: cat.key,
-            slug: cat.slug,
-            label_ru: cat.labelRu,
-            label_uz: cat.labelUz,
-            icon: cat.icon,
-            image: cat.image || "",
-            subcategories: JSON.stringify(cat.subcategories || []),
-          },
-          { onConflict: "key" }
-        );
-        if (error) {
-          console.error(`Supabase upsert error for category "${cat.key}":`, error);
-          errors++;
-        } else {
+        const res = await smartUpsertCategoryToDB(cat);
+        if (res.success) {
           success++;
+        } else {
+          errors++;
         }
       } catch (e) {
         console.error(`Failed to upsert category "${cat.key}":`, e);
