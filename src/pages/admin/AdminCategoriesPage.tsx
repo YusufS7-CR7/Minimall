@@ -27,7 +27,6 @@ export default function AdminCategoriesPage() {
     addSubcategory,
     updateSubcategory,
     deleteSubcategory,
-    resetCategories,
     syncAllCategoriesToDB,
   } = useCategories();
 
@@ -433,19 +432,7 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  // Reset to default
-  const handleReset = async () => {
-    if (
-      window.confirm(
-        lang === "uz"
-          ? "Kategoriyalar va kichik toifalar tuzilmasini Minimall standart sozlamalariga qaytarasizmi? Siz qo'shgan toifalar standart toifalar bilan almashtiriladi."
-          : "Сбросить структуру категорий и подкатегорий к исходным настройкам Minimall? Ваши добавленные категории будут заменены стандартными."
-      )
-    ) {
-      await resetCategories();
-      showToast(lang === "uz" ? "Kategoriyalar standart holatga qaytarildi" : "Категории возвращены к стандартным");
-    }
-  };
+
 
   return (
     <div className="space-y-6">
@@ -495,14 +482,7 @@ export default function AdminCategoriesPage() {
             <span>➕</span>
             <span>{t.addBtn}</span>
           </button>
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-4 py-2.5 rounded-2xl text-xs transition-colors cursor-pointer"
-            title={lang === "uz" ? "Toifalar tuzilmasini standart holatga qaytarish" : "Вернуть структуру категорий по умолчанию"}
-          >
-            <span>🔄</span>
-            <span>{lang === "uz" ? "Qayta sozlash" : "Сброс"}</span>
-          </button>
+
         </div>
       </div>
 
