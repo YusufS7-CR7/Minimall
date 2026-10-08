@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useProducts } from "@/context/ProductsContext";
 import { useApp } from "@/context/AppContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
@@ -9,6 +9,8 @@ import { useCategories } from "@/context/CategoriesContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { LOGO_DATA_URI } from "@/assets/logoDataUri";
+import CurrencySyncModal from "@/components/admin/CurrencySyncModal";
+import { isUsdProduct } from "@/utils/usdProductUtils";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -28,6 +30,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [rateInput, setRateInput] = useState<string>(String(usdRate));
   const [rateEditing, setRateEditing] = useState(false);
   const [rateSaved, setRateSaved] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncTargetRate, setSyncTargetRate] = useState<number>(usdRate);
+
+  const usdProductsCount = useMemo(() => {
+    return products.filter(isUsdProduct).length;
+  }, [products]);
 
   const handleRateSave = () => {
     const val = parseFloat(rateInput.replace(/\s/g, "").replace(/,/g, "."));
@@ -37,6 +45,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       setRateSaved(true);
       setTimeout(() => setRateSaved(false), 2000);
       showToast(lang === "uz" ? `Kurs yangilandi: 1 $ = ${val.toLocaleString("ru")} сум` : `Курс обновлён: 1 $ = ${val.toLocaleString("ru")} сум`);
+
+      // Prompt admin to synchronize products that were added in USD
+      if (usdProductsCount > 0) {
+        setSyncTargetRate(val);
+        setIsSyncModalOpen(true);
+      }
     }
   };
 
@@ -247,6 +261,32 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <span>{t.helpShort}</span>
               </Link>
             </nav>
+
+            {/* Mobile Currency Bar */}
+            <div className="mt-2.5 flex items-center justify-between gap-2 bg-white border border-amber-200 rounded-2xl p-2.5 shadow-2xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-base">💱</span>
+                <div className="text-xs">
+                  <span className="font-extrabold text-amber-900">
+                    1$ = {usdRate.toLocaleString("ru")} сум
+                  </span>
+                  <span className="text-[10px] text-gray-500 ml-1">
+                    ({usdProductsCount} USD)
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSyncTargetRate(usdRate);
+                  setIsSyncModalOpen(true);
+                }}
+                className="px-2.5 py-1 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-xl transition-colors cursor-pointer flex items-center gap-1 shrink-0 active:scale-95"
+              >
+                <span>🔄</span>
+                <span>{lang === "uz" ? "Sinxronlash" : "Синхронизировать"}</span>
+              </button>
+            </div>
           </div>
 
           {/* Desktop: vertical sidebar */}
@@ -422,6 +462,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <span>{lang === "uz" ? "Kursni o'zgartirish" : "Изменить курс"}</span>
               </button>
             )}
+
+            {/* Synchronize USD Products button */}
+            <button
+              id="admin-usd-sync-btn"
+              type="button"
+              onClick={() => {
+                setSyncTargetRate(usdRate);
+                setIsSyncModalOpen(true);
+              }}
+              className="w-full mt-2 text-xs font-bold text-amber-900 bg-gradient-to-r from-amber-100 via-amber-200/90 to-amber-200 hover:from-amber-200 hover:to-amber-300 border border-amber-300 px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-2xs group"
+              title={
+                lang === "uz"
+                  ? "Dollardagi tovarlar narxini joriy kurs bo'yicha sinxronlash"
+                  : "Синхронизировать цены товаров в USD по текущему курсу"
+              }
+            >
+              <span className="text-sm group-hover:rotate-180 transition-transform duration-500">🔄</span>
+              <span>{lang === "uz" ? "Narxlarni sinxronlash" : "Синхронизировать"}</span>
+              <span className="bg-amber-300/80 text-amber-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                {usdProductsCount} $
+              </span>
+            </button>
           </div>
 
           {/* Quick System Info Box — desktop only */}
@@ -443,6 +505,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Main Content Area */}
         <main className="flex-1 min-w-0">{children}</main>
       </div>
+
+      {/* USD Price Synchronization Modal */}
+      <CurrencySyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        initialRate={syncTargetRate}
+      />
     </div>
   );
 }

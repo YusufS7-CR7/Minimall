@@ -10,6 +10,7 @@ import {
 import type { Product, ProductSize, StockStatus } from "@/data/types";
 import { slugify, BRANDS as INITIAL_BRANDS } from "@/data/products";
 import { supabase } from "@/lib/supabase";
+import { isUsdProduct, recalculateProductForRate } from "@/utils/usdProductUtils";
 
 // ─── DB row type (Supabase snake_case) ───────────────────────────────────────
 
@@ -203,6 +204,10 @@ interface ProductsContextValue {
   exportCatalog: () => void;
   importCatalog: (jsonString: string) => Promise<boolean>;
   refreshProducts: () => Promise<void>;
+  syncProductsWithUsdRate: (
+    newRate: number,
+    onProgress?: (progress: { current: number; total: number; percent: number }) => void
+  ) => Promise<{ updatedCount: number; totalUsdCount: number; success: boolean }>;
 }
 
 const ProductsContext = createContext<ProductsContextValue | null>(null);
@@ -559,6 +564,76 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     setProducts([]);
   }, []);
 
+  // ── Sync USD Products with new Exchange Rate ──────────────────────────────
+  const syncProductsWithUsdRate = useCallback(
+    async (
+      newRate: number,
+      onProgress?: (progress: { current: number; total: number; percent: number }) => void
+    ): Promise<{ updatedCount: number; totalUsdCount: number; success: boolean }> => {
+      if (!newRate || newRate <= 0) {
+        return { updatedCount: 0, totalUsdCount: 0, success: false };
+      }
+
+      // Filter products that have USD prices
+      const usdProducts = products.filter(isUsdProduct);
+      const totalUsdCount = usdProducts.length;
+
+      if (totalUsdCount === 0) {
+        return { updatedCount: 0, totalUsdCount: 0, success: true };
+      }
+
+      // Recalculate each USD product for the new exchange rate
+      const updatedProducts = usdProducts.map((p) => recalculateProductForRate(p, newRate));
+      const updatedMap = new Map<number, Product>();
+      updatedProducts.forEach((p) => updatedMap.set(p.id, p));
+
+      // 1. Instant optimistic update to local state and cache
+      setProducts((prev) => {
+        const next = prev.map((p) => updatedMap.get(p.id) || p);
+        saveCachedProducts(next);
+        return next;
+      });
+
+      // 2. Persist to Supabase in chunks of 50
+      const dbRows = updatedProducts.map((p) => productToDb(p));
+      const chunkSize = 50;
+      let success = true;
+
+      for (let i = 0; i < dbRows.length; i += chunkSize) {
+        const chunk = dbRows.slice(i, i + chunkSize);
+        const { error } = await supabase.from("products").upsert(chunk);
+        if (error) {
+          console.warn(`Chunk ${Math.floor(i / chunkSize) + 1} upsert failed, falling back to sequential:`, error.message);
+          for (const row of chunk) {
+            if (row.id) {
+              const { error: singleErr } = await supabase.from("products").update(row).eq("id", row.id);
+              if (singleErr) {
+                console.error(`Failed to update product ${row.id}:`, singleErr.message);
+                success = false;
+              }
+            }
+          }
+        }
+
+        const processed = Math.min(i + chunkSize, dbRows.length);
+        if (onProgress) {
+          onProgress({
+            current: processed,
+            total: dbRows.length,
+            percent: Math.round((processed / dbRows.length) * 100),
+          });
+        }
+      }
+
+      return {
+        updatedCount: totalUsdCount,
+        totalUsdCount,
+        success,
+      };
+    },
+    [products]
+  );
+
   // ── Export catalog ─────────────────────────────────────────────────────────
   const exportCatalog = useCallback(() => {
     const dataStr =
@@ -624,6 +699,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         exportCatalog,
         importCatalog,
         refreshProducts: fetchProducts,
+        syncProductsWithUsdRate,
       }}
     >
       {children}

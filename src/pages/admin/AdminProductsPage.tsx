@@ -9,9 +9,11 @@ import { useCurrency } from "@/context/CurrencyContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import ProductFormModal from "./ProductFormModal";
 import ExcelImportModal from "./ExcelImportModal";
+import CurrencySyncModal from "@/components/admin/CurrencySyncModal";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { formatPrice } from "@/utils/formatPrice";
 import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
+import { getUsdProductInfo, isUsdProduct } from "@/utils/usdProductUtils";
 
 export default function AdminProductsPage() {
   const { products, deleteProduct, updateProduct, addProduct, brands } = useProducts();
@@ -37,6 +39,11 @@ export default function AdminProductsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+  const usdProductsCount = useMemo(() => {
+    return products.filter(isUsdProduct).length;
+  }, [products]);
 
   const handleExcelImportSuccess = (count: number) => {
     showToast(
@@ -202,6 +209,24 @@ export default function AdminProductsPage() {
         </div>
         {canCreate && (
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Sync USD Products by Rate button */}
+            <button
+              type="button"
+              onClick={() => setIsSyncModalOpen(true)}
+              className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
+              title={
+                lang === "uz"
+                  ? "Dollardagi tovarlar narxini kurs bo'yicha sinxronlash"
+                  : "Синхронизировать цены товаров в USD по текущему курсу"
+              }
+            >
+              <span className="text-base">💱</span>
+              <span>{lang === "uz" ? "Kurs bo'yicha sinxronlash" : "Синхронизировать курс"}</span>
+              <span className="bg-amber-200/90 text-amber-950 text-xs font-black px-1.5 py-0.5 rounded-full">
+                {usdProductsCount} USD
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={() => setIsExcelModalOpen(true)}
@@ -440,7 +465,21 @@ export default function AdminProductsPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                   <div>
-                    <div className="text-sm font-black text-gray-900">{formatPrice(p.price, usdRate)}</div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="text-sm font-black text-gray-900">{formatPrice(p.price, usdRate)}</div>
+                      {(() => {
+                        const usdInfo = getUsdProductInfo(p, usdRate);
+                        if (!usdInfo.isUsd || usdInfo.usdPrice === null) return null;
+                        return (
+                          <span
+                            className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-1.5 py-0.2 rounded font-mono font-bold text-[10px]"
+                            title="Цена задана в долларах (USD)"
+                          >
+                            ${usdInfo.usdPrice.toFixed(2).replace(/\.00$/, "")}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     {p.oldPrice && (
                       <div className="text-[10px] text-gray-400 line-through">{formatPrice(p.oldPrice, usdRate)}</div>
                     )}
@@ -628,9 +667,23 @@ export default function AdminProductsPage() {
                       </td>
 
                       {/* Price */}
-                      <td className="py-3 px-3 w-[110px] min-w-[105px] whitespace-nowrap">
-                        <div className="text-xs sm:text-sm font-bold text-gray-900">
-                          {formatPrice(p.price, usdRate)}
+                      <td className="py-3 px-3 w-[125px] min-w-[115px] whitespace-nowrap">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="text-xs sm:text-sm font-bold text-gray-900">
+                            {formatPrice(p.price, usdRate)}
+                          </span>
+                          {(() => {
+                            const usdInfo = getUsdProductInfo(p, usdRate);
+                            if (!usdInfo.isUsd || usdInfo.usdPrice === null) return null;
+                            return (
+                              <span
+                                className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-1 py-0.2 rounded font-mono font-bold text-[9px]"
+                                title="Цена задана в USD"
+                              >
+                                ${usdInfo.usdPrice.toFixed(2).replace(/\.00$/, "")}
+                              </span>
+                            );
+                          })()}
                         </div>
                         {p.oldPrice && (
                           <div className="text-[11px] text-gray-400 line-through">
@@ -764,6 +817,12 @@ export default function AdminProductsPage() {
         isOpen={isExcelModalOpen}
         onClose={() => setIsExcelModalOpen(false)}
         onSuccess={handleExcelImportSuccess}
+      />
+
+      {/* Currency Synchronization Modal */}
+      <CurrencySyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
       />
     </div>
   );
