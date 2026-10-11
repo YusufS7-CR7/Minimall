@@ -11,6 +11,7 @@ import type { Product, ProductSize, StockStatus } from "@/data/types";
 import { slugify, BRANDS as INITIAL_BRANDS } from "@/data/products";
 import { supabase } from "@/lib/supabase";
 import { isUsdProduct, recalculateProductForRate } from "@/utils/usdProductUtils";
+import { parseSizeNames } from "@/utils/sizeUtils";
 
 // ─── DB row type (Supabase snake_case) ───────────────────────────────────────
 
@@ -83,7 +84,7 @@ function dbToProduct(row: DbProduct): Product {
           }) as ProductSize[]).filter((s) => s.name);
         }
       } catch {
-        sizes = rawSizes.split(",").map((s) => ({ name: s.trim(), price: row.price })).filter((s) => s.name);
+        sizes = parseSizeNames(rawSizes).map((name) => ({ name, price: row.price })).filter((s) => s.name);
       }
     }
   }

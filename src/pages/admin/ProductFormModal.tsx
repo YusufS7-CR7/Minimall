@@ -12,6 +12,7 @@ import CustomSelect from "@/components/ui/CustomSelect";
 import CustomMultiSelect from "@/components/ui/CustomMultiSelect";
 import { uploadMediaFile } from "@/lib/storage";
 import { formatNumberWithSpaces, parseFormattedNumber } from "@/utils/formatPrice";
+import { parseSizeNames } from "@/utils/sizeUtils";
 
 interface ProductFormModalProps {
   isOpen: boolean;
@@ -199,7 +200,7 @@ export default function ProductFormModal({
       : 0);
     if (!text || !enteredPrice || enteredPrice <= 0) return;
     const finalPrice = newSizeCurrency === "USD" ? Math.round(enteredPrice * usdRate) : Math.round(enteredPrice);
-    const parts = text.split(/[,;\n]+/).map((s) => s.trim()).filter(Boolean);
+    const parts = parseSizeNames(text);
     setSizes((prev) => {
       const combined = [...prev];
       for (const part of parts) {
