@@ -5,6 +5,7 @@ import {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
 import type { Product, ProductSize, StockStatus } from "@/data/types";
@@ -15,7 +16,7 @@ import { parseSizeNames } from "@/utils/sizeUtils";
 
 // ─── DB row type (Supabase snake_case) ───────────────────────────────────────
 
-interface DbProduct {
+export interface DbProduct {
   id: number;
   slug: string;
   name: string;
@@ -39,7 +40,7 @@ interface DbProduct {
   created_at: string;
 }
 
-function dbToProduct(row: DbProduct): Product {
+export function dbToProduct(row: DbProduct): Product {
   const specs = row.specs ?? {};
   const subcategory =
     row.subcategory ||
@@ -196,6 +197,7 @@ interface ProductsContextValue {
   addProduct: (data: Omit<Product, "id"> & { id?: number }) => Promise<Product | null>;
   addProductsBatch: (items: Array<Omit<Product, "id">>) => Promise<Product[]>;
   updateProduct: (id: number, data: Partial<Product>) => Promise<void>;
+  upsertProduct: (fresh: Product) => void;
   deleteProduct: (id: number) => Promise<void>;
   resetProducts: () => Promise<void>;
   getProductBySlug: (slug: string) => Product | undefined;
@@ -215,7 +217,7 @@ const ProductsContext = createContext<ProductsContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-const CACHE_KEY = "minimall_products_cache_v3";
+const CACHE_KEY = "minimall_products_cache_v4";
 
 function loadCachedProducts(): Product[] {
   try {
@@ -243,6 +245,12 @@ function saveCachedProducts(prods: Product[]) {
 export function ProductsProvider({ children }: { children: ReactNode }) {
   const [products, setProducts] = useState<Product[]>(loadCachedProducts);
   const [loading, setLoading] = useState<boolean>(() => products.length === 0);
+  const productsRef = useRef<Product[]>(products);
+
+  // Keep productsRef in sync with latest products state
+  useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
 
   // Sync state to cache whenever products change
   useEffect(() => {
@@ -250,6 +258,21 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       saveCachedProducts(products);
     }
   }, [products]);
+
+  // Upsert a single product (used for instant sync when individual page fetches fresh data)
+  const upsertProduct = useCallback((fresh: Product) => {
+    setProducts((prev) => {
+      const exists = prev.some((p) => p.id === fresh.id || p.slug === fresh.slug);
+      let next: Product[];
+      if (exists) {
+        next = prev.map((p) => (p.id === fresh.id || p.slug === fresh.slug ? fresh : p));
+      } else {
+        next = [fresh, ...prev];
+      }
+      saveCachedProducts(next);
+      return next;
+    });
+  }, []);
 
   // ── Fetch all products from Supabase ───────────────────────────────────────
   const fetchProducts = useCallback(async () => {
@@ -277,6 +300,46 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchProducts();
+
+    // Subscribe to realtime product changes so all users see updates instantly
+    const channel = supabase
+      .channel("public-products-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "products" },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newProd = dbToProduct(payload.new as DbProduct);
+            setProducts((prev) => {
+              if (prev.some((p) => p.id === newProd.id)) return prev;
+              const next = [newProd, ...prev];
+              saveCachedProducts(next);
+              return next;
+            });
+          } else if (payload.eventType === "UPDATE") {
+            const updatedProd = dbToProduct(payload.new as DbProduct);
+            setProducts((prev) => {
+              const next = prev.map((p) => (p.id === updatedProd.id ? updatedProd : p));
+              saveCachedProducts(next);
+              return next;
+            });
+          } else if (payload.eventType === "DELETE") {
+            const deletedId = (payload.old as { id?: number })?.id;
+            if (deletedId) {
+              setProducts((prev) => {
+                const next = prev.filter((p) => p.id !== deletedId);
+                saveCachedProducts(next);
+                return next;
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchProducts]);
 
   // ── Custom brands (still localStorage — lightweight, no table needed) ──────
@@ -408,6 +471,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   // ── Update product ─────────────────────────────────────────────────────────
   const updateProduct = useCallback(
     async (id: number, patch: Partial<Product>) => {
+      const currentProd = productsRef.current.find((p) => p.id === id);
+
       // Build the DB-compatible patch
       const dbPatch: Record<string, unknown> = {};
       if (patch.name !== undefined) dbPatch.name = patch.name;
@@ -433,17 +498,21 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         patch.stockStatus !== undefined ||
         patch.specs !== undefined
       ) {
-        const currentProd = products.find((p) => p.id === id);
-        const mergedSpecs: Record<string, any> = {
-          ...(currentProd?.specs || {}),
-          ...(patch.specs || {}),
-        };
-
-        // Build clean specs without any old auto-generated system keys
+        const existingSpecs = currentProd?.specs || {};
         const cleanSpecs: Record<string, string> = {};
-        for (const [k, v] of Object.entries(mergedSpecs)) {
-          if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory" || k === "_stockStatus") continue;
-          cleanSpecs[k] = v;
+
+        // If patch.specs is explicitly provided, use the new specs and DO NOT revive deleted ones!
+        if (patch.specs !== undefined) {
+          for (const [k, v] of Object.entries(patch.specs)) {
+            if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory" || k === "_stockStatus") continue;
+            cleanSpecs[k] = v;
+          }
+        } else {
+          // Keep existing specs if specs wasn't in this patch
+          for (const [k, v] of Object.entries(existingSpecs)) {
+            if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory" || k === "_stockStatus") continue;
+            cleanSpecs[k] = v;
+          }
         }
 
         // Subcategory is preserved in specs._subcategory
@@ -461,6 +530,9 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           }
         } else if (patch.category !== undefined) {
           dbPatch.category = patch.category;
+          if (currentProd?.categories && currentProd.categories.length > 0) {
+            cleanSpecs._categories = JSON.stringify(currentProd.categories);
+          }
         } else if (currentProd?.categories && currentProd.categories.length > 0) {
           cleanSpecs._categories = JSON.stringify(currentProd.categories);
         }
@@ -487,20 +559,25 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       }
       if (patch.rating !== undefined) dbPatch.rating = patch.rating;
 
-      const { error } = await supabase
+      const { data: updatedRow, error } = await supabase
         .from("products")
         .update(dbPatch)
-        .eq("id", id);
+        .eq("id", id)
+        .select()
+        .single();
 
       if (error) {
-        console.error("Failed to update product:", error.message);
-        return;
+        console.error("Failed to update product in Supabase:", error.message);
+        throw new Error(error.message);
       }
 
-      // Optimistic local update
-      setProducts((prev) =>
-        prev.map((p) => {
+      const updatedProd = updatedRow ? dbToProduct(updatedRow as DbProduct) : null;
+
+      // Update local state and save to cache
+      setProducts((prev) => {
+        const next = prev.map((p) => {
           if (p.id !== id) return p;
+          if (updatedProd) return updatedProd;
           let nextSlug = p.slug;
           if (patch.slug && patch.slug !== p.slug) {
             nextSlug = slugify(patch.slug);
@@ -528,8 +605,10 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
             categories: nextCategories,
             slug: nextSlug,
           };
-        })
-      );
+        });
+        saveCachedProducts(next);
+        return next;
+      });
     },
     []
   );
@@ -691,6 +770,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         addProduct,
         addProductsBatch,
         updateProduct,
+        upsertProduct,
         deleteProduct,
         resetProducts,
         getProductBySlug,

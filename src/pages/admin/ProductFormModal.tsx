@@ -644,74 +644,101 @@ export default function ProductFormModal({
 
     if (productToEdit) {
       const effectiveSizes = hasSizes ? sizes.filter((s) => s.name.trim().length > 0 && s.price > 0) : undefined;
+      const effectiveDescRu = descRu.trim() || `Качественный инструмент ${name.trim()} с официальной гарантией.`;
+      const effectiveDescUz = descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`;
+      const effectiveSlug = slug.trim() || slugify(name.trim());
 
-      await updateProduct(productToEdit.id, {
-        name: name.trim(),
-        nameUz: nameUz.trim() || name.trim(),
-        brand: effectiveBrand,
-        category: effectiveCategory,
-        categories: effectiveCategories,
-        subcategory: subcategory || undefined,
-        price: parsedPrice,
-        oldPrice: parsedOldPrice,
-        inStock: effectiveInStock,
-        stockStatus,
-        priceOnQuestion,
-        badge: badge || undefined,
-        rating,
-        image: primaryImage,
-        images: imagesList,
-        descRu: descRu.trim() || `Качественный инструмент ${name.trim()} с официальной гарантией.`,
-        descUz: descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`,
-        slug: slug.trim() || slugify(name.trim()),
-        specs: specsRecord,
-        sizes: effectiveSizes,
-      });
+      try {
+        await updateProduct(productToEdit.id, {
+          name: name.trim(),
+          nameUz: nameUz.trim() || name.trim(),
+          brand: effectiveBrand,
+          category: effectiveCategory,
+          categories: effectiveCategories,
+          subcategory: subcategory || undefined,
+          price: parsedPrice,
+          oldPrice: parsedOldPrice,
+          inStock: effectiveInStock,
+          stockStatus,
+          priceOnQuestion,
+          badge: badge || undefined,
+          rating,
+          image: primaryImage,
+          images: imagesList,
+          descRu: effectiveDescRu,
+          descUz: effectiveDescUz,
+          slug: effectiveSlug,
+          specs: specsRecord,
+          sizes: effectiveSizes,
+        });
 
-      onSuccess({
-        ...productToEdit,
-        name: name.trim(),
-        price: parsedPrice,
-        image: primaryImage,
-        images: imagesList,
-        category: effectiveCategory,
-        categories: effectiveCategories,
-        slug: slug.trim() || slugify(name.trim()),
-        sizes: effectiveSizes,
-        inStock: effectiveInStock,
-        stockStatus,
-      });
+        onSuccess({
+          ...productToEdit,
+          name: name.trim(),
+          nameUz: nameUz.trim() || name.trim(),
+          brand: effectiveBrand,
+          price: parsedPrice,
+          oldPrice: parsedOldPrice,
+          image: primaryImage,
+          images: imagesList,
+          category: effectiveCategory,
+          categories: effectiveCategories,
+          subcategory: subcategory || undefined,
+          slug: effectiveSlug,
+          sizes: effectiveSizes,
+          inStock: effectiveInStock,
+          stockStatus,
+          descRu: effectiveDescRu,
+          descUz: effectiveDescUz,
+          specs: specsRecord,
+        });
+        onClose();
+      } catch (err: any) {
+        console.error("Update error:", err);
+        setError(lang === "uz" ? `Xatolik: ${err.message || err}` : `Ошибка сохранения: ${err.message || err}`);
+        return;
+      }
     } else {
       const effectiveSizes = hasSizes ? sizes.filter((s) => s.name.trim().length > 0 && s.price > 0) : undefined;
+      const effectiveDescRu = descRu.trim() || `Качественный инструмент ${name.trim()} с официальной гарантией.`;
+      const effectiveDescUz = descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`;
+      const effectiveSlug = slug.trim() || slugify(name.trim());
 
-      const created = await addProduct({
-        name: name.trim(),
-        nameUz: nameUz.trim() || name.trim(),
-        brand: effectiveBrand,
-        category: effectiveCategory,
-        categories: effectiveCategories,
-        subcategory: subcategory || undefined,
-        price: parsedPrice,
-        oldPrice: parsedOldPrice,
-        inStock: effectiveInStock,
-        stockStatus,
-        priceOnQuestion,
-        badge: badge || undefined,
-        rating,
-        image: primaryImage,
-        images: imagesList,
-        descRu: descRu.trim() || `Качественный инструмент ${name.trim()} с официальной гарантией.`,
-        descUz: descUz.trim() || `${name.trim()} rasmiy kafolatli sifatli asbob.`,
-        slug: slug.trim() || slugify(name.trim()),
-        type: "corded",
-        specs: specsRecord,
-        sizes: effectiveSizes,
-      });
+      try {
+        const created = await addProduct({
+          name: name.trim(),
+          nameUz: nameUz.trim() || name.trim(),
+          brand: effectiveBrand,
+          category: effectiveCategory,
+          categories: effectiveCategories,
+          subcategory: subcategory || undefined,
+          price: parsedPrice,
+          oldPrice: parsedOldPrice,
+          inStock: effectiveInStock,
+          stockStatus,
+          priceOnQuestion,
+          badge: badge || undefined,
+          rating,
+          image: primaryImage,
+          images: imagesList,
+          descRu: effectiveDescRu,
+          descUz: effectiveDescUz,
+          slug: effectiveSlug,
+          type: "corded",
+          specs: specsRecord,
+          sizes: effectiveSizes,
+        });
 
-      if (created) onSuccess(created);
+        if (created) {
+          onSuccess(created);
+        }
+        onClose();
+      } catch (err: any) {
+        console.error("Create error:", err);
+        setError(lang === "uz" ? `Xatolik: ${err.message || err}` : `Ошибка добавления: ${err.message || err}`);
+        return;
+      }
     }
-
-    onClose();
   };
 
   if (!isOpen) return null;
@@ -1453,7 +1480,7 @@ export default function ProductFormModal({
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${stockStatus === "in_stock" ? "bg-white" : "bg-emerald-500"}`} />
-                    <span>{t.inStockBadge || (lang === "uz" ? "Mavjud" : "В наличии")}</span>
+                    <span>{(t as any).inStockBadge || (lang === "uz" ? "Mavjud" : "В наличии")}</span>
                   </button>
 
                   {/* Button 2: Под вопросом */}
@@ -1469,7 +1496,7 @@ export default function ProductFormModal({
                     }`}
                   >
                     <span>❓</span>
-                    <span>{t.onQuestionLabel || (lang === "uz" ? "Под вопросом" : "Под вопросом")}</span>
+                    <span>{(t as any).onQuestionLabel || (lang === "uz" ? "Под вопросом" : "Под вопросом")}</span>
                   </button>
 
                   {/* Button 3: Нет в наличии */}
@@ -1486,7 +1513,7 @@ export default function ProductFormModal({
                     }`}
                   >
                     <span className={`w-2 h-2 rounded-full ${stockStatus === "out_of_stock" ? "bg-white" : "bg-rose-500"}`} />
-                    <span>{t.outOfStockBadge || (lang === "uz" ? "Mavjud emas" : "Нет в наличии")}</span>
+                    <span>{(t as any).outOfStockBadge || (t as any).outOfStockLabel || (lang === "uz" ? "Mavjud emas" : "Нет в наличии")}</span>
                   </button>
                 </div>
 

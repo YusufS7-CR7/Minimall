@@ -2,25 +2,82 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { useProducts } from "@/context/ProductsContext";
+import { useProducts, dbToProduct, type DbProduct } from "@/context/ProductsContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { getCategoryByKey } from "@/data/categories";
 import { T } from "@/data/translations";
+import type { Product } from "@/data/types";
 import StarRating from "@/components/ui/StarRating";
 import ProductCard from "@/components/ui/ProductCard";
-
+import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/utils/formatPrice";
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
   const { lang, addToCart } = useApp();
   const { user, openAuthModal } = useAuth();
-  const { getProductBySlug, products, loading: productsLoading } = useProducts();
+  const { getProductBySlug, products, loading: productsLoading, upsertProduct } = useProducts();
   const { usdRate } = useCurrency();
   const t = T[lang];
 
-  const product = getProductBySlug(slug ?? "");
+  // Local state initialized with cached product for instant rendering
+  const cachedProduct = getProductBySlug(slug ?? "");
+  const [product, setProduct] = useState<Product | undefined>(cachedProduct);
+  const [isFetchingDirect, setIsFetchingDirect] = useState<boolean>(!cachedProduct);
+  const [notFound, setNotFound] = useState(false);
+
+  // Direct fetch by slug from Supabase ensures fresh descriptions, characteristics, and handles new products
+  useEffect(() => {
+    if (!slug) {
+      setNotFound(true);
+      return;
+    }
+
+    let isCancelled = false;
+    const initial = getProductBySlug(slug);
+    if (initial) {
+      setProduct(initial);
+      setNotFound(false);
+    } else {
+      setIsFetchingDirect(true);
+    }
+
+    async function loadFreshProduct() {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("slug", slug)
+          .single();
+
+        if (isCancelled) return;
+
+        if (!error && data) {
+          const fresh = dbToProduct(data as DbProduct);
+          setProduct(fresh);
+          upsertProduct(fresh);
+          setNotFound(false);
+        } else if (!initial) {
+          setNotFound(true);
+        }
+      } catch (err) {
+        if (!initial && !isCancelled) {
+          setNotFound(true);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsFetchingDirect(false);
+        }
+      }
+    }
+
+    loadFreshProduct();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [slug, getProductBySlug, upsertProduct]);
 
   // SEO — always call hooks before any conditional return
   const primaryCatKey = (product?.categories && product.categories.length > 0)
@@ -79,8 +136,52 @@ export default function ProductPage() {
       : undefined,
   });
 
-  // Wait for products to load before deciding 404 — prevents false redirect when page opens in new tab
-  if (productsLoading && !product) {
+  // Calculate clean display specs (including Brand, Power, Voltage if present)
+  const displaySpecs = useMemo(() => {
+    if (!product) return [];
+    const list: Array<{ key: string; value: string }> = [];
+
+    // Add brand if present and not default
+    if (product.brand && product.brand !== "Без бренда") {
+      list.push({
+        key: lang === "uz" ? "Brend" : "Бренд",
+        value: product.brand,
+      });
+    }
+
+    // Add power if present
+    if (product.power && product.power.trim()) {
+      list.push({
+        key: lang === "uz" ? "Quvvat" : "Мощность",
+        value: product.power.trim(),
+      });
+    }
+
+    // Add voltage if present
+    if (product.voltage && product.voltage.trim()) {
+      list.push({
+        key: lang === "uz" ? "Tarmoq kuchlanishi" : "Напряжение сети",
+        value: product.voltage.trim(),
+      });
+    }
+
+    // Add custom specs from product.specs (excluding system keys starting with _ and internal currency keys)
+    if (product.specs && typeof product.specs === "object") {
+      for (const [k, v] of Object.entries(product.specs)) {
+        if (!k.startsWith("_") && !/currency|price.*usd|usd.*price/i.test(k) && v && String(v).trim()) {
+          // Avoid duplicate keys if already added
+          if (!list.some((item) => item.key.toLowerCase() === k.trim().toLowerCase())) {
+            list.push({ key: k.trim(), value: String(v).trim() });
+          }
+        }
+      }
+    }
+
+    return list;
+  }, [product, lang]);
+
+  // Wait for product load only if not available yet and not 404
+  if (!product && (isFetchingDirect || productsLoading) && !notFound) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-gray-400">
@@ -91,7 +192,7 @@ export default function ProductPage() {
     );
   }
 
-  if (!product) return <Navigate to="/404" replace />;
+  if (notFound || !product) return <Navigate to="/404" replace />;
 
   const related = products.filter((p) => {
     if (p.id === product.id) return false;
@@ -118,6 +219,15 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize);
   const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
+
+  // Intelligently select active tab based on available content
+  useEffect(() => {
+    if (displaySpecs.length === 0 && desc.trim()) {
+      setActiveTab("desc");
+    } else if (displaySpecs.length > 0) {
+      setActiveTab("specs");
+    }
+  }, [product?.id, displaySpecs.length, desc]);
 
   useEffect(() => {
     if (product?.sizes && product.sizes.length > 0) {
@@ -532,19 +642,37 @@ export default function ProductPage() {
           </div>
 
           {/* Key specs preview */}
-          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-              {Object.entries(product.specs)
-                .filter(([k]) => !k.startsWith("_") && !/currency|price.*usd|usd.*price/i.test(k))
-                .slice(0, 4)
-                .map(([k, v]) => (
-                <div key={k}>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">{k}</div>
-                  <div className="text-sm font-semibold text-gray-900">{v}</div>
-                </div>
-              ))}
+          {displaySpecs.length > 0 ? (
+            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                {displaySpecs.slice(0, 4).map((spec) => (
+                  <div key={spec.key}>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wider font-bold truncate">
+                      {spec.key}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900 truncate">
+                      {spec.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-gradient-to-br from-gray-50 to-slate-50/50 rounded-2xl p-4 border border-gray-100 flex items-center justify-between text-xs">
+              <div className="space-y-0.5">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold block">
+                  {lang === "uz" ? "Artikul" : "Артикул"}
+                </span>
+                <span className="font-mono font-bold text-gray-900 text-sm">MM-{product.id}</span>
+              </div>
+              <div className="space-y-0.5 text-right">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-bold block">
+                  {lang === "uz" ? "Brend" : "Бренд"}
+                </span>
+                <span className="font-bold text-gray-900 text-sm">{product.brand || "Minimall"}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -606,22 +734,42 @@ export default function ProductPage() {
 
         {activeTab === "specs" ? (
           <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            <table className="w-full text-sm">
-              <tbody>
-                {Object.entries(product.specs)
-                  .filter(([k]) => !k.startsWith("_") && !/currency|price.*usd|usd.*price/i.test(k))
-                  .map(([k, v], i) => (
-                  <tr key={k} className={i % 2 === 0 ? "bg-gray-50/50" : "bg-white"}>
-                    <td className="px-5 py-3 text-gray-500 font-medium w-1/2">{k}</td>
-                    <td className="px-5 py-3 text-gray-900 font-semibold">{v}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {displaySpecs.length > 0 ? (
+              <table className="w-full text-sm">
+                <tbody>
+                  {displaySpecs.map((spec, i) => (
+                    <tr key={spec.key} className={i % 2 === 0 ? "bg-gray-50/50" : "bg-white"}>
+                      <td className="px-5 py-3.5 text-gray-500 font-medium w-1/2 border-b border-gray-100/60">{spec.key}</td>
+                      <td className="px-5 py-3.5 text-gray-900 font-semibold border-b border-gray-100/60">{spec.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-8 text-center text-gray-500 space-y-2">
+                <span className="text-3xl block">📋</span>
+                <p className="font-bold text-gray-800 text-sm">
+                  {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
+                </p>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                  {lang === "uz"
+                    ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
+                    : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
+                </p>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <p className="text-gray-700 leading-relaxed text-sm">{desc}</p>
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
+            {desc.trim() ? (
+              <p className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-line font-normal">
+                {desc}
+              </p>
+            ) : (
+              <div className="py-6 text-center text-gray-400 text-sm">
+                {lang === "uz" ? "Ushbu mahsulot uchun tavsif tez orada qo'shiladi." : "Описание для данного товара появится в ближайшее время."}
+              </div>
+            )}
           </div>
         )}
       </div>
