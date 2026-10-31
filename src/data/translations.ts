@@ -89,7 +89,7 @@ export const T: Record<Lang, Translations> = {
     ourLocation: "Наш адрес",
     locationDesc:
       "Приходите к нам в шоу-рум и убедитесь в качестве инструмента лично",
-    address: "г. Ташкент, ул. Амира Темура, 107Б",
+    address: "г. Ташкент, Алмазарский район, ул. Уста Ширин, 125/1 -4А",
     workHours: "Пн–Сб: 9:00–19:00, Вс: 10:00–17:00",
     phone: "+998 (97) 036 36 36",
     email: "info@mini-mall.uz",
@@ -182,7 +182,7 @@ export const T: Record<Lang, Translations> = {
     login: "Kirish",
     ourLocation: "Bizning manzil",
     locationDesc: "Showroomimizga kelib, asbob sifatini o'zingiz ko'ring",
-    address: "Toshkent sh., Amir Temur ko'chasi, 107B",
+    address: "Toshkent sh., Olmazar tumani, Usta Shirin ko'chasi, 125/1 -4A",
     workHours: "Du–Sh: 9:00–19:00, Ya: 10:00–17:00",
     phone: "+998 (97) 036 36 36",
     email: "info@mini-mall.uz",

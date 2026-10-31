@@ -217,10 +217,24 @@ const ProductsContext = createContext<ProductsContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-const CACHE_KEY = "minimall_products_cache_v4";
+const CACHE_KEY = "minimall_products_cache_v5";
+const CACHE_TS_KEY = "minimall_products_cache_ts_v5";
+// Cache TTL: 3 minutes — after this, always fetch fresh from Supabase
+const CACHE_TTL_MS = 3 * 60 * 1000;
 
 function loadCachedProducts(): Product[] {
   try {
+    // Check cache age — if older than TTL, discard to force fresh fetch
+    const ts = localStorage.getItem(CACHE_TS_KEY);
+    if (ts) {
+      const age = Date.now() - parseInt(ts, 10);
+      if (age > CACHE_TTL_MS) {
+        // Cache expired — clear it so loading spinner shows and fresh data is fetched
+        localStorage.removeItem(CACHE_KEY);
+        localStorage.removeItem(CACHE_TS_KEY);
+        return [];
+      }
+    }
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -237,6 +251,7 @@ function loadCachedProducts(): Product[] {
 function saveCachedProducts(prods: Product[]) {
   try {
     localStorage.setItem(CACHE_KEY, JSON.stringify(prods));
+    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
   } catch {
     // Ignore storage quota or private-browsing errors
   }
@@ -301,6 +316,14 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchProducts();
 
+    // Refresh when the user returns to this tab — guarantees they see the latest descriptions
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchProducts();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     // Subscribe to realtime product changes so all users see updates instantly
     const channel = supabase
       .channel("public-products-realtime")
@@ -338,6 +361,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       .subscribe();
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
       supabase.removeChannel(channel);
     };
   }, [fetchProducts]);
@@ -607,6 +631,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
           };
         });
         saveCachedProducts(next);
+        // Invalidate cache timestamp so other clients pick up fresh data on next load
+        try { localStorage.removeItem(CACHE_TS_KEY); } catch { /* ignore */ }
         return next;
       });
     },

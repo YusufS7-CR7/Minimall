@@ -118,7 +118,7 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                   {lang === "uz" ? "Qurilish asboblari va texnikalari internet-do'koni" : "Интернет-магазин строительных инструментов и техники"}
                 </p>
                 <p className="text-xs text-gray-500 font-mono mt-0.5">
-                  mini-mall.uz | {lang === "uz" ? "Toshkent, O'zbekiston" : "Ташкент, Узбекистан"}
+                  mini-mall.uz | {lang === "uz" ? "Toshkent sh., Olmazar tumani, Usta Shirin ko'chasi, 125/1 -4A" : "г. Ташкент, Алмазарский район, ул. Уста Ширин, 125/1 -4А"}
                 </p>
               </div>
             </div>

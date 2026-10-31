@@ -129,8 +129,8 @@ export const INITIAL_HELP_SECTIONS: Record<InfoModalSection, HelpSectionData> = 
       phone: "+998 (97) 036 36 36",
       email: "info@mini-mall.uz",
       telegram: "@minimall_uzb",
-      addressRu: "г. Ташкент (координаты 41°21'21.1\"N 69°14'41.8\"E)",
-      addressUz: "Toshkent sh. (koordinatalar 41°21'21.1\"N 69°14'41.8\"E)",
+      addressRu: "г. Ташкент, Алмазарский район, ул. Уста Ширин, 125/1 -4А",
+      addressUz: "Toshkent sh., Olmazar tumani, Usta Shirin ko'chasi, 125/1 -4A",
       hoursRu: "Пн–Вс с 9:00 до 19:00",
       hoursUz: "Du–Ya 9:00 dan 19:00 gacha",
     },
@@ -219,9 +219,9 @@ export const INITIAL_HELP_SECTIONS: Record<InfoModalSection, HelpSectionData> = 
     descriptionUz:
       "Bosch, Makita, DeWalt va boshqa brendlar uskunalariga sertifikatlangan Toshkent ustaxonalarida original ehtiyot qismlar bilan xizmat ko'rsatiladi.",
     contentRu:
-      "Центральный сервисный пункт Minimall:\n📍 г. Ташкент, координаты 41°21'21.1\"N 69°14'41.8\"E\n📞 Прием заявок на сервис: +998 (97) 036 36 36\n⏱ Режим работы: Пн–Вс с 9:00 до 19:00\n\nСервисные услуги:\n• Бесплатное гарантийное обслуживание\n• Постгарантийный ремонт электро- и бензоинструмента\n• Замена расходных деталей (щётки, якоря, патроны, ремни)\n• Проверка и юстировка лазерных нивелиров",
+      "Центральный сервисный пункт Minimall:\n📍 г. Ташкент, Алмазарский район, ул. Уста Ширин, 125/1 -4А\n📞 Прием заявок на сервис: +998 (97) 036 36 36\n⏱ Режим работы: Пн–Вс с 9:00 до 19:00\n\nСервисные услуги:\n• Бесплатное гарантийное обслуживание\n• Постгарантийный ремонт электро- и бензоинструмента\n• Замена расходных деталей (щётки, якоря, патроны, ремни)\n• Проверка и юстировка лазерных нивелиров",
     contentUz:
-      "Minimall markaziy servis punkti:\n📍 Toshkent sh., koordinatalar 41°21'21.1\"N 69°14'41.8\"E\n📞 Servis buyurtmalari: +998 (97) 036 36 36\n⏱ Ish vaqti: Du–Ya 9:00 dan 19:00 gacha\n\nXizmatlar:\n• Bepul kafolatli ta'mirlash\n• Kafolatdan keyingi ta'mirlash\n• Ehtiyot qismlarni almashtirish (cho'tkalar, yakor, patronlar)\n• Lazer sathlarini sozlash va tekshirish",
+      "Minimall markaziy servis punkti:\n📍 Toshkent sh., Olmazar tumani, Usta Shirin ko'chasi, 125/1 -4A\n📞 Servis buyurtmalari: +998 (97) 036 36 36\n⏱ Ish vaqti: Du–Ya 9:00 dan 19:00 gacha\n\nXizmatlar:\n• Bepul kafolatli ta'mirlash\n• Kafolatdan keyingi ta'mirlash\n• Ehtiyot qismlarni almashtirish (cho'tkalar, yakor, patronlar)\n• Lazer sathlarini sozlash va tekshirish",
   },
   contacts: {
     id: "contacts",
@@ -235,15 +235,15 @@ export const INITIAL_HELP_SECTIONS: Record<InfoModalSection, HelpSectionData> = 
     descriptionRu: "Свяжитесь с нами удобным способом или посетите наш склад-магазин в Ташкенте.",
     descriptionUz: "Biz bilan o'zingizga qulay usulda bog'laning yoki Toshkentdagi ombor-do'konimizga tashrif buyuring.",
     contentRu:
-      "Отдел продаж и консультаций:\n📞 Телефон: +998 (97) 036 36 36\n✉️ Email: info@mini-mall.uz\n✈️ Telegram: @minimall_uzb\n\nАдрес шоу-рума и склада:\n📍 г. Ташкент (координаты 41°21'21.1\"N 69°14'41.8\"E)\n⏱ Часы работы: с 9:00 до 19:00 каждый день без выходных",
+      "Отдел продаж и консультаций:\n📞 Телефон: +998 (97) 036 36 36\n✉️ Email: info@mini-mall.uz\n✈️ Telegram: @minimall_uzb\n\nАдрес шоу-рума и склада:\n📍 г. Ташкент, Алмазарский район, ул. Уста Ширин, 125/1 -4А\n⏱ Часы работы: с 9:00 до 19:00 каждый день без выходных",
     contentUz:
-      "Sotuv va maslahat bo'limi:\n📞 Telefon: +998 (97) 036 36 36\n✉️ Email: info@mini-mall.uz\n✈️ Telegram: @minimall_uzb\n\nShowroom va ombor manzili:\n📍 Toshkent sh. (koordinatalar 41°21'21.1\"N 69°14'41.8\"E)\n⏱ Ish vaqti: Har kuni 9:00 dan 19:00 gacha dam olish kunlarisiz",
+      "Sotuv va maslahat bo'limi:\n📞 Telefon: +998 (97) 036 36 36\n✉️ Email: info@mini-mall.uz\n✈️ Telegram: @minimall_uzb\n\nShowroom va ombor manzili:\n📍 Toshkent sh., Olmazar tumani, Usta Shirin ko'chasi, 125/1 -4A\n⏱ Ish vaqti: Har kuni 9:00 dan 19:00 gacha dam olish kunlarisiz",
     contacts: {
       phone: "+998 (97) 036 36 36",
       email: "info@mini-mall.uz",
       telegram: "@minimall_uzb",
-      addressRu: "г. Ташкент (координаты 41°21'21.1\"N 69°14'41.8\"E)",
-      addressUz: "Toshkent sh. (koordinatalar 41°21'21.1\"N 69°14'41.8\"E)",
+      addressRu: "г. Ташкент, Алмазарский район, ул. Уста Ширин, 125/1 -4А",
+      addressUz: "Toshkent sh., Olmazar tumani, Usta Shirin ko'chasi, 125/1 -4A",
       hoursRu: "Ежедневно с 9:00 до 19:00",
       hoursUz: "Har kuni 9:00 dan 19:00 gacha",
     },

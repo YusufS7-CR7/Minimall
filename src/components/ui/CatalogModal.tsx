@@ -127,8 +127,8 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
   const subcategories = activeCat?.subcategories ?? [];
 
   const handleNavigate = (path: string) => {
-    onClose();
     navigate(path);
+    onClose();
   };
 
   return (
