@@ -215,19 +215,10 @@ export default function ProductPage() {
 
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"specs" | "desc">("specs");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize);
   const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
 
-  // Intelligently select active tab based on available content
-  useEffect(() => {
-    if (displaySpecs.length === 0 && desc.trim()) {
-      setActiveTab("desc");
-    } else if (displaySpecs.length > 0) {
-      setActiveTab("specs");
-    }
-  }, [product?.id, displaySpecs.length, desc]);
 
   useEffect(() => {
     if (product?.sizes && product.sizes.length > 0) {
@@ -715,26 +706,13 @@ export default function ProductPage() {
         </div>
       )}
 
-      {/* Tabs: Specs / Description */}
-      <div className="mb-12">
-        <div className="flex gap-0 border-b border-gray-200 mb-6">
-          {(["specs", "desc"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 text-sm font-bold transition-all relative ${
-                activeTab === tab ? "text-red-600" : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {tab === "specs" ? t.characteristics : t.description}
-              {activeTab === tab && <span className="absolute bottom-0 left-2 right-2 h-[2.5px] bg-red-500 rounded-t-full" />}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === "specs" ? (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-            {displaySpecs.length > 0 ? (
+      {/* Specs + Description — always visible */}
+      <div className="mb-12 space-y-6">
+        {/* Characteristics */}
+        {displaySpecs.length > 0 ? (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 mb-3 px-1">{t.characteristics}</h2>
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
               <table className="w-full text-sm">
                 <tbody>
                   {displaySpecs.map((spec, i) => (
@@ -745,33 +723,36 @@ export default function ProductPage() {
                   ))}
                 </tbody>
               </table>
-            ) : (
-              <div className="p-8 text-center text-gray-500 space-y-2">
-                <span className="text-3xl block">📋</span>
-                <p className="font-bold text-gray-800 text-sm">
-                  {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
-                </p>
-                <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                  {lang === "uz"
-                    ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
-                    : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
-                </p>
-              </div>
-            )}
+            </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-            {desc.trim() ? (
+        ) : null}
+
+        {/* Description — shown whenever it has real content */}
+        {desc.trim() ? (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 mb-3 px-1">{t.description}</h2>
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
               <p className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-line font-normal">
                 {desc}
               </p>
-            ) : (
-              <div className="py-6 text-center text-gray-400 text-sm">
-                {lang === "uz" ? "Ushbu mahsulot uchun tavsif tez orada qo'shiladi." : "Описание для данного товара появится в ближайшее время."}
-              </div>
-            )}
+            </div>
           </div>
-        )}
+        ) : displaySpecs.length === 0 ? (
+          <div>
+            <h2 className="text-base font-bold text-gray-900 mb-3 px-1">{t.characteristics}</h2>
+            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500 space-y-2">
+              <span className="text-3xl block">📋</span>
+              <p className="font-bold text-gray-800 text-sm">
+                {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
+              </p>
+              <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                {lang === "uz"
+                  ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
+                  : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
+              </p>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Related products */}
