@@ -16,7 +16,7 @@ import { ADMIN_TRANSLATIONS } from "@/data/adminTranslations";
 import { getUsdProductInfo, isUsdProduct } from "@/utils/usdProductUtils";
 
 export default function AdminProductsPage() {
-  const { products, deleteProduct, updateProduct, addProduct, brands } = useProducts();
+  const { products, deleteProduct, updateProduct, addProduct, brands, syncAllDescriptionsAndSpecsToDB, loading } = useProducts();
   const { categories } = useCategories();
   const { lang, showToast } = useApp();
   const { isSuperAdmin, hasPermission } = useAdminAuth();
@@ -40,6 +40,47 @@ export default function AdminProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isExcelModalOpen, setIsExcelModalOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+  // Sync Descriptions & Specs state
+  const [isSyncingDesc, setIsSyncingDesc] = useState(false);
+  const [syncDescProgress, setSyncDescProgress] = useState<{ current: number; total: number; percent: number } | null>(null);
+
+  const handleSyncDescriptionsAndSpecs = async () => {
+    setIsSyncingDesc(true);
+    setSyncDescProgress(null);
+    try {
+      const res = await syncAllDescriptionsAndSpecsToDB((prog) => {
+        setSyncDescProgress(prog);
+      });
+
+      if (res.errors === 0) {
+        const extraNote = res.recoveredCount > 0
+          ? (lang === "uz" ? ` (${res.recoveredCount} ta keshdan tiklandi)` : ` (${res.recoveredCount} восстановлено из кэша)`)
+          : "";
+        showToast(
+          lang === "uz"
+            ? `✅ Barcha ${res.success} ta tovar tavsiflari va xususiyatlari bazaga saqlandi!${extraNote}`
+            : `✅ Все ${res.success} товаров: описания и характеристики успешно сохранены в базу данных!${extraNote}`
+        );
+      } else {
+        showToast(
+          lang === "uz"
+            ? `⚠️ ${res.success} ta saqlandi, ${res.errors} ta xato bilan saqlandi. Konsolni tekshiring.`
+            : `⚠️ ${res.success} сохранено, ${res.errors} с ошибкой. Проверьте консоль.`
+        );
+      }
+    } catch (err: any) {
+      console.error("Sync error:", err);
+      showToast(
+        lang === "uz"
+          ? `❌ Saqlashda xatolik: ${err?.message || err}`
+          : `❌ Ошибка сохранения: ${err?.message || err}`
+      );
+    } finally {
+      setIsSyncingDesc(false);
+      setSyncDescProgress(null);
+    }
+  };
 
   const usdProductsCount = useMemo(() => {
     return products.filter(isUsdProduct).length;
@@ -207,8 +248,30 @@ export default function AdminProductsPage() {
             {t.subtitle}
           </p>
         </div>
-        {canCreate && (
+        {(canCreate || canEdit) && (
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* Sync All Descriptions and Characteristics to Supabase */}
+            <button
+              type="button"
+              onClick={handleSyncDescriptionsAndSpecs}
+              disabled={isSyncingDesc || loading}
+              className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm px-4 py-3 rounded-2xl transition-all shadow-md shadow-emerald-600/20 shrink-0 cursor-pointer active:scale-95"
+              title={
+                lang === "uz"
+                  ? "Barcha tovarlarning tavsiflari va xususiyatlarini Supabase bazasiga saqlash"
+                  : "Принудительно сохранить все вписанные описания и характеристики товаров в базу данных (Supabase)"
+              }
+            >
+              <span className="text-base">{isSyncingDesc ? "⏳" : "☁️"}</span>
+              <span>
+                {isSyncingDesc
+                  ? (syncDescProgress
+                      ? `${lang === "uz" ? "Saqlanmoqda" : "Сохранение"} (${syncDescProgress.current}/${syncDescProgress.total})`
+                      : (lang === "uz" ? "Saqlanmoqda..." : "Сохранение..."))
+                  : (lang === "uz" ? "Tavsif va xususiyatlarni saqlash" : "Сохранить описания и характеристики")}
+              </span>
+            </button>
+
             {/* Sync USD Products by Rate button */}
             <button
               type="button"
@@ -237,14 +300,16 @@ export default function AdminProductsPage() {
               <span>{lang === "uz" ? "Excel'dan import" : "Импорт из Excel"}</span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
-            >
-              <span className="text-base font-black">+</span>
-              <span>{t.addBtn}</span>
-            </button>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
+              >
+                <span className="text-base font-black">+</span>
+                <span>{t.addBtn}</span>
+              </button>
+            )}
           </div>
         )}
       </div>

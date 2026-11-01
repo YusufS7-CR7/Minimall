@@ -211,6 +211,9 @@ interface ProductsContextValue {
     newRate: number,
     onProgress?: (progress: { current: number; total: number; percent: number }) => void
   ) => Promise<{ updatedCount: number; totalUsdCount: number; success: boolean }>;
+  syncAllDescriptionsAndSpecsToDB: (
+    onProgress?: (progress: { current: number; total: number; percent: number }) => void
+  ) => Promise<{ success: number; errors: number; total: number; recoveredCount: number }>;
 }
 
 const ProductsContext = createContext<ProductsContextValue | null>(null);
@@ -740,6 +743,204 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     [products]
   );
 
+  // ── Sync All Descriptions and Specs to Supabase DB ─────────────────────────
+  const syncAllDescriptionsAndSpecsToDB = useCallback(
+    async (
+      onProgress?: (progress: { current: number; total: number; percent: number }) => void
+    ): Promise<{ success: number; errors: number; total: number; recoveredCount: number }> => {
+      // 1. Recover any descriptions or specs stored in older or alternate localStorage cache keys
+      const bestCachedMap = new Map<number, { descRu?: string; descUz?: string; specs?: Record<string, string> }>();
+      if (typeof window !== "undefined" && window.localStorage) {
+        const candidateKeys = [
+          "minimall_products_cache_v5",
+          "minimall_products_cache_v4",
+          "minimall_products_cache_v3",
+          "minimall_products_cache_v2",
+          "minimall_products_cache",
+        ];
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && !candidateKeys.includes(key) && (key.includes("product") || key.includes("catalog"))) {
+            candidateKeys.push(key);
+          }
+        }
+
+        for (const key of candidateKeys) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) continue;
+
+            for (const item of parsed) {
+              if (!item || typeof item !== "object" || !item.id) continue;
+              const id = Number(item.id);
+              if (!id) continue;
+
+              const descRu = String(item.descRu || item.desc_ru || "").trim();
+              const descUz = String(item.descUz || item.desc_uz || "").trim();
+              const specs = item.specs && typeof item.specs === "object" ? item.specs : undefined;
+
+              const existing = bestCachedMap.get(id);
+
+              const betterDescRu = (descRu && (!existing?.descRu || descRu.length > existing.descRu.length))
+                ? descRu
+                : existing?.descRu;
+
+              const betterDescUz = (descUz && (!existing?.descUz || descUz.length > existing.descUz.length))
+                ? descUz
+                : existing?.descUz;
+
+              const customSpecsCount = specs ? Object.keys(specs).filter((k) => !k.startsWith("_")).length : 0;
+              const existingSpecsCount = existing?.specs ? Object.keys(existing.specs).filter((k) => !k.startsWith("_")).length : 0;
+              const betterSpecs = customSpecsCount > existingSpecsCount ? specs : (existing?.specs || specs);
+
+              if (betterDescRu || betterDescUz || betterSpecs) {
+                bestCachedMap.set(id, {
+                  descRu: betterDescRu,
+                  descUz: betterDescUz,
+                  specs: betterSpecs,
+                });
+              }
+            }
+          } catch {
+            // ignore JSON parse errors
+          }
+        }
+      }
+
+      // 2. Prepare all products to update
+      const currentList = productsRef.current;
+      let recoveredCount = 0;
+
+      const itemsToUpdate = currentList.map((p) => {
+        const cached = bestCachedMap.get(p.id);
+
+        let finalDescRu = p.descRu?.trim() || "";
+        let finalDescUz = p.descUz?.trim() || "";
+
+        if (cached?.descRu && cached.descRu.length > finalDescRu.length) {
+          finalDescRu = cached.descRu;
+          recoveredCount++;
+        }
+        if (cached?.descUz && cached.descUz.length > finalDescUz.length) {
+          finalDescUz = cached.descUz;
+        }
+
+        const currentCustomSpecsCount = p.specs ? Object.keys(p.specs).filter((k) => !k.startsWith("_")).length : 0;
+        const cachedCustomSpecsCount = cached?.specs ? Object.keys(cached.specs).filter((k) => !k.startsWith("_")).length : 0;
+        const sourceSpecs = cachedCustomSpecsCount > currentCustomSpecsCount ? cached!.specs! : (p.specs || {});
+
+        const cleanSpecs: Record<string, string> = {};
+        for (const [k, v] of Object.entries(sourceSpecs)) {
+          if (k.startsWith("_sizes") || k.startsWith("_categories") || k === "_subcategory" || k === "_stockStatus") continue;
+          if (v !== undefined && v !== null && String(v).trim()) {
+            cleanSpecs[k] = String(v).trim();
+          }
+        }
+
+        if (p.subcategory) cleanSpecs._subcategory = p.subcategory;
+        if (p.categories && p.categories.length > 0) cleanSpecs._categories = JSON.stringify(p.categories);
+        if (p.sizes && p.sizes.length > 0) cleanSpecs._sizes = JSON.stringify(p.sizes);
+        const stockStatus: StockStatus = p.stockStatus || (p.inStock ? "in_stock" : "out_of_stock");
+        cleanSpecs._stockStatus = stockStatus;
+        if (p.priceOnQuestion || (sourceSpecs as any)?._priceOnQuestion === "true") {
+          cleanSpecs._priceOnQuestion = "true";
+        }
+        if ((sourceSpecs as any)?._origPrice) cleanSpecs._origPrice = (sourceSpecs as any)._origPrice;
+        if ((sourceSpecs as any)?._origCurrency) cleanSpecs._origCurrency = (sourceSpecs as any)._origCurrency;
+        if ((sourceSpecs as any)?._origOldPrice) cleanSpecs._origOldPrice = (sourceSpecs as any)._origOldPrice;
+
+        return {
+          id: p.id,
+          descRu: finalDescRu,
+          descUz: finalDescUz,
+          cleanSpecs,
+        };
+      });
+
+      // 3. Update Supabase in chunks of 15
+      let success = 0;
+      let errors = 0;
+      const chunkSize = 15;
+
+      for (let i = 0; i < itemsToUpdate.length; i += chunkSize) {
+        const chunk = itemsToUpdate.slice(i, i + chunkSize);
+        await Promise.all(
+          chunk.map(async (item) => {
+            try {
+              const { error } = await supabase
+                .from("products")
+                .update({
+                  desc_ru: item.descRu || null,
+                  desc_uz: item.descUz || null,
+                  specs: item.cleanSpecs,
+                })
+                .eq("id", item.id);
+
+              if (error) {
+                console.error(`Failed to update product ${item.id}:`, error.message);
+                errors++;
+              } else {
+                success++;
+              }
+            } catch (err) {
+              console.error(`Exception updating product ${item.id}:`, err);
+              errors++;
+            }
+          })
+        );
+
+        if (onProgress) {
+          const current = Math.min(i + chunkSize, itemsToUpdate.length);
+          onProgress({
+            current,
+            total: itemsToUpdate.length,
+            percent: Math.round((current / itemsToUpdate.length) * 100),
+          });
+        }
+      }
+
+      // 4. Update local state and cache
+      setProducts((prev) => {
+        const updateMap = new Map<number, { descRu: string; descUz: string; cleanSpecs: Record<string, string> }>();
+        itemsToUpdate.forEach((item) => updateMap.set(item.id, item));
+
+        const next = prev.map((p) => {
+          const u = updateMap.get(p.id);
+          if (!u) return p;
+          return {
+            ...p,
+            descRu: u.descRu,
+            descUz: u.descUz,
+            specs: u.cleanSpecs,
+          };
+        });
+        saveCachedProducts(next);
+        return next;
+      });
+
+      // Clear cache timestamp so other browser tabs / users pick up the newly synced data immediately
+      try {
+        localStorage.removeItem(CACHE_TS_KEY);
+      } catch {
+        // ignore
+      }
+
+      // Refresh from DB to guarantee absolute sync
+      await fetchProducts();
+
+      return {
+        success,
+        errors,
+        total: itemsToUpdate.length,
+        recoveredCount,
+      };
+    },
+    [fetchProducts]
+  );
+
   // ── Export catalog ─────────────────────────────────────────────────────────
   const exportCatalog = useCallback(() => {
     const dataStr =
@@ -807,6 +1008,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         importCatalog,
         refreshProducts: fetchProducts,
         syncProductsWithUsdRate,
+        syncAllDescriptionsAndSpecsToDB,
       }}
     >
       {children}
