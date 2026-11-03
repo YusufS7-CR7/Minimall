@@ -129,8 +129,28 @@ export function dbToProduct(row: DbProduct): Product {
     voltage: row.voltage ?? undefined,
     power: row.power ?? undefined,
     type: row.type,
-    descRu: row.desc_ru ?? "",
-    descUz: row.desc_uz ?? "",
+    descRu:
+      row.desc_ru ||
+      (specs as any)?.description ||
+      (specs as any)?.desc ||
+      (specs as any)?.descRu ||
+      (specs as any)?._descRu ||
+      (specs as any)?._desc_ru ||
+      (specs as any)?.["Описание"] ||
+      (specs as any)?.["описание"] ||
+      "",
+    descUz:
+      row.desc_uz ||
+      (specs as any)?.descriptionUz ||
+      (specs as any)?.descUz ||
+      (specs as any)?._descUz ||
+      (specs as any)?._desc_uz ||
+      (row.desc_ru ||
+        (specs as any)?.description ||
+        (specs as any)?.desc ||
+        (specs as any)?.descRu ||
+        (specs as any)?._descRu ||
+        ""),
     specs,
     badge: row.badge ?? undefined,
     inStock: stockStatus !== "out_of_stock",
@@ -251,13 +271,17 @@ function loadCachedProducts(): Product[] {
   return [];
 }
 
+let saveCacheTimer: any = null;
 function saveCachedProducts(prods: Product[]) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(prods));
-    localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
-  } catch {
-    // Ignore storage quota or private-browsing errors
-  }
+  if (saveCacheTimer) clearTimeout(saveCacheTimer);
+  saveCacheTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(prods));
+      localStorage.setItem(CACHE_TS_KEY, String(Date.now()));
+    } catch {
+      // Ignore storage quota or private-browsing errors
+    }
+  }, 1000);
 }
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
@@ -319,9 +343,11 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchProducts();
 
-    // Refresh when the user returns to this tab — guarantees they see the latest descriptions
+    let lastFetchTs = Date.now();
+    // Refresh only if away for more than 5 minutes
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && Date.now() - lastFetchTs > 5 * 60 * 1000) {
+        lastFetchTs = Date.now();
         fetchProducts();
       }
     };

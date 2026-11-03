@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -41,11 +41,23 @@ export default function HomePage() {
 
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20_000_000]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const HOME_PAGE_SIZE = 24;
+  const [visibleCount, setVisibleCount] = useState(HOME_PAGE_SIZE);
 
   const isPriceFiltered = priceRange[0] > 0 || priceRange[1] < 20_000_000;
 
-  const displayedProducts = products.filter(
-    (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
+  const displayedProducts = useMemo(
+    () => products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]),
+    [products, priceRange]
+  );
+
+  useEffect(() => {
+    setVisibleCount(HOME_PAGE_SIZE);
+  }, [priceRange]);
+
+  const pagedProducts = useMemo(
+    () => displayedProducts.slice(0, visibleCount),
+    [displayedProducts, visibleCount]
   );
 
   useDocumentMeta({
@@ -174,11 +186,27 @@ export default function HomePage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
-            {displayedProducts.map((p) => (
-              <ProductCard key={p.id} product={p} lang={lang} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-5">
+              {pagedProducts.map((p) => (
+                <ProductCard key={p.id} product={p} lang={lang} />
+              ))}
+            </div>
+            {visibleCount < displayedProducts.length && (
+              <div className="mt-8 flex justify-center pb-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + HOME_PAGE_SIZE)}
+                  className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs sm:text-sm rounded-xl border border-gray-200 hover:border-red-300 transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-2"
+                >
+                  <span>{lang === "ru" ? "Показать ещё товары" : "Yana tovarlarni ko'rsatish"}</span>
+                  <span className="text-gray-400 font-normal">
+                    ({displayedProducts.length - visibleCount} {lang === "ru" ? "осталось" : "qoldi"})
+                  </span>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
 

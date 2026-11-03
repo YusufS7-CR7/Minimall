@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, useSearchParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useProducts } from "@/context/ProductsContext";
@@ -20,17 +20,34 @@ export default function CategoryPage() {
 
   const { lang } = useApp();
   const { products: allProducts, brands } = useProducts();
-  const { categories, getCategoryBySlug } = useCategories();
+  const { categories, getCategoryBySlug, loading } = useCategories();
   const t = T[lang];
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
   const [sortBy, setSortBy] = useState<"default" | "price_asc" | "price_desc" | "rating">("default");
 
+  const PAGE_SIZE = 24;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
   // If no slug, show all products
   const category = slug ? getCategoryBySlug(slug) : undefined;
 
-  // Redirect invalid slugs to 404
-  if (slug && !category) return <Navigate to="/404" replace />;
+  // Reset pagination on navigation or filter change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [slug, subSlug, filters, sortBy]);
+
+  // Handle loading or invalid slug
+  if (slug && !category) {
+    if (loading) {
+      return (
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      );
+    }
+    return <Navigate to="/404" replace />;
+  }
 
   // Active subcategory if ?sub= is present in URL
   const activeSubcategory = useMemo(() => {
@@ -60,12 +77,17 @@ export default function CategoryPage() {
 
   // Base products filtered by category and subcategory
   const baseProducts = useMemo(() => {
-    let prods = slug
+    let prods = slug && category
       ? allProducts.filter((p) => {
           const productCats = (p.categories && p.categories.length > 0)
             ? p.categories
             : (p.category ? [p.category] : []);
-          return productCats.includes(category!.key);
+          const catKey = category.key.toLowerCase();
+          const catSlug = category.slug.toLowerCase();
+          return productCats.some((c) => {
+            const clean = c.toLowerCase().trim();
+            return clean === catKey || clean === catSlug;
+          });
         })
       : allProducts;
 
@@ -267,7 +289,12 @@ export default function CategoryPage() {
                 const cats = (p.categories && p.categories.length > 0)
                   ? p.categories
                   : (p.category ? [p.category] : []);
-                return cats.includes(cat.key);
+                const catKey = cat.key.toLowerCase();
+                const catSlug = cat.slug.toLowerCase();
+                return cats.some((c) => {
+                  const clean = c.toLowerCase().trim();
+                  return clean === catKey || clean === catSlug;
+                });
               }).length;
 
               return (
@@ -453,11 +480,27 @@ export default function CategoryPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
-              {filteredProducts.map((p) => (
-                <ProductCard key={p.id} product={p} lang={lang} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
+                {pagedProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} lang={lang} />
+                ))}
+              </div>
+              {visibleCount < filteredProducts.length && (
+                <div className="mt-8 flex justify-center pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                    className="px-6 py-3 bg-white hover:bg-gray-50 text-gray-800 font-bold text-xs sm:text-sm rounded-xl border border-gray-200 hover:border-red-300 transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-2"
+                  >
+                    <span>{lang === "ru" ? "Показать ещё" : "Yana ko'rsatish"}</span>
+                    <span className="text-gray-400 font-normal">
+                      ({filteredProducts.length - visibleCount} {lang === "ru" ? "осталось" : "qoldi"})
+                    </span>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

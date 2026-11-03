@@ -33,7 +33,9 @@ export default function CategoryNavBar({ lang }: CategoryNavBarProps) {
           </li>
           {categories.map((c) => {
             const label = lang === "ru" ? c.labelRu : c.labelUz;
-            const isActive = slug === c.slug;
+            const isActive = slug
+              ? slug.toLowerCase() === c.slug.toLowerCase() || slug.toLowerCase() === c.key.toLowerCase()
+              : false;
             return (
               <li key={c.key}>
                 <Link

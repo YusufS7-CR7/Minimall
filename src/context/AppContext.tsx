@@ -66,6 +66,18 @@ interface AppContextValue {
   setCatalogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   openCatalog: () => void;
   closeCatalog: () => void;
+  cartOpen: boolean;
+  setCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  openCart: () => void;
+  closeCart: () => void;
+  favoritesOpen: boolean;
+  setFavoritesOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  openFavorites: () => void;
+  closeFavorites: () => void;
+  ordersOpen: boolean;
+  setOrdersOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  openOrders: () => void;
+  closeOrders: () => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -109,6 +121,18 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
   const [catalogOpen, setCatalogOpen] = useState(false);
   const openCatalog = useCallback(() => setCatalogOpen(true), []);
   const closeCatalog = useCallback(() => setCatalogOpen(false), []);
+
+  const [cartOpen, setCartOpen] = useState(false);
+  const openCart = useCallback(() => setCartOpen(true), []);
+  const closeCart = useCallback(() => setCartOpen(false), []);
+
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const openFavorites = useCallback(() => setFavoritesOpen(true), []);
+  const closeFavorites = useCallback(() => setFavoritesOpen(false), []);
+
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const openOrders = useCallback(() => setOrdersOpen(true), []);
+  const closeOrders = useCallback(() => setOrdersOpen(false), []);
 
   // ── Sync cart & favorites when userId changes (login / logout) ────────────
   const prevUserIdRef = useRef(userId);
@@ -291,6 +315,18 @@ export function AppProvider({ children, userId = "guest" }: { children: ReactNod
         setCatalogOpen,
         openCatalog,
         closeCatalog,
+        cartOpen,
+        setCartOpen,
+        openCart,
+        closeCart,
+        favoritesOpen,
+        setFavoritesOpen,
+        openFavorites,
+        closeFavorites,
+        ordersOpen,
+        setOrdersOpen,
+        openOrders,
+        closeOrders,
       }}
     >
       {children}

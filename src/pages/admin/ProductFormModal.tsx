@@ -190,7 +190,12 @@ export default function ProductFormModal({
   const [sizes, setSizes] = useState<ProductSize[]>([]);
   const [newSizeInput, setNewSizeInput] = useState("");
   const [newSizePrice, setNewSizePrice] = useState("");
-  const [newSizeCurrency, setNewSizeCurrency] = useState<"UZS" | "USD">("UZS");
+  const [newSizeCurrency, setNewSizeCurrency] = useState<"UZS" | "USD">(currencyMode);
+
+  // Sync newSizeCurrency when admin switches the product-level currency mode
+  useEffect(() => {
+    setNewSizeCurrency(currencyMode);
+  }, [currencyMode]);
 
   const handleAddSize = (val?: string) => {
     const text = (val !== undefined ? val : newSizeInput).trim();
@@ -361,6 +366,7 @@ export default function ProductFormModal({
       setHasSizes(existingSizes.length > 0);
       setNewSizeInput("");
       setNewSizePrice("");
+      setNewSizeCurrency(origCurrency === "USD" ? "USD" : "UZS");
 
       const existingImages = productToEdit.images && productToEdit.images.length > 0
         ? productToEdit.images
@@ -401,6 +407,7 @@ export default function ProductFormModal({
       setHasSizes(false);
       setNewSizeInput("");
       setNewSizePrice("");
+      setNewSizeCurrency("UZS");
       setImagesList([]);
       setDescRu("");
       setDescUz("");

@@ -419,7 +419,9 @@ export function CategoriesProvider({ children }: { children: React.ReactNode }) 
   const getCategoryByKey = useCallback(
     (key: string) => {
       const clean = key?.toLowerCase().trim();
-      return categories.find((c) => c.key.toLowerCase() === clean);
+      return categories.find(
+        (c) => c.key.toLowerCase() === clean || c.slug.toLowerCase() === clean
+      );
     },
     [categories]
   );

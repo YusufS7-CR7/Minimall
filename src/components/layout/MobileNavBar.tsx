@@ -1,21 +1,22 @@
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { T } from "@/data/translations";
-import CartDrawer from "@/components/ui/CartDrawer";
-import FavoritesModal from "@/components/ui/FavoritesModal";
-import OrderHistoryModal from "@/components/ui/OrderHistoryModal";
 
 export default function MobileNavBar() {
   const location = useLocation();
-  const { lang, totalCartCount, favorites, catalogOpen, setCatalogOpen } = useApp();
+  const {
+    lang,
+    totalCartCount,
+    favorites,
+    catalogOpen,
+    setCatalogOpen,
+    openCart,
+    openFavorites,
+    openOrders,
+  } = useApp();
   const { user, openAuthModal } = useAuth();
   const t = T[lang];
-
-  const [cartOpen, setCartOpen] = useState(false);
-  const [favOpen, setFavOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(false);
 
   const isHome = location.pathname === "/" && !catalogOpen;
   const isCatalog =
@@ -75,9 +76,9 @@ export default function MobileNavBar() {
 
           {/* Cart — center, prominent */}
           <button
-            onClick={() => setCartOpen(true)}
+            onClick={openCart}
             aria-label={t.cart}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 relative text-gray-400 hover:text-gray-700 active:scale-90 transition-transform"
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 relative text-gray-400 hover:text-gray-700 active:scale-90 transition-transform cursor-pointer"
           >
             <div className="relative">
               <div className={`w-11 h-11 -mt-5 rounded-full flex items-center justify-center shadow-lg transition-all ${
@@ -100,9 +101,9 @@ export default function MobileNavBar() {
 
           {/* Favorites */}
           <button
-            onClick={() => setFavOpen(true)}
+            onClick={openFavorites}
             aria-label={t.favorites}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 relative text-gray-400 hover:text-gray-700 active:scale-90 transition-transform"
+            className="flex-1 flex flex-col items-center justify-center gap-0.5 relative text-gray-400 hover:text-gray-700 active:scale-90 transition-transform cursor-pointer"
           >
             <div className="relative">
               <svg className={`w-5 h-5 ${favorites.length > 0 ? "text-red-500" : ""}`} fill={favorites.length > 0 ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -120,11 +121,11 @@ export default function MobileNavBar() {
           {/* Profile / Login */}
           <button
             onClick={() => {
-              if (user) setOrdersOpen(true);
+              if (user) openOrders();
               else openAuthModal("login");
             }}
             aria-label={user ? (lang === "ru" ? "Мои заказы" : "Buyurtmalar") : t.login}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform ${
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform cursor-pointer ${
               isProfile ? "text-red-600" : "text-gray-400 hover:text-gray-700"
             }`}
           >
@@ -144,11 +145,6 @@ export default function MobileNavBar() {
 
         </div>
       </nav>
-
-      {/* Modals triggered from mobile nav */}
-      <CartDrawer lang={lang} open={cartOpen} onClose={() => setCartOpen(false)} />
-      <FavoritesModal isOpen={favOpen} onClose={() => setFavOpen(false)} />
-      <OrderHistoryModal isOpen={ordersOpen} onClose={() => setOrdersOpen(false)} />
     </>
   );
 }

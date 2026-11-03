@@ -221,14 +221,17 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
                 </span>
                 <div className="text-[10px] text-gray-400 mt-0.5">
                   {lang === "uz" ? "Taxminan: " : "Ориентировочно: "}
-                  <span className="font-semibold text-gray-500 line-through">{formatPrice(product.price)}</span>
+                  <span className="font-semibold text-gray-500 line-through">{formatPrice(product.price, usdRate)}</span>
                 </div>
               </div>
             ) : (
               <>
-                <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-tight">{formatPrice(product.price)}</div>
+                <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-tight">
+                  {hasSizes && <span className="text-[11px] font-normal text-gray-500 mr-1">{lang === "uz" ? "dan" : "от"}</span>}
+                  {formatPrice(product.price, usdRate)}
+                </div>
                 {product.oldPrice && (
-                  <div className="text-[10px] sm:text-xs text-gray-400 line-through">{formatPrice(product.oldPrice)}</div>
+                  <div className="text-[10px] sm:text-xs text-gray-400 line-through">{formatPrice(product.oldPrice, usdRate)}</div>
                 )}
               </>
             )}

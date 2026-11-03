@@ -70,11 +70,16 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
   const catProductCount = useMemo(() => {
     const map: Record<string, number> = {};
     for (const cat of categories) {
+      const catKey = cat.key.toLowerCase();
+      const catSlug = cat.slug.toLowerCase();
       map[cat.key] = products.filter((p) => {
         const cats = (p.categories && p.categories.length > 0)
           ? p.categories
           : (p.category ? [p.category] : []);
-        return cats.includes(cat.key);
+        return cats.some((c) => {
+          const lc = c.toLowerCase().trim();
+          return lc === catKey || lc === catSlug;
+        });
       }).length;
     }
     return map;

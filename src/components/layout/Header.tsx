@@ -4,10 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { T } from "@/data/translations";
 import type { Lang } from "@/data/types";
-import CartDrawer from "@/components/ui/CartDrawer";
 import CatalogModal from "@/components/ui/CatalogModal";
-import FavoritesModal from "@/components/ui/FavoritesModal";
-import OrderHistoryModal from "@/components/ui/OrderHistoryModal";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { LOGO_DATA_URI } from "@/assets/logoDataUri";
 
@@ -17,14 +14,21 @@ interface HeaderProps {
 
 export default function Header({ lang }: HeaderProps) {
   const t = T[lang];
-  const { totalCartCount, favorites, showToast, setLang, catalogOpen, setCatalogOpen } = useApp();
+  const {
+    totalCartCount,
+    favorites,
+    showToast,
+    setLang,
+    catalogOpen,
+    setCatalogOpen,
+    openCart,
+    openFavorites,
+    openOrders,
+  } = useApp();
   const { user, openAuthModal, logout } = useAuth();
   const [search, setSearch] = useState("");
 
-  const [cartOpen, setCartOpen] = useState(false);
-  const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [ordersOpen, setOrdersOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -162,7 +166,7 @@ export default function Header({ lang }: HeaderProps) {
 
             <button
               id="favorites-btn"
-              onClick={() => setFavoritesOpen(true)}
+              onClick={openFavorites}
               aria-label={t.favorites}
               className="hidden md:flex flex-col items-center gap-0.5 relative text-gray-500 hover:text-red-500 transition-colors px-2 group cursor-pointer"
             >
@@ -181,9 +185,9 @@ export default function Header({ lang }: HeaderProps) {
 
             <button
               id="cart-btn"
-              onClick={() => setCartOpen(true)}
+              onClick={openCart}
               aria-label={t.cart}
-              className="hidden md:flex flex-col items-center gap-0.5 relative text-gray-500 hover:text-red-500 transition-colors px-2 group"
+              className="hidden md:flex flex-col items-center gap-0.5 relative text-gray-500 hover:text-red-500 transition-colors px-2 group cursor-pointer"
             >
               <div className="relative">
                 <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -223,11 +227,11 @@ export default function Header({ lang }: HeaderProps) {
                       <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
                       <p className="text-xs text-gray-400 truncate">{user.email}</p>
                     </div>
-                    <button id="my-orders-btn" onClick={() => { setOrdersOpen(true); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium border-b border-gray-100">
+                    <button id="my-orders-btn" onClick={() => { openOrders(); setUserMenuOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium border-b border-gray-100 cursor-pointer">
                       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
                       {lang === "ru" ? "Мои заказы" : "Mening buyurtmalarim"}
                     </button>
-                    <button id="logout-btn" onClick={() => { logout(); setUserMenuOpen(false); showToast(lang === "ru" ? "Вы вышли из аккаунта" : "Akkauntdan chiqdingiz"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                    <button id="logout-btn" onClick={() => { logout(); setUserMenuOpen(false); showToast(lang === "ru" ? "Вы вышли из аккаунта" : "Akkauntdan chiqdingiz"); }} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium cursor-pointer">
                       <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                       {lang === "ru" ? "Выйти из аккаунта" : "Akkauntdan chiqish"}
                     </button>
@@ -235,7 +239,7 @@ export default function Header({ lang }: HeaderProps) {
                 )}
               </div>
             ) : (
-              <button id="login-btn" onClick={() => openAuthModal("login")} aria-label={T[lang].login} className="hidden md:flex flex-col items-center gap-0.5 text-gray-500 hover:text-red-500 transition-colors px-2 group">
+              <button id="login-btn" onClick={() => openAuthModal("login")} aria-label={T[lang].login} className="hidden md:flex flex-col items-center gap-0.5 text-gray-500 hover:text-red-500 transition-colors px-2 group cursor-pointer">
                 <svg className="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
@@ -261,15 +265,6 @@ export default function Header({ lang }: HeaderProps) {
 
       {/* Catalog mega-menu */}
       <CatalogModal id="catalog-modal" lang={lang} open={catalogOpen} onClose={() => setCatalogOpen(false)} />
-
-      {/* Cart drawer */}
-      <CartDrawer lang={lang} open={cartOpen} onClose={() => setCartOpen(false)} />
-
-      {/* Favorites modal */}
-      <FavoritesModal isOpen={favoritesOpen} onClose={() => setFavoritesOpen(false)} />
-
-      {/* Order history modal */}
-      <OrderHistoryModal isOpen={ordersOpen} onClose={() => setOrdersOpen(false)} />
     </>
   );
 }

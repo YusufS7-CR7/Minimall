@@ -23,6 +23,9 @@ import MobileNavBar from "@/components/layout/MobileNavBar";
 import Toast from "@/components/ui/Toast";
 import AuthModal from "@/components/auth/AuthModal";
 import InfoModal, { type InfoModalSection } from "@/components/ui/InfoModal";
+import CartDrawer from "@/components/ui/CartDrawer";
+import FavoritesModal from "@/components/ui/FavoritesModal";
+import OrderHistoryModal from "@/components/ui/OrderHistoryModal";
 
 // Storefront Pages
 import HomePage from "@/pages/HomePage";
@@ -67,7 +70,15 @@ function ScrollToTop() {
 }
 
 function AppLayout() {
-  const { lang } = useApp();
+  const {
+    lang,
+    cartOpen,
+    closeCart,
+    favoritesOpen,
+    closeFavorites,
+    ordersOpen,
+    closeOrders,
+  } = useApp();
   const { pathname } = useLocation();
   const { isAuthenticated, loading: adminLoading } = useAdminAuth();
   const isAdminRoute = pathname.startsWith("/admin");
@@ -169,6 +180,9 @@ function AppLayout() {
         onSelectSection={setInfoModalSection}
         lang={lang}
       />
+      <CartDrawer lang={lang} open={cartOpen} onClose={closeCart} />
+      <FavoritesModal isOpen={favoritesOpen} onClose={closeFavorites} />
+      <OrderHistoryModal isOpen={ordersOpen} onClose={closeOrders} />
     </div>
   );
 }

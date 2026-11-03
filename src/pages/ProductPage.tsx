@@ -85,7 +85,16 @@ export default function ProductPage() {
     : product?.category;
   const category = primaryCatKey ? getCategoryByKey(primaryCatKey) : undefined;
   const name = product ? (lang === "uz" ? (product.nameUz || product.name) : product.name) : "";
-  const desc = product ? (lang === "uz" ? (product.descUz || product.descRu) : product.descRu) : "";
+  const fallbackDesc = useMemo(() => {
+    if (!product) return "";
+    const brandStr = product.brand && product.brand !== "Без бренда" ? `от производителя ${product.brand}` : "";
+    if (lang === "uz") {
+      return `${name} ${brandStr ? `— ${product.brand} brendidan` : ""} yuqori sifatli va ishonchli asbob. Qulay ishlatish, mustahkam korpus va uzoq xizmat muddati. O'zbekiston bo'ylab rasmiy kafolat va tez yetkazib berish xizmati bilan.`;
+    }
+    return `${name} ${brandStr} — надежный и качественный инструмент для профессиональных и бытовых работ. Отличается высокой прочностью, эргономичной конструкцией и длительным сроком службы. Поставляется с официальной гарантией качества и быстрой доставкой по Узбекистану.`;
+  }, [product, name, lang]);
+  const rawDesc = product ? (lang === "uz" ? (product.descUz || product.descRu) : product.descRu) : "";
+  const desc = rawDesc && rawDesc.trim() ? rawDesc.trim() : fallbackDesc;
   const categoryLabel = category ? (lang === "uz" ? (category.labelUz || category.labelRu) : category.labelRu) : "";
 
   const productCategories = useMemo(() => {
@@ -215,6 +224,7 @@ export default function ProductPage() {
 
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
   const [selectedSize, setSelectedSize] = useState<string>("");
   const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize);
   const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
@@ -537,6 +547,56 @@ export default function ProductPage() {
             </div>
           )}
 
+          {/* Sizes / Variants Selector — placed prominently right before Add to Cart */}
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="mb-5 bg-gray-50/90 p-3.5 sm:p-4 rounded-2xl border border-gray-200/90 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                  <span>📏</span>
+                  <span>{lang === "uz" ? "Variantni tanlang:" : "Выберите вариант (размер):"}</span>
+                </span>
+                {selectedSize && (
+                  <span className="text-xs font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
+                    {selectedSize}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {product.sizes.map((size) => {
+                  const isSelected = selectedSize === size.name;
+                  return (
+                    <button
+                      key={size.name}
+                      type="button"
+                      onClick={() => setSelectedSize(size.name)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-102"
+                          : "bg-white text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-600 shadow-2xs"
+                      }`}
+                    >
+                      <span>{size.name}</span>
+                      <span className={`font-black ${isSelected ? "text-white" : "text-amber-600"}`}>
+                        {formatPrice(size.price, usdRate)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Quick Description snippet preview in hero column */}
+          <div className="mb-5 text-xs text-gray-600 leading-relaxed line-clamp-2">
+            <span>{desc}</span>
+            <a
+              href="#product-tabs"
+              className="ml-1.5 text-red-600 font-bold hover:underline inline-block"
+            >
+              {lang === "uz" ? "Batafsil tavsif ↓" : "Подробнее о товаре ↓"}
+            </a>
+          </div>
+
           {/* CTA — stacked on mobile */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
@@ -667,52 +727,56 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Sizes selector if available */}
-      {product.sizes && product.sizes.length > 0 && (
-        <div className="mb-6 bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80 space-y-2.5 max-w-3xl">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-              <span>📏</span>
-              <span>{lang === "uz" ? "O'lchamni tanlang:" : "Выберите размер:"}</span>
-            </span>
-            {selectedSize && (
-              <span className="text-xs font-extrabold text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
-                {selectedSize}
+      {/* Interactive Tabs for Description and Characteristics */}
+      <div id="product-tabs" className="mb-12 space-y-4 scroll-mt-24">
+        {/* Tab Headers */}
+        <div className="flex items-center gap-2 border-b border-gray-200">
+          <button
+            type="button"
+            onClick={() => setActiveTab("desc")}
+            className={`px-4 sm:px-6 py-3 text-sm sm:text-base font-bold transition-all border-b-2 -mb-[2px] cursor-pointer flex items-center gap-2 ${
+              activeTab === "desc"
+                ? "border-red-600 text-red-600"
+                : "border-transparent text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            <span>📝</span>
+            <span>{t.description}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("specs")}
+            className={`px-4 sm:px-6 py-3 text-sm sm:text-base font-bold transition-all border-b-2 -mb-[2px] cursor-pointer flex items-center gap-2 ${
+              activeTab === "specs"
+                ? "border-red-600 text-red-600"
+                : "border-transparent text-gray-500 hover:text-gray-900"
+            }`}
+          >
+            <span>⚙️</span>
+            <span>{t.characteristics}</span>
+            {displaySpecs.length > 0 && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "specs" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-500"
+              }`}>
+                {displaySpecs.length}
               </span>
             )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {product.sizes.map((size) => {
-              const isSelected = selectedSize === size.name;
-              return (
-                <button
-                  key={size.name}
-                  type="button"
-                  onClick={() => setSelectedSize(size.name)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-105"
-                      : "bg-white text-gray-700 border border-gray-200 hover:border-red-300 hover:text-red-600 shadow-2xs"
-                  }`}
-                >
-                  <span>{size.name}</span>
-                  <span className={`ml-1 font-black ${isSelected ? "text-red-100" : "text-amber-500"}`}>
-                    {formatPrice(size.price)}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          </button>
         </div>
-      )}
 
-      {/* Specs + Description — always visible */}
-      <div className="mb-12 space-y-6">
-        {/* Characteristics */}
-        {displaySpecs.length > 0 ? (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-3 px-1">{t.characteristics}</h2>
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        {/* Tab Content */}
+        {activeTab === "desc" ? (
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-xs">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
+              {lang === "uz" ? "Mahsulot haqida batafsil ma'lumot" : "Подробное описание товара"}
+            </h3>
+            <p className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-line font-normal">
+              {desc}
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs">
+            {displaySpecs.length > 0 ? (
               <table className="w-full text-sm">
                 <tbody>
                   {displaySpecs.map((spec, i) => (
@@ -723,36 +787,21 @@ export default function ProductPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            ) : (
+              <div className="p-8 text-center text-gray-500 space-y-2">
+                <span className="text-3xl block">📋</span>
+                <p className="font-bold text-gray-800 text-sm">
+                  {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
+                </p>
+                <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                  {lang === "uz"
+                    ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
+                    : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
+                </p>
+              </div>
+            )}
           </div>
-        ) : null}
-
-        {/* Description — shown whenever it has real content */}
-        {desc.trim() ? (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-3 px-1">{t.description}</h2>
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-              <p className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-line font-normal">
-                {desc}
-              </p>
-            </div>
-          </div>
-        ) : displaySpecs.length === 0 ? (
-          <div>
-            <h2 className="text-base font-bold text-gray-900 mb-3 px-1">{t.characteristics}</h2>
-            <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500 space-y-2">
-              <span className="text-3xl block">📋</span>
-              <p className="font-bold text-gray-800 text-sm">
-                {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
-              </p>
-              <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                {lang === "uz"
-                  ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
-                  : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
-              </p>
-            </div>
-          </div>
-        ) : null}
+        )}
       </div>
 
       {/* Related products */}

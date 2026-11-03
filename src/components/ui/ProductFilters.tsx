@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import PriceRangeSlider, { formatPriceShort } from "./PriceRangeSlider";
 import type { Lang, Product } from "@/data/types";
 import { T } from "@/data/translations";
 import { BRANDS } from "@/data/products";
 import { matchBrandFuzzy } from "@/utils/brandSearch";
+import { useCategories } from "@/context/CategoriesContext";
 
 export interface FilterState {
   priceRange: [number, number];
@@ -46,6 +48,8 @@ export default function ProductFilters({
   const [brandSearchQuery, setBrandSearchQuery] = useState("");
   const [isBrandCardOpen, setIsBrandCardOpen] = useState(true);
   const [isBrandListExpanded, setIsBrandListExpanded] = useState(false);
+  const [isCategoryCardOpen, setIsCategoryCardOpen] = useState(false);
+  const { categories } = useCategories();
   const t = T[lang];
 
   const isPriceFiltered =
@@ -137,7 +141,55 @@ export default function ProductFilters({
         />
       </div>
 
-      {/* 2. BRANDS FILTER WITH EXPAND/COLLAPSE & TYPO-TOLERANT FUZZY SEARCH */}
+      {/* 2. CATEGORIES FILTER ACCORDION */}
+      {categories.length > 0 && (
+        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs transition-all">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setIsCategoryCardOpen((prev) => !prev)}
+              className="flex items-center gap-2 text-sm font-bold text-gray-900 cursor-pointer select-none hover:text-red-600 transition-colors w-full"
+            >
+              <span>{lang === "ru" ? "Категории" : "Kategoriyalar"}</span>
+              <span className="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full ml-auto mr-1">
+                {categories.length}
+              </span>
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                  isCategoryCardOpen ? "rotate-180" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+          {isCategoryCardOpen && (
+            <div className="mt-3 space-y-1 max-h-56 overflow-y-auto pr-1">
+              {categories.map((c) => {
+                const label = lang === "ru" ? c.labelRu : c.labelUz;
+                return (
+                  <Link
+                    key={c.key}
+                    to={`/catalog/${c.slug}`}
+                    className="flex items-center justify-between py-1.5 px-2 rounded-lg text-xs text-gray-700 hover:text-red-600 hover:bg-red-50/60 transition-colors"
+                  >
+                    <span className="flex items-center gap-2 truncate">
+                      <span className="text-sm shrink-0">{c.icon}</span>
+                      <span className="truncate">{label}</span>
+                    </span>
+                    <span className="text-gray-300 text-xs">›</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. BRANDS FILTER WITH EXPAND/COLLAPSE & TYPO-TOLERANT FUZZY SEARCH */}
       {!hideBrandFilter && combinedBrands.length > 0 && (
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs transition-all">
           {/* Header with Accordion toggle */}
