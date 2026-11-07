@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useSearchParams, Link, Navigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useProducts } from "@/context/ProductsContext";
@@ -201,6 +201,11 @@ export default function CategoryPage() {
         return 0;
       });
   }, [baseProducts, filters, sortBy]);
+
+  const pagedProducts = useMemo(
+    () => filteredProducts.slice(0, visibleCount),
+    [filteredProducts, visibleCount]
+  );
 
   useDocumentMeta({
     title: activeSubcategory

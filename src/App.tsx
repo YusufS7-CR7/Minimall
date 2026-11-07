@@ -187,7 +187,7 @@ function AppLayout() {
     if (!isAuthenticated) {
       return (
         <Suspense fallback={<AdminLoadingSpinner />}>
-          <ScrollToTop />
+          <ScrollRestorationHandler />
           <AdminLoginPage />
           <Toast />
         </Suspense>
@@ -197,7 +197,7 @@ function AppLayout() {
     return (
       <Suspense fallback={<AdminLoadingSpinner />}>
         <div className="min-h-screen bg-gray-50 text-gray-900 selection:bg-red-500 selection:text-white">
-          <ScrollToTop />
+          <ScrollRestorationHandler />
           <AdminLayout>
             <Routes>
               <Route path="/admin" element={<AdminProductsPage />} />
