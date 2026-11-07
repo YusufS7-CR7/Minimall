@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigationType } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import AppContextBridge from "@/context/AppContextBridge";
 import { ProductsProvider } from "@/context/ProductsContext";
@@ -57,14 +57,81 @@ function AdminLoadingSpinner() {
 }
 
 /**
- * Automatically scrolls the browser window to top on page navigation.
+ * Handles intelligent scroll restoration on navigation:
+ * - On "PUSH" (clicking a link to a new page): scrolls window to top (0, 0).
+ * - On "POP" (browser Back / Forward button): restores the exact saved scroll position for that URL.
  */
-function ScrollToTop() {
-  const { pathname } = useLocation();
+function ScrollRestorationHandler() {
+  const location = useLocation();
+  const navType = useNavigationType();
 
+  // Disable clumsy automatic browser scroll restoration which clamps to footer
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [pathname]);
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  // Save scroll position for the current path before navigating away or while scrolling
+  useEffect(() => {
+    const key = `scroll_pos_${location.pathname}${location.search}`;
+
+    let rafId: number;
+    const handleScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        try {
+          sessionStorage.setItem(key, window.scrollY.toString());
+        } catch {}
+      });
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(rafId);
+      try {
+        sessionStorage.setItem(key, window.scrollY.toString());
+      } catch {}
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [location.pathname, location.search]);
+
+  // Restore scroll position or scroll to top
+  useEffect(() => {
+    const key = `scroll_pos_${location.pathname}${location.search}`;
+
+    if (navType === "PUSH") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    } else if (navType === "POP") {
+      try {
+        const saved = sessionStorage.getItem(key);
+        if (saved !== null) {
+          const targetY = parseInt(saved, 10);
+          if (!isNaN(targetY)) {
+            // Immediate attempt
+            window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+
+            // Follow-up attempts as product grid and images render
+            const t1 = setTimeout(() => {
+              window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+            }, 50);
+            const t2 = setTimeout(() => {
+              window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+            }, 150);
+            const t3 = setTimeout(() => {
+              window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
+            }, 350);
+
+            return () => {
+              clearTimeout(t1);
+              clearTimeout(t2);
+              clearTimeout(t3);
+            };
+          }
+        }
+      } catch {}
+    }
+  }, [location.pathname, location.search, navType]);
 
   return null;
 }
@@ -152,7 +219,7 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-gray-900 selection:bg-red-500 selection:text-white">
-      <ScrollToTop />
+      <ScrollRestorationHandler />
       <TopBar lang={lang} onOpenInfo={handleOpenInfo} />
       <Header lang={lang} />
       <CategoryNavBar lang={lang} />

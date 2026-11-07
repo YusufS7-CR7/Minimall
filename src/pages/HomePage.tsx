@@ -42,7 +42,16 @@ export default function HomePage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 20_000_000]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const HOME_PAGE_SIZE = 24;
-  const [visibleCount, setVisibleCount] = useState(HOME_PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("mm_home_vc");
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (val >= HOME_PAGE_SIZE) return val;
+      }
+    } catch {}
+    return HOME_PAGE_SIZE;
+  });
 
   const isPriceFiltered = priceRange[0] > 0 || priceRange[1] < 20_000_000;
 
@@ -52,6 +61,17 @@ export default function HomePage() {
   );
 
   useEffect(() => {
+    try {
+      sessionStorage.setItem("mm_home_vc", visibleCount.toString());
+    } catch {}
+  }, [visibleCount]);
+
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setVisibleCount(HOME_PAGE_SIZE);
   }, [priceRange]);
 

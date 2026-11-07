@@ -26,17 +26,45 @@ export default function CategoryPage() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTER_STATE);
   const [sortBy, setSortBy] = useState<"default" | "price_asc" | "price_desc" | "rating">("default");
 
-  const PAGE_SIZE = 24;
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  // If no slug, show all products. Safely decode URL component.
   const cleanSlug = slug ? decodeURIComponent(slug).toLowerCase().trim() : undefined;
   const category = cleanSlug ? getCategoryBySlug(cleanSlug) : undefined;
 
-  // Reset pagination on navigation or filter change
+  const PAGE_SIZE = 24;
+  const vcKey = `mm_cat_vc_${cleanSlug || "all"}`;
+  const [visibleCount, setVisibleCount] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(vcKey);
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (val >= PAGE_SIZE) return val;
+      }
+    } catch {}
+    return PAGE_SIZE;
+  });
+
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [slug, subSlug, filters, sortBy]);
+    try {
+      sessionStorage.setItem(vcKey, visibleCount.toString());
+    } catch {}
+  }, [vcKey, visibleCount]);
+
+  const prevSlugRef = useRef(cleanSlug);
+  const prevFiltersRef = useRef(filters);
+  const prevSortRef = useRef(sortBy);
+
+  // Reset pagination only when category, filter or sort explicitly changes
+  useEffect(() => {
+    if (
+      prevSlugRef.current !== cleanSlug ||
+      prevFiltersRef.current !== filters ||
+      prevSortRef.current !== sortBy
+    ) {
+      prevSlugRef.current = cleanSlug;
+      prevFiltersRef.current = filters;
+      prevSortRef.current = sortBy;
+      setVisibleCount(PAGE_SIZE);
+    }
+  }, [cleanSlug, subSlug, filters, sortBy]);
 
   // Handle loading or invalid slug - wait for categories to load before 404
   if (slug && !category) {
