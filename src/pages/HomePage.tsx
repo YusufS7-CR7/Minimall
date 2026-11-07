@@ -535,6 +535,7 @@ function AdvantagesSection({ lang }: { lang: string }) {
 
 function DiscountProductsRow({ lang }: { lang: string }) {
   const { addToCart } = useApp();
+  const { user, openAuthModal } = useAuth();
   const { products } = useProducts();
   const { usdRate } = useCurrency();
   const navigate = useNavigate();
@@ -543,6 +544,10 @@ function DiscountProductsRow({ lang }: { lang: string }) {
   if (discountProducts.length === 0) return null;
 
   const handleAddToCart = (product: any) => {
+    if (!user) {
+      openAuthModal("register");
+      return;
+    }
     if (product.sizes && product.sizes.length > 0) {
       navigate(`/product/${product.slug}`);
       return;
@@ -600,6 +605,7 @@ function DiscountProductsRow({ lang }: { lang: string }) {
 function SaleCarousel({ lang }: { lang: string }) {
   const { products } = useProducts();
   const { addToCart } = useApp();
+  const { user, openAuthModal } = useAuth();
   const { usdRate } = useCurrency();
   const navigate = useNavigate();
   const t = T[lang as "ru" | "uz"];
@@ -771,6 +777,10 @@ function SaleCarousel({ lang }: { lang: string }) {
         </div>
         <button
           onClick={() => {
+            if (!user) {
+              openAuthModal("register");
+              return;
+            }
             if (p.sizes && p.sizes.length > 0) {
               navigate(`/product/${p.slug}`);
               return;

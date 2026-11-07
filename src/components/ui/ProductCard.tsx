@@ -33,22 +33,30 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   const hasImage = galleryImages.length > 0 && !imgError;
   const hasSizes = Boolean(product.sizes && product.sizes.length > 0);
 
-  const [selectedSizeName, setSelectedSizeName] = useState<string>(() => product.sizes?.[0]?.name || "");
+  const [selectedSizeName, setSelectedSizeName] = useState<string>(() => product.sizes?.[0]?.name?.trim() || "");
+  const lastCardProdIdRef = useRef<number>(product.id);
 
   useEffect(() => {
-    if (product.sizes && product.sizes.length > 0) {
-      setSelectedSizeName((prev) => {
-        if (prev && product.sizes!.some((s) => s.name === prev)) return prev;
-        return product.sizes![0].name;
-      });
+    if (lastCardProdIdRef.current !== product.id) {
+      lastCardProdIdRef.current = product.id;
+      if (product.sizes && product.sizes.length > 0) {
+        setSelectedSizeName(product.sizes[0].name.trim());
+      } else {
+        setSelectedSizeName("");
+      }
     } else {
-      setSelectedSizeName("");
+      if (product.sizes && product.sizes.length > 0) {
+        setSelectedSizeName((prev) => {
+          if (prev && product.sizes!.some((s) => s.name.trim() === prev.trim())) return prev;
+          return product.sizes![0].name.trim();
+        });
+      }
     }
-  }, [product.id, product.sizes]);
+  }, [product.id]);
 
   const selectedVariant = useMemo(() => {
-    if (!hasSizes) return undefined;
-    return product.sizes?.find((s) => s.name === selectedSizeName) || product.sizes?.[0];
+    if (!hasSizes || !product.sizes) return undefined;
+    return product.sizes.find((s) => s.name.trim() === selectedSizeName.trim()) || product.sizes[0];
   }, [hasSizes, product.sizes, selectedSizeName]);
 
   const currentPrice = selectedVariant?.price ?? product.price;
@@ -71,16 +79,24 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   }, [galleryImages.length]);
 
   const handleFavorite = useCallback(() => {
+    if (!user) {
+      openAuthModal("register");
+      return;
+    }
     toggleFavorite(product.id);
-  }, [toggleFavorite, product.id]);
+  }, [user, openAuthModal, toggleFavorite, product.id]);
 
   const handleAddToCart = useCallback(() => {
+    if (!user) {
+      openAuthModal("register");
+      return;
+    }
     if (hasSizes && selectedVariant) {
       addToCart(product, selectedVariant.name, selectedVariant.price);
       return;
     }
     addToCart(product);
-  }, [addToCart, product, hasSizes, selectedVariant]);
+  }, [user, openAuthModal, addToCart, product, hasSizes, selectedVariant]);
 
   return (
     <article className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 hover:-translate-y-1 relative">
@@ -231,7 +247,7 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
             </div>
             <div className="flex flex-wrap gap-1">
               {product.sizes.slice(0, 3).map((size) => {
-                const isSelected = selectedSizeName === size.name;
+                const isSelected = selectedSizeName.trim() === size.name.trim();
                 return (
                   <button
                     key={size.name}
@@ -239,7 +255,7 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setSelectedSizeName(size.name);
+                      setSelectedSizeName(size.name.trim());
                     }}
                     className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
                       isSelected

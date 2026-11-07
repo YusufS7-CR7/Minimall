@@ -77,7 +77,8 @@ export default function ProductPage() {
     return () => {
       isCancelled = true;
     };
-  }, [slug, getProductBySlug, upsertProduct]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   // SEO — always call hooks before any conditional return
   const primaryCatKey = (product?.categories && product.categories.length > 0)
@@ -240,21 +241,32 @@ export default function ProductPage() {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
-  const [selectedSize, setSelectedSize] = useState<string>(() => product?.sizes?.[0]?.name || "");
+  const [selectedSize, setSelectedSize] = useState<string>(() => product?.sizes?.[0]?.name?.trim() || "");
+  const currentProdIdRef = useRef<number | null>(product?.id ?? null);
 
   useEffect(() => {
-    if (product?.sizes && product.sizes.length > 0) {
-      setSelectedSize((prev) => {
-        if (prev && product.sizes!.some((s) => s.name === prev)) return prev;
-        return product.sizes![0].name;
-      });
+    if (!product?.id) return;
+    // Only reset to the first variant if the product ID actually changed (navigated to a different product)
+    if (currentProdIdRef.current !== product.id) {
+      currentProdIdRef.current = product.id;
+      if (product.sizes && product.sizes.length > 0) {
+        setSelectedSize(product.sizes[0].name.trim());
+      } else {
+        setSelectedSize("");
+      }
     } else {
-      setSelectedSize("");
+      // If same product, ensure current selection is still valid in sizes list
+      if (product.sizes && product.sizes.length > 0) {
+        setSelectedSize((prev) => {
+          if (prev && product.sizes!.some((s) => s.name.trim() === prev.trim())) return prev;
+          return product.sizes![0].name.trim();
+        });
+      }
     }
-  }, [product?.id, product?.sizes]);
+  }, [product?.id]);
 
-  const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize) || product?.sizes?.[0];
-  const effectiveSelectedSize = selectedSize || selectedSizeOption?.name || "";
+  const selectedSizeOption = product?.sizes?.find((size) => size.name.trim() === selectedSize.trim()) || product?.sizes?.[0];
+  const effectiveSelectedSize = selectedSize.trim() || selectedSizeOption?.name?.trim() || "";
   const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
 
   useEffect(() => {
@@ -582,12 +594,16 @@ export default function ProductPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size) => {
-                  const isSelected = selectedSize === size.name;
+                  const isSelected = effectiveSelectedSize === size.name.trim();
                   return (
                     <button
                       key={size.name}
                       type="button"
-                      onClick={() => setSelectedSize(size.name)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedSize(size.name.trim());
+                      }}
                       className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
                           ? "bg-red-600 text-white shadow-md shadow-red-600/25 ring-2 ring-red-600/30 scale-102"
@@ -620,6 +636,10 @@ export default function ProductPage() {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
               onClick={() => {
+                if (!user) {
+                  openAuthModal("register");
+                  return;
+                }
                 addToCart(product, effectiveSelectedSize || undefined, selectedSizeOption?.price);
               }}
               disabled={!product.inStock && product.stockStatus !== "on_question"}
@@ -648,6 +668,10 @@ export default function ProductPage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (!user) {
+                    openAuthModal("register");
+                    return;
+                  }
                   addToCart(product, effectiveSelectedSize || undefined, selectedSizeOption?.price);
                   openCart();
                 }}
