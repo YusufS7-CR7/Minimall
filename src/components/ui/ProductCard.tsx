@@ -33,6 +33,26 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   const hasImage = galleryImages.length > 0 && !imgError;
   const hasSizes = Boolean(product.sizes && product.sizes.length > 0);
 
+  const [selectedSizeName, setSelectedSizeName] = useState<string>(() => product.sizes?.[0]?.name || "");
+
+  useEffect(() => {
+    if (product.sizes && product.sizes.length > 0) {
+      setSelectedSizeName((prev) => {
+        if (prev && product.sizes!.some((s) => s.name === prev)) return prev;
+        return product.sizes![0].name;
+      });
+    } else {
+      setSelectedSizeName("");
+    }
+  }, [product.id, product.sizes]);
+
+  const selectedVariant = useMemo(() => {
+    if (!hasSizes) return undefined;
+    return product.sizes?.find((s) => s.name === selectedSizeName) || product.sizes?.[0];
+  }, [hasSizes, product.sizes, selectedSizeName]);
+
+  const currentPrice = selectedVariant?.price ?? product.price;
+
   useEffect(() => {
     setCurrentImageIndex(0);
     setImgError(false);
@@ -51,24 +71,16 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
   }, [galleryImages.length]);
 
   const handleFavorite = useCallback(() => {
-    if (!user) {
-      openAuthModal("register");
-      return;
-    }
     toggleFavorite(product.id);
-  }, [user, openAuthModal, toggleFavorite, product.id]);
+  }, [toggleFavorite, product.id]);
 
   const handleAddToCart = useCallback(() => {
-    if (!user) {
-      openAuthModal("register");
-      return;
-    }
-    if (hasSizes) {
-      navigate(`/product/${product.slug}`);
+    if (hasSizes && selectedVariant) {
+      addToCart(product, selectedVariant.name, selectedVariant.price);
       return;
     }
     addToCart(product);
-  }, [user, openAuthModal, addToCart, product, hasSizes, navigate]);
+  }, [addToCart, product, hasSizes, selectedVariant]);
 
   return (
     <article className="group bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 hover:-translate-y-1 relative">
@@ -210,6 +222,48 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
           <StarRating rating={product.rating} />
         </div>
 
+        {/* Variant selector pills directly on card */}
+        {hasSizes && product.sizes && product.sizes.length > 0 && (
+          <div className="mb-2.5 pt-1 border-t border-gray-100">
+            <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+              <span className="font-semibold">{lang === "uz" ? "Variant:" : "Вариант:"}</span>
+              <span className="font-bold text-red-600 truncate max-w-[120px]">{selectedVariant?.name}</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {product.sizes.slice(0, 3).map((size) => {
+                const isSelected = selectedSizeName === size.name;
+                return (
+                  <button
+                    key={size.name}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedSizeName(size.name);
+                    }}
+                    className={`text-[10px] px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-red-600 text-white shadow-xs"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200/60"
+                    }`}
+                  >
+                    {size.name}
+                  </button>
+                );
+              })}
+              {product.sizes.length > 3 && (
+                <Link
+                  to={`/product/${product.slug}`}
+                  className="text-[10px] px-1.5 py-0.5 rounded-md text-red-600 bg-red-50 hover:bg-red-100 font-bold"
+                  title="Все варианты"
+                >
+                  +{product.sizes.length - 3}
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Price + CTA */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 mt-auto pt-1">
           <div>
@@ -227,8 +281,7 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
             ) : (
               <>
                 <div className="text-sm sm:text-lg font-extrabold text-gray-900 leading-tight">
-                  {hasSizes && <span className="text-[11px] font-normal text-gray-500 mr-1">{lang === "uz" ? "dan" : "от"}</span>}
-                  {formatPrice(product.price, usdRate)}
+                  {formatPrice(currentPrice, usdRate)}
                 </div>
                 {product.oldPrice && (
                   <div className="text-[10px] sm:text-xs text-gray-400 line-through">{formatPrice(product.oldPrice, usdRate)}</div>
@@ -265,11 +318,7 @@ const ProductCard = memo(function ProductCard({ product, lang }: ProductCardProp
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4" />
                 </svg>
-                <span>
-                  {hasSizes
-                    ? (lang === "uz" ? "Tanlash" : "Выбрать")
-                    : t.addToCart}
-                </span>
+                <span>{t.addToCart}</span>
               </>
             )}
           </button>

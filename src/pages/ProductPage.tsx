@@ -15,7 +15,7 @@ import { formatPrice } from "@/utils/formatPrice";
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { lang, addToCart } = useApp();
+  const { lang, addToCart, openCart } = useApp();
   const { user, openAuthModal } = useAuth();
   const { getProductBySlug, products, loading: productsLoading, upsertProduct } = useProducts();
   const { usdRate } = useCurrency();
@@ -93,7 +93,22 @@ export default function ProductPage() {
     }
     return `${name} ${brandStr} — надежный и качественный инструмент для профессиональных и бытовых работ. Отличается высокой прочностью, эргономичной конструкцией и длительным сроком службы. Поставляется с официальной гарантией качества и быстрой доставкой по Узбекистану.`;
   }, [product, name, lang]);
-  const rawDesc = product ? (lang === "uz" ? (product.descUz || product.descRu) : product.descRu) : "";
+
+  const rawDesc = useMemo(() => {
+    if (!product) return "";
+    const uz = product.descUz?.trim() || "";
+    const ru = product.descRu?.trim() || "";
+    if (lang === "uz") {
+      // If Uzbek description is only the stub "... rasmiy kafolatli sifatli asbob." or very short, but Russian is full
+      const isStub = uz.endsWith("rasmiy kafolatli sifatli asbob.") || uz.length < 80;
+      if (isStub && ru.length > uz.length + 40) {
+        return ru;
+      }
+      return uz || ru;
+    }
+    return ru || uz;
+  }, [product, lang]);
+
   const desc = rawDesc && rawDesc.trim() ? rawDesc.trim() : fallbackDesc;
   const categoryLabel = category ? (lang === "uz" ? (category.labelUz || category.labelRu) : category.labelRu) : "";
 
@@ -225,18 +240,22 @@ export default function ProductPage() {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"desc" | "specs">("desc");
-  const [selectedSize, setSelectedSize] = useState<string>("");
-  const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize);
-  const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
-
+  const [selectedSize, setSelectedSize] = useState<string>(() => product?.sizes?.[0]?.name || "");
 
   useEffect(() => {
     if (product?.sizes && product.sizes.length > 0) {
-      setSelectedSize(product.sizes[0].name);
+      setSelectedSize((prev) => {
+        if (prev && product.sizes!.some((s) => s.name === prev)) return prev;
+        return product.sizes![0].name;
+      });
     } else {
       setSelectedSize("");
     }
   }, [product?.id, product?.sizes]);
+
+  const selectedSizeOption = product?.sizes?.find((size) => size.name === selectedSize) || product?.sizes?.[0];
+  const effectiveSelectedSize = selectedSize || selectedSizeOption?.name || "";
+  const displayedPrice = selectedSizeOption?.price ?? product?.price ?? 0;
 
   useEffect(() => {
     setCurrentImgIndex(0);
@@ -601,8 +620,7 @@ export default function ProductPage() {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 sm:mb-8">
             <button
               onClick={() => {
-                if (!user) { openAuthModal("register"); return; }
-                addToCart(product, selectedSize || undefined, selectedSizeOption?.price);
+                addToCart(product, effectiveSelectedSize || undefined, selectedSizeOption?.price);
               }}
               disabled={!product.inStock && product.stockStatus !== "on_question"}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
@@ -625,14 +643,29 @@ export default function ProductPage() {
                 </>
               )}
             </button>
+
+            {product.inStock && !product.priceOnQuestion && product.stockStatus !== "on_question" && (
+              <button
+                type="button"
+                onClick={() => {
+                  addToCart(product, effectiveSelectedSize || undefined, selectedSizeOption?.price);
+                  openCart();
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold border-2 border-red-600 text-red-600 hover:bg-red-50 transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+              >
+                <span>⚡</span>
+                <span>{lang === "uz" ? "Hozir xarid qilish" : "Купить сейчас"}</span>
+              </button>
+            )}
+
             <div className="flex gap-2 sm:gap-3">
               <a
                 href={`https://t.me/minimall_uzb?text=${encodeURIComponent(
                   product.priceOnQuestion
-                    ? `Здравствуйте! Хочу уточнить цену товара: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
+                    ? `Здравствуйте! Хочу уточнить цену товара: ${name}${effectiveSelectedSize ? ` (Размер: ${effectiveSelectedSize})` : ""} (арт. MM-${product.id})`
                     : product.stockStatus === "on_question"
-                    ? `Здравствуйте! Хочу уточнить наличие товара под вопросом: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
-                    : `Здравствуйте! Интересует товар: ${name}${selectedSize ? ` (Размер: ${selectedSize})` : ""} (арт. MM-${product.id})`
+                    ? `Здравствуйте! Хочу уточнить наличие товара под вопросом: ${name}${effectiveSelectedSize ? ` (Размер: ${effectiveSelectedSize})` : ""} (арт. MM-${product.id})`
+                    : `Здравствуйте! Интересует товар: ${name}${effectiveSelectedSize ? ` (Размер: ${effectiveSelectedSize})` : ""} (арт. MM-${product.id})`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -727,81 +760,61 @@ export default function ProductPage() {
         </div>
       </div>
 
-      {/* Interactive Tabs for Description and Characteristics */}
-      <div id="product-tabs" className="mb-12 space-y-4 scroll-mt-24">
-        {/* Tab Headers */}
-        <div className="flex items-center gap-2 border-b border-gray-200">
-          <button
-            type="button"
-            onClick={() => setActiveTab("desc")}
-            className={`px-4 sm:px-6 py-3 text-sm sm:text-base font-bold transition-all border-b-2 -mb-[2px] cursor-pointer flex items-center gap-2 ${
-              activeTab === "desc"
-                ? "border-red-600 text-red-600"
-                : "border-transparent text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            <span>📝</span>
-            <span>{t.description}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("specs")}
-            className={`px-4 sm:px-6 py-3 text-sm sm:text-base font-bold transition-all border-b-2 -mb-[2px] cursor-pointer flex items-center gap-2 ${
-              activeTab === "specs"
-                ? "border-red-600 text-red-600"
-                : "border-transparent text-gray-500 hover:text-gray-900"
-            }`}
-          >
-            <span>⚙️</span>
-            <span>{t.characteristics}</span>
+      {/* Product Details: Full Description and Characteristics */}
+      <div id="product-tabs" className="mb-12 space-y-8 scroll-mt-24">
+        {/* Full Description Section */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-xs">
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+            <span className="text-xl">📝</span>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900">
+              {lang === "uz" ? "Mahsulot haqida to'liq tavsif" : "Подробное описание товара"}
+            </h2>
+          </div>
+          <p className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-line font-normal">
+            {desc}
+          </p>
+        </div>
+
+        {/* Characteristics / Specs Section */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs">
+          <div className="flex items-center justify-between p-5 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⚙️</span>
+              <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                {t.characteristics}
+              </h2>
+            </div>
             {displaySpecs.length > 0 && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                activeTab === "specs" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-500"
-              }`}>
+              <span className="text-xs bg-red-50 text-red-600 px-2.5 py-1 rounded-full font-bold">
                 {displaySpecs.length}
               </span>
             )}
-          </button>
+          </div>
+          {displaySpecs.length > 0 ? (
+            <table className="w-full text-sm">
+              <tbody>
+                {displaySpecs.map((spec, i) => (
+                  <tr key={spec.key} className={i % 2 === 0 ? "bg-gray-50/50" : "bg-white"}>
+                    <td className="px-5 py-3.5 text-gray-500 font-medium w-1/2 border-b border-gray-100/60">{spec.key}</td>
+                    <td className="px-5 py-3.5 text-gray-900 font-semibold border-b border-gray-100/60">{spec.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-8 text-center text-gray-500 space-y-2">
+              <span className="text-3xl block">📋</span>
+              <p className="font-bold text-gray-800 text-sm">
+                {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
+              </p>
+              <p className="text-xs text-gray-400 max-w-sm mx-auto">
+                {lang === "uz"
+                  ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
+                  : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
+              </p>
+            </div>
+          )}
         </div>
-
-        {/* Tab Content */}
-        {activeTab === "desc" ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-xs">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-3">
-              {lang === "uz" ? "Mahsulot haqida batafsil ma'lumot" : "Подробное описание товара"}
-            </h3>
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base whitespace-pre-line font-normal">
-              {desc}
-            </p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs">
-            {displaySpecs.length > 0 ? (
-              <table className="w-full text-sm">
-                <tbody>
-                  {displaySpecs.map((spec, i) => (
-                    <tr key={spec.key} className={i % 2 === 0 ? "bg-gray-50/50" : "bg-white"}>
-                      <td className="px-5 py-3.5 text-gray-500 font-medium w-1/2 border-b border-gray-100/60">{spec.key}</td>
-                      <td className="px-5 py-3.5 text-gray-900 font-semibold border-b border-gray-100/60">{spec.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="p-8 text-center text-gray-500 space-y-2">
-                <span className="text-3xl block">📋</span>
-                <p className="font-bold text-gray-800 text-sm">
-                  {lang === "uz" ? "Texnik xususiyatlar aniqlashtirilmoqda" : "Характеристики уточняются"}
-                </p>
-                <p className="text-xs text-gray-400 max-w-sm mx-auto">
-                  {lang === "uz"
-                    ? "Batafsil ma'lumot olish yoki buyurtma berish uchun mutaxassislarimiz bilan bog'laning."
-                    : "Для получения подробных характеристик и консультации свяжитесь с нашим отделом продаж."}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Related products */}

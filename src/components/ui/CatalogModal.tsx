@@ -66,21 +66,24 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
     };
   }, [open, onClose]);
 
-  // Helper: count products per category
+  // Helper: count products per category - O(P) single pass instead of 33,000 nested iterations
   const catProductCount = useMemo(() => {
+    const rawCounts = new Map<string, number>();
+    for (const p of products) {
+      const cats = (p.categories && p.categories.length > 0)
+        ? p.categories
+        : (p.category ? [p.category] : []);
+      for (const c of cats) {
+        const lc = c.toLowerCase().trim();
+        rawCounts.set(lc, (rawCounts.get(lc) || 0) + 1);
+      }
+    }
     const map: Record<string, number> = {};
     for (const cat of categories) {
       const catKey = cat.key.toLowerCase();
-      const catSlug = cat.slug.toLowerCase();
-      map[cat.key] = products.filter((p) => {
-        const cats = (p.categories && p.categories.length > 0)
-          ? p.categories
-          : (p.category ? [p.category] : []);
-        return cats.some((c) => {
-          const lc = c.toLowerCase().trim();
-          return lc === catKey || lc === catSlug;
-        });
-      }).length;
+      const catSlug = (cat.slug || "").toLowerCase();
+      const count = (rawCounts.get(catKey) || 0) + (catSlug && catSlug !== catKey ? (rawCounts.get(catSlug) || 0) : 0);
+      map[cat.key] = count;
     }
     return map;
   }, [categories, products]);
@@ -296,7 +299,13 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                     <button
                       key={cat.key}
                       type="button"
-                      onClick={() => setActiveCategory(cat.key)}
+                      onClick={() => {
+                        if (isActive) {
+                          handleNavigate(`/catalog/${cat.slug}`);
+                        } else {
+                          setActiveCategory(cat.key);
+                        }
+                      }}
                       className={`relative w-full flex flex-col items-center justify-center py-2.5 px-1 text-center transition-all cursor-pointer ${
                         isActive
                           ? "bg-white text-red-600 font-bold shadow-xs"
@@ -449,7 +458,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                       key={cat.key}
                       type="button"
                       onMouseEnter={() => setActiveCategory(cat.key)}
-                      onClick={() => setActiveCategory(cat.key)}
+                      onClick={() => handleNavigate(`/catalog/${cat.slug}`)}
                       className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-all group relative cursor-pointer ${
                         isActive
                           ? "bg-white text-red-600 font-semibold shadow-xs"

@@ -85,7 +85,7 @@ export default function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
       name: i.product.name,
       nameUz: i.product.nameUz,
       image: i.product.image,
-      price: i.product.price,
+      price: i.selectedSizePrice ?? i.product.price,
       count: i.count,
       selectedSize: i.selectedSize,
       selectedSizePrice: i.selectedSizePrice,

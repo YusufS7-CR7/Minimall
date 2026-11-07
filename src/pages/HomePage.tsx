@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useProducts } from "@/context/ProductsContext";
@@ -535,16 +535,16 @@ function AdvantagesSection({ lang }: { lang: string }) {
 
 function DiscountProductsRow({ lang }: { lang: string }) {
   const { addToCart } = useApp();
-  const { user, openAuthModal } = useAuth();
   const { products } = useProducts();
   const { usdRate } = useCurrency();
+  const navigate = useNavigate();
   const t = T[lang as "ru" | "uz"];
   const discountProducts = products.filter((p) => p.oldPrice);
   if (discountProducts.length === 0) return null;
 
   const handleAddToCart = (product: any) => {
-    if (!user) {
-      openAuthModal("register");
+    if (product.sizes && product.sizes.length > 0) {
+      navigate(`/product/${product.slug}`);
       return;
     }
     addToCart(product);
@@ -583,7 +583,9 @@ function DiscountProductsRow({ lang }: { lang: string }) {
               <div className="text-[10px] sm:text-xs text-gray-400 line-through mb-1.5">{formatPrice(p.oldPrice!, usdRate)}</div>
               <StarRating rating={p.rating} />
               <button onClick={() => handleAddToCart(p)} className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2 sm:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer">
-                {t.addToCart}
+                {p.sizes && p.sizes.length > 0
+                  ? (lang === "ru" ? "Выбрать вариант" : "Variant tanlash")
+                  : t.addToCart}
               </button>
             </div>
           </div>
@@ -598,8 +600,8 @@ function DiscountProductsRow({ lang }: { lang: string }) {
 function SaleCarousel({ lang }: { lang: string }) {
   const { products } = useProducts();
   const { addToCart } = useApp();
-  const { user, openAuthModal } = useAuth();
   const { usdRate } = useCurrency();
+  const navigate = useNavigate();
   const t = T[lang as "ru" | "uz"];
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -769,15 +771,17 @@ function SaleCarousel({ lang }: { lang: string }) {
         </div>
         <button
           onClick={() => {
-            if (!user) {
-              openAuthModal("register");
+            if (p.sizes && p.sizes.length > 0) {
+              navigate(`/product/${p.slug}`);
               return;
             }
             addToCart(p);
           }}
           className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer"
         >
-          {t.addToCart}
+          {p.sizes && p.sizes.length > 0
+            ? (lang === "ru" ? "Выбрать вариант" : "Variant tanlash")
+            : t.addToCart}
         </button>
       </div>
 

@@ -10,6 +10,7 @@ import { useCategories } from "@/context/CategoriesContext";
 export interface FilterState {
   priceRange: [number, number];
   selectedBrands: string[];
+  selectedCategories: string[];
   inStockOnly: boolean;
   sortBy: "default" | "price_asc" | "price_desc" | "rating" | "discount";
 }
@@ -17,6 +18,7 @@ export interface FilterState {
 export const DEFAULT_FILTER_STATE: FilterState = {
   priceRange: [0, 20_000_000],
   selectedBrands: [],
+  selectedCategories: [],
   inStockOnly: false,
   sortBy: "default",
 };
@@ -48,19 +50,23 @@ export default function ProductFilters({
   const [brandSearchQuery, setBrandSearchQuery] = useState("");
   const [isBrandCardOpen, setIsBrandCardOpen] = useState(true);
   const [isBrandListExpanded, setIsBrandListExpanded] = useState(false);
-  const [isCategoryCardOpen, setIsCategoryCardOpen] = useState(false);
+  const [isCategoryCardOpen, setIsCategoryCardOpen] = useState(true);
+  const [categorySearchQuery, setCategorySearchQuery] = useState("");
   const { categories } = useCategories();
   const t = T[lang];
 
+  const selectedCats = filters.selectedCategories || [];
   const isPriceFiltered =
     filters.priceRange[0] > 0 || filters.priceRange[1] < 20_000_000;
   const isBrandFiltered = filters.selectedBrands.length > 0;
+  const isCategoryFiltered = selectedCats.length > 0;
   const isStockFiltered = filters.inStockOnly;
-  const hasActiveFilters = isPriceFiltered || isBrandFiltered || isStockFiltered;
+  const hasActiveFilters = isPriceFiltered || isBrandFiltered || isCategoryFiltered || isStockFiltered;
 
   const activeFiltersCount =
     (isPriceFiltered ? 1 : 0) +
     filters.selectedBrands.length +
+    selectedCats.length +
     (isStockFiltered ? 1 : 0);
 
   // Count products per brand based on available products
@@ -112,11 +118,50 @@ export default function ProductFilters({
     onChange({ ...filters, selectedBrands: updated });
   };
 
+  // Count products per category
+  const categoryCounts = useMemo(() => {
+    const rawCounts = new Map<string, number>();
+    availableProducts.forEach((p) => {
+      const cats = (p.categories && p.categories.length > 0)
+        ? p.categories
+        : (p.category ? [p.category] : []);
+      cats.forEach((c) => {
+        const lc = c.toLowerCase().trim();
+        rawCounts.set(lc, (rawCounts.get(lc) || 0) + 1);
+      });
+    });
+    const map: Record<string, number> = {};
+    categories.forEach((cat) => {
+      const catKey = cat.key.toLowerCase();
+      const catSlug = (cat.slug || "").toLowerCase();
+      map[cat.key] = (rawCounts.get(catKey) || 0) + (catSlug && catSlug !== catKey ? (rawCounts.get(catSlug) || 0) : 0);
+    });
+    return map;
+  }, [availableProducts, categories]);
+
+  const filteredCategories = useMemo(() => {
+    const q = categorySearchQuery.trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter((c) => {
+      const name = (lang === "ru" ? c.labelRu : c.labelUz).toLowerCase();
+      return name.includes(q);
+    });
+  }, [categories, categorySearchQuery, lang]);
+
+  const toggleCategory = (catKey: string) => {
+    const isChecked = selectedCats.includes(catKey);
+    const next = isChecked
+      ? selectedCats.filter((k) => k !== catKey)
+      : [...selectedCats, catKey];
+    onChange({ ...filters, selectedCategories: next });
+  };
+
   const handleReset = () => {
     onChange({
       ...filters,
       priceRange: [0, 20_000_000],
       selectedBrands: [],
+      selectedCategories: [],
       inStockOnly: false,
     });
   };
@@ -141,7 +186,7 @@ export default function ProductFilters({
         />
       </div>
 
-      {/* 2. CATEGORIES FILTER ACCORDION */}
+      {/* 2. CATEGORIES FILTER ACCORDION WITH CHECKBOXES */}
       {categories.length > 0 && (
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs transition-all">
           <div className="flex items-center justify-between">
@@ -151,7 +196,12 @@ export default function ProductFilters({
               className="flex items-center gap-2 text-sm font-bold text-gray-900 cursor-pointer select-none hover:text-red-600 transition-colors w-full"
             >
               <span>{lang === "ru" ? "Категории" : "Kategoriyalar"}</span>
-              <span className="text-[10px] bg-gray-100 text-gray-600 font-bold px-2 py-0.5 rounded-full ml-auto mr-1">
+              {selectedCats.length > 0 && (
+                <span className="text-[10px] bg-red-100 text-red-600 font-extrabold px-2 py-0.5 rounded-full">
+                  {selectedCats.length}
+                </span>
+              )}
+              <span className="text-[10px] bg-gray-100 text-gray-500 font-bold px-2 py-0.5 rounded-full ml-auto mr-1">
                 {categories.length}
               </span>
               <svg
@@ -167,23 +217,54 @@ export default function ProductFilters({
             </button>
           </div>
           {isCategoryCardOpen && (
-            <div className="mt-3 space-y-1 max-h-56 overflow-y-auto pr-1">
-              {categories.map((c) => {
-                const label = lang === "ru" ? c.labelRu : c.labelUz;
-                return (
-                  <Link
-                    key={c.key}
-                    to={`/catalog/${c.slug}`}
-                    className="flex items-center justify-between py-1.5 px-2 rounded-lg text-xs text-gray-700 hover:text-red-600 hover:bg-red-50/60 transition-colors"
-                  >
-                    <span className="flex items-center gap-2 truncate">
+            <div className="mt-3 space-y-2">
+              {/* Category Search Input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  placeholder={lang === "uz" ? "Kategoriya qidirish..." : "Поиск по категориям..."}
+                  className="w-full text-xs px-2.5 py-1.5 pl-7 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:border-red-500 focus:bg-white"
+                />
+                <svg className="w-3.5 h-3.5 text-gray-400 absolute left-2 top-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {categorySearchQuery && (
+                  <button type="button" onClick={() => setCategorySearchQuery("")} className="absolute right-2 top-1.5 text-xs text-gray-400 hover:text-gray-600">✕</button>
+                )}
+              </div>
+
+              {/* Category Checkboxes List */}
+              <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                {filteredCategories.map((c) => {
+                  const label = lang === "ru" ? c.labelRu : c.labelUz;
+                  const isChecked = selectedCats.includes(c.key);
+                  const count = categoryCounts[c.key] || 0;
+                  return (
+                    <label
+                      key={c.key}
+                      className="flex items-center gap-2 py-1.5 px-2 rounded-lg text-xs hover:bg-gray-50 cursor-pointer select-none transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleCategory(c.key)}
+                        className="w-3.5 h-3.5 rounded text-red-600 focus:ring-red-500 border-gray-300 cursor-pointer"
+                      />
                       <span className="text-sm shrink-0">{c.icon}</span>
-                      <span className="truncate">{label}</span>
-                    </span>
-                    <span className="text-gray-300 text-xs">›</span>
-                  </Link>
-                );
-              })}
+                      <span className={`truncate flex-1 ${isChecked ? "font-bold text-red-600" : "text-gray-700"}`}>
+                        {label}
+                      </span>
+                      {count > 0 && (
+                        <span className="text-[10px] text-gray-400 shrink-0 font-medium">
+                          {count}
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -549,10 +630,12 @@ export function ActiveFilterBar({
   lang,
   totalFound,
 }: ActiveFilterBarProps) {
+  const { categories } = useCategories();
+  const selectedCats = filters.selectedCategories || [];
   const isPriceFiltered =
     filters.priceRange[0] > 0 || filters.priceRange[1] < 20_000_000;
   const hasActive =
-    isPriceFiltered || filters.selectedBrands.length > 0 || filters.inStockOnly;
+    isPriceFiltered || filters.selectedBrands.length > 0 || selectedCats.length > 0 || filters.inStockOnly;
 
   if (!hasActive) return null;
 
@@ -618,6 +701,33 @@ export function ActiveFilterBar({
         </span>
       )}
 
+      {/* Category tags */}
+      {selectedCats.map((catKey) => {
+        const cat = categories.find((c) => c.key === catKey || c.slug === catKey);
+        const label = cat ? (lang === "ru" ? cat.labelRu : cat.labelUz) : catKey;
+        return (
+          <span
+            key={catKey}
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-red-200 text-red-800 rounded-xl text-xs font-semibold shadow-2xs"
+          >
+            {cat?.icon && <span className="text-sm">{cat.icon}</span>}
+            <span>{label}</span>
+            <button
+              type="button"
+              onClick={() =>
+                onChange({
+                  ...filters,
+                  selectedCategories: selectedCats.filter((x) => x !== catKey),
+                })
+              }
+              className="hover:text-red-600 ml-0.5 text-xs font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </span>
+        );
+      })}
+
       {/* Reset all button */}
       <button
         type="button"
@@ -626,6 +736,7 @@ export function ActiveFilterBar({
             ...filters,
             priceRange: [0, 20_000_000],
             selectedBrands: [],
+            selectedCategories: [],
             inStockOnly: false,
           })
         }

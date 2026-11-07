@@ -29,17 +29,18 @@ export default function CategoryPage() {
   const PAGE_SIZE = 24;
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  // If no slug, show all products
-  const category = slug ? getCategoryBySlug(slug) : undefined;
+  // If no slug, show all products. Safely decode URL component.
+  const cleanSlug = slug ? decodeURIComponent(slug).toLowerCase().trim() : undefined;
+  const category = cleanSlug ? getCategoryBySlug(cleanSlug) : undefined;
 
   // Reset pagination on navigation or filter change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [slug, subSlug, filters, sortBy]);
 
-  // Handle loading or invalid slug
+  // Handle loading or invalid slug - wait for categories to load before 404
   if (slug && !category) {
-    if (loading) {
+    if (loading || categories.length === 0) {
       return (
         <div className="min-h-[50vh] flex items-center justify-center">
           <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
@@ -52,7 +53,7 @@ export default function CategoryPage() {
   // Active subcategory if ?sub= is present in URL
   const activeSubcategory = useMemo(() => {
     if (!category || !subSlug) return undefined;
-    const cleanSub = subSlug.toLowerCase().trim();
+    const cleanSub = decodeURIComponent(subSlug).toLowerCase().trim();
     return category.subcategories?.find(
       (s) => s.slug.toLowerCase() === cleanSub || s.key.toLowerCase() === cleanSub
     );
@@ -75,21 +76,40 @@ export default function CategoryPage() {
     setSearchParams(newParams);
   };
 
-  // Base products filtered by category and subcategory
+  // Base products filtered by category, sidebar checkbox categories, and subcategory
   const baseProducts = useMemo(() => {
-    let prods = slug && category
-      ? allProducts.filter((p) => {
-          const productCats = (p.categories && p.categories.length > 0)
-            ? p.categories
-            : (p.category ? [p.category] : []);
-          const catKey = category.key.toLowerCase();
-          const catSlug = category.slug.toLowerCase();
-          return productCats.some((c) => {
-            const clean = c.toLowerCase().trim();
-            return clean === catKey || clean === catSlug;
-          });
-        })
-      : allProducts;
+    let prods = allProducts;
+
+    // Filter by URL category if present
+    if (slug && category) {
+      const catKey = category.key.toLowerCase();
+      const catSlug = (category.slug || "").toLowerCase();
+      prods = prods.filter((p) => {
+        const productCats = (p.categories && p.categories.length > 0)
+          ? p.categories
+          : (p.category ? [p.category] : []);
+        return productCats.some((c) => {
+          const clean = c.toLowerCase().trim();
+          return clean === catKey || clean === catSlug;
+        });
+      });
+    }
+
+    // Filter by sidebar checkbox selected categories
+    if (filters.selectedCategories && filters.selectedCategories.length > 0) {
+      const selectedKeys = new Set(
+        filters.selectedCategories.map((k) => k.toLowerCase().trim())
+      );
+      prods = prods.filter((p) => {
+        const productCats = (p.categories && p.categories.length > 0)
+          ? p.categories
+          : (p.category ? [p.category] : []);
+        return productCats.some((c) => {
+          const clean = c.toLowerCase().trim();
+          return selectedKeys.has(clean);
+        });
+      });
+    }
 
     if (activeSubcategory) {
       prods = prods.filter((p) => {
@@ -115,7 +135,7 @@ export default function CategoryPage() {
       });
     }
     return prods;
-  }, [allProducts, slug, category, activeSubcategory]);
+  }, [allProducts, slug, category, filters.selectedCategories, activeSubcategory]);
 
   const categoryLabel = category
     ? lang === "ru"

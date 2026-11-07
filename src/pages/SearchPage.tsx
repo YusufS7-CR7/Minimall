@@ -49,6 +49,16 @@ export default function SearchPage() {
         ) {
           return false;
         }
+        // Category filter
+        if (filters.selectedCategories && filters.selectedCategories.length > 0) {
+          const selectedKeys = new Set(filters.selectedCategories.map((k) => k.toLowerCase().trim()));
+          const productCats = (p.categories && p.categories.length > 0)
+            ? p.categories
+            : (p.category ? [p.category] : []);
+          if (!productCats.some((c) => selectedKeys.has(c.toLowerCase().trim()))) {
+            return false;
+          }
+        }
         // Stock filter
         if (filters.inStockOnly && !p.inStock) {
           return false;

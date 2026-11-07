@@ -83,7 +83,7 @@ export default function CartDrawer({ lang, open, onClose }: CartDrawerProps) {
                     </div>
                   )}
                   <div className="text-xs text-red-600 font-extrabold mt-1">
-                    {formatPrice(item.selectedSizePrice ?? item.product.price)}
+                    {formatPrice(item.selectedSizePrice ?? item.product.price, usdRate)}
                   </div>
                   <div className="flex items-center gap-2 mt-2.5">
                     <button
