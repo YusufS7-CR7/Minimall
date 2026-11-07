@@ -24,6 +24,9 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
   const { categories } = useCategories();
   const t = T[lang];
   const [copied, setCopied] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, 6);
 
   const copyCoordinates = () => {
     if (navigator?.clipboard) {
@@ -209,19 +212,46 @@ export default function Footer({ lang, onOpenInfo }: FooterProps) {
 
             {/* Catalog */}
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">{t.catalog}</h3>
+              <div className="flex items-center justify-between mb-4 gap-2">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t.catalog}</h3>
+                <Link
+                  to="/catalog"
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium shrink-0"
+                >
+                  {lang === "ru" ? "Весь каталог →" : "Barchasi →"}
+                </Link>
+              </div>
               <ul className="space-y-2.5">
-                {categories.map((c) => (
+                {visibleCategories.map((c) => (
                   <li key={c.key}>
                     <Link
                       to={`/catalog/${c.slug}`}
-                      className="text-gray-400 hover:text-red-400 text-sm transition-colors"
+                      className="text-gray-400 hover:text-red-400 text-sm transition-colors block truncate"
+                      title={lang === "ru" ? c.labelRu : c.labelUz}
                     >
                       {lang === "ru" ? c.labelRu : c.labelUz}
                     </Link>
                   </li>
                 ))}
               </ul>
+              {categories.length > 6 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllCategories((prev) => !prev)}
+                  className="mt-3 text-xs font-semibold text-gray-400 hover:text-red-400 transition-colors flex items-center gap-1.5 cursor-pointer py-1 group"
+                >
+                  <span className="text-red-400 text-[10px]">
+                    {showAllCategories ? "▲" : "▼"}
+                  </span>
+                  <span>
+                    {showAllCategories
+                      ? (lang === "ru" ? "Свернуть" : "Qisqartirish")
+                      : (lang === "ru"
+                          ? `Ещё ${categories.length - 6} категорий`
+                          : `Yana ${categories.length - 6} ta toifa`)}
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Company */}
