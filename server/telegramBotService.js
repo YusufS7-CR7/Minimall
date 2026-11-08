@@ -126,6 +126,15 @@ let authSessions = {}; // chatId -> { step: 'awaiting_login' | 'awaiting_passwor
 // Pre-seed known admin chat IDs so subscribers persist across Render container restarts
 const DEFAULT_PRECONFIGURED_ADMINS = {
   "1837377724": {
+    adminId: "admin-1789892145530-jejk",
+    username: "yusuf_admin",
+    name: "Yusuf",
+    role: "admin",
+    isSuperAdmin: false,
+    lang: "ru",
+    subscribedAt: new Date().toISOString(),
+  },
+  "633686749": {
     adminId: "superadmin-1",
     username: "admin",
     name: "Главный Администратор",
@@ -144,11 +153,11 @@ const adminChatIdsEnv = (process.env.ADMIN_CHAT_IDS || "1837377724")
 for (const id of adminChatIdsEnv) {
   if (!subscribers[id]) {
     subscribers[id] = DEFAULT_PRECONFIGURED_ADMINS[id] || {
-      adminId: "superadmin-1",
+      adminId: id,
       username: "admin",
       name: "Администратор",
-      role: "superadmin",
-      isSuperAdmin: true,
+      role: "admin",
+      isSuperAdmin: false,
       lang: userLanguages[id] || "ru",
       subscribedAt: new Date().toISOString(),
     };
