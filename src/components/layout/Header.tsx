@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
+import { useProducts } from "@/context/ProductsContext";
+import { searchProducts } from "@/utils/smartSearch";
 import { T } from "@/data/translations";
 import type { Lang } from "@/data/types";
 import CatalogModal from "@/components/ui/CatalogModal";
@@ -26,17 +28,33 @@ export default function Header({ lang }: HeaderProps) {
     openOrders,
   } = useApp();
   const { user, openAuthModal, logout } = useAuth();
+  const { products } = useProducts();
   const [search, setSearch] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Close user menu on outside click
+  // Live search suggestions
+  const liveResultsAll = useMemo(() => {
+    if (!search.trim() || search.trim().length < 2) return [];
+    return searchProducts(products, search, lang);
+  }, [search, products, lang]);
+
+  const liveResults = useMemo(() => {
+    return liveResultsAll.slice(0, 5);
+  }, [liveResultsAll]);
+
+  // Close menus on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setIsSearchFocused(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -46,6 +64,7 @@ export default function Header({ lang }: HeaderProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (search.trim()) {
+      setIsSearchFocused(false);
       navigate(`/search?q=${encodeURIComponent(search.trim())}`);
     }
   };
@@ -121,30 +140,142 @@ export default function Header({ lang }: HeaderProps) {
             </button>
 
             {/* Search — takes all remaining space, smaller on mobile */}
-            <form
-              role="search"
-              onSubmit={handleSearch}
-              className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100 focus-within:bg-white transition-all"
-            >
-              <input
-                id="site-search"
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t.searchPlaceholder}
-                aria-label={t.searchPlaceholder}
-                className="flex-1 py-1.5 sm:py-2.5 px-2.5 sm:px-4 bg-transparent text-xs sm:text-sm outline-none text-gray-800 placeholder-gray-400 min-w-0"
-              />
-              <button
-                type="submit"
-                aria-label="Найти"
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-2.5 sm:px-4 py-1.5 sm:py-2.5 transition-all shrink-0"
+            <div ref={searchContainerRef} className="flex-1 relative min-w-0">
+              <form
+                role="search"
+                onSubmit={handleSearch}
+                className="flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden focus-within:border-red-400 focus-within:ring-2 focus-within:ring-red-100 focus-within:bg-white transition-all"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                </svg>
-              </button>
-            </form>
+                <input
+                  id="site-search"
+                  type="search"
+                  value={search}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setIsSearchFocused(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setIsSearchFocused(false);
+                    }
+                  }}
+                  placeholder={t.searchPlaceholder}
+                  aria-label={t.searchPlaceholder}
+                  autoComplete="off"
+                  className="flex-1 py-1.5 sm:py-2.5 px-2.5 sm:px-4 bg-transparent text-xs sm:text-sm outline-none text-gray-800 placeholder-gray-400 min-w-0"
+                />
+
+                {/* Clear search query button */}
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch("");
+                      setIsSearchFocused(false);
+                    }}
+                    aria-label="Очистить"
+                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors mr-0.5"
+                  >
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  aria-label="Найти"
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-2.5 sm:px-4 py-1.5 sm:py-2.5 transition-all shrink-0 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                  </svg>
+                </button>
+              </form>
+
+              {/* Instant Search Suggestions Dropdown */}
+              {isSearchFocused && search.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden divide-y divide-gray-100">
+                  {liveResults.length > 0 ? (
+                    <div>
+                      <div className="px-3.5 py-2 bg-gray-50/70 text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                        <span>{lang === "ru" ? "Быстрый поиск" : "Tezkor qidiruv"}</span>
+                        <span>{liveResultsAll.length} {lang === "ru" ? "найдено" : "topildi"}</span>
+                      </div>
+                      <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-50">
+                        {liveResults.map((product) => {
+                          const productName = lang === "uz" ? (product.nameUz || product.name) : product.name;
+                          return (
+                            <Link
+                              key={product.id}
+                              to={`/product/${product.slug}`}
+                              onClick={() => {
+                                setIsSearchFocused(false);
+                              }}
+                              className="flex items-center gap-3 p-2.5 sm:p-3 hover:bg-red-50/50 transition-colors group"
+                            >
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden shrink-0 flex items-center justify-center p-1">
+                                {product.image ? (
+                                  <img
+                                    src={product.image}
+                                    alt={productName}
+                                    className="w-full h-full object-contain group-hover:scale-105 transition-transform"
+                                  />
+                                ) : (
+                                  <span className="text-gray-300 text-xs">📦</span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs sm:text-sm font-semibold text-gray-800 truncate group-hover:text-red-600 transition-colors">
+                                  {productName}
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-gray-400">
+                                  {product.brand && (
+                                    <span className="px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 font-medium text-[10px]">
+                                      {product.brand}
+                                    </span>
+                                  )}
+                                  <span className="font-bold text-red-600 text-xs sm:text-sm">
+                                    {product.price.toLocaleString("ru-RU")} {lang === "ru" ? "сум" : "so'm"}
+                                  </span>
+                                </div>
+                              </div>
+                              <svg className="w-4 h-4 text-gray-300 group-hover:text-red-500 group-hover:translate-x-0.5 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      <div className="p-2 bg-gray-50/80 text-center">
+                        <button
+                          type="button"
+                          onClick={handleSearch}
+                          className="w-full py-1.5 sm:py-2 text-xs sm:text-sm font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                        >
+                          {lang === "ru"
+                            ? `Показать все результаты (${liveResultsAll.length}) →`
+                            : `Barcha natijalarni ko'rish (${liveResultsAll.length}) →`}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-5 text-center text-gray-400">
+                      <div className="text-2xl mb-1">🔍</div>
+                      <div className="text-xs sm:text-sm font-medium text-gray-600">
+                        {lang === "ru" ? "Ничего не найдено" : "Hech narsa topilmadi"}
+                      </div>
+                      <div className="text-[11px] text-gray-400 mt-0.5">
+                        {lang === "ru"
+                          ? `По запросу «${search}» товаров не найдено`
+                          : `"${search}" so'rovi bo'yicha tovarlar topilmadi`}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Mobile Language Switcher */}
             <button

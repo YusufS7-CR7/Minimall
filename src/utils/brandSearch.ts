@@ -95,16 +95,36 @@ export function matchBrandFuzzy(brand: string, query: string): boolean {
   // 1. Direct or substring match
   if (b.includes(q) || q.includes(b)) return true;
 
-  // 2. Transliterated match
+  // 2. Keyboard layout variants
+  const EN_TO_RU: Record<string, string> = {
+    q: "й", w: "ц", e: "у", r: "к", t: "е", y: "н", u: "г", i: "ш", o: "щ", p: "з",
+    "[": "х", "]": "ъ", a: "ф", s: "ы", d: "в", f: "а", g: "п", h: "р", j: "о",
+    k: "л", l: "д", ";": "ж", "'": "э", z: "я", x: "ч", c: "с", v: "м", b: "и",
+    n: "т", m: "ь", ",": "б", ".": "ю",
+  };
+  const RU_TO_EN: Record<string, string> = {};
+  for (const [k, v] of Object.entries(EN_TO_RU)) RU_TO_EN[v] = k;
+
+  const qRu = q.split("").map((c) => EN_TO_RU[c] || c).join("");
+  const qEn = q.split("").map((c) => RU_TO_EN[c] || c).join("");
+  if (b.includes(qEn) || qEn.includes(b)) return true;
+
+  // 3. Transliterated match
   const qTrans = transliterate(q);
+  const qRuTrans = transliterate(qRu);
   const bTrans = transliterate(b);
   if (bTrans.includes(qTrans) || qTrans.includes(bTrans)) return true;
+  if (bTrans.includes(qRuTrans) || qRuTrans.includes(bTrans)) return true;
 
-  // 3. Known aliases and synonyms
+  // 4. Known aliases and synonyms
   const synonyms = BRAND_SYNONYMS[brand] || [];
   for (const syn of synonyms) {
     const s = syn.toLowerCase();
-    if (s.includes(q) || q.includes(s) || s.includes(qTrans) || qTrans.includes(s)) {
+    if (
+      s.includes(q) || q.includes(s) ||
+      s.includes(qTrans) || qTrans.includes(s) ||
+      s.includes(qRu) || qRu.includes(s)
+    ) {
       return true;
     }
     const dist = getLevenshteinDistance(q, s);
@@ -112,10 +132,11 @@ export function matchBrandFuzzy(brand: string, query: string): boolean {
     if (dist <= maxDist) return true;
   }
 
-  // 4. Fuzzy Levenshtein on brand name & transliteration
+  // 5. Fuzzy Levenshtein on brand name & transliteration
   const distName = getLevenshteinDistance(q, b);
   const distTrans = getLevenshteinDistance(qTrans, bTrans);
+  const distEn = getLevenshteinDistance(qEn, b);
   const maxAllowed = b.length <= 3 ? 1 : b.length <= 6 ? 2 : 3;
 
-  return distName <= maxAllowed || distTrans <= maxAllowed;
+  return distName <= maxAllowed || distTrans <= maxAllowed || distEn <= maxAllowed;
 }

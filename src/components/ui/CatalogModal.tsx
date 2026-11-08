@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { T } from "@/data/translations";
 import { useCategories } from "@/context/CategoriesContext";
 import { useProducts } from "@/context/ProductsContext";
+import { switchEnToRu, switchRuToEn, cyrillicToLatin, latinToCyrillic } from "@/utils/smartSearch";
 import type { Lang } from "@/data/types";
 
 interface CatalogModalProps {
@@ -97,6 +98,19 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
     const q = searchQuery.trim().toLowerCase();
     if (!q) return null;
 
+    const variants = [
+      q,
+      switchEnToRu(q),
+      switchRuToEn(q),
+      cyrillicToLatin(q),
+      latinToCyrillic(q),
+    ].filter(Boolean);
+
+    const matchesText = (target: string) => {
+      const lower = target.toLowerCase();
+      return variants.some((v) => lower.includes(v));
+    };
+
     const matchedSubs: Array<{
       categoryKey: string;
       categorySlug: string;
@@ -108,7 +122,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
 
     const matchedCats = categories.filter((c) => {
       const name = (lang === "ru" ? c.labelRu : c.labelUz).toLowerCase();
-      return name.includes(q);
+      return matchesText(name);
     });
 
     for (const c of categories) {
@@ -116,7 +130,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
       if (c.subcategories) {
         for (const sub of c.subcategories) {
           const sLabel = lang === "ru" ? sub.labelRu : sub.labelUz;
-          if (sLabel.toLowerCase().includes(q)) {
+          if (matchesText(sLabel)) {
             matchedSubs.push({
               categoryKey: c.key,
               categorySlug: c.slug,

@@ -4,6 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { useProducts } from "@/context/ProductsContext";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { T } from "@/data/translations";
+import { searchProducts } from "@/utils/smartSearch";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductFilters, {
   ActiveFilterBar,
@@ -24,15 +25,7 @@ export default function SearchPage() {
 
   const rawResults = useMemo(() => {
     if (!q.trim()) return [];
-    const query = q.toLowerCase();
-    return products.filter((p) => {
-      const name = (lang === "uz" ? (p.nameUz || p.name) : p.name).toLowerCase();
-      return (
-        name.includes(query) ||
-        p.brand.toLowerCase().includes(query) ||
-        p.slug.includes(query)
-      );
-    });
+    return searchProducts(products, q, lang);
   }, [q, products, lang]);
 
   const filteredResults = useMemo(() => {
