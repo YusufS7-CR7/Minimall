@@ -20,6 +20,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
   const [activeCategory, setActiveCategory] = useState<string>(() => categories[0]?.key || "drills");
   const [searchQuery, setSearchQuery] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   // Sync / validate active category when menu opens
   useEffect(() => {
@@ -51,10 +52,13 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
-  // Close on outside click (for desktop dropdown)
+  // Close on outside click (for desktop dropdown; does not close when tapping inside mobile modal)
   useEffect(() => {
     if (!open) return;
     const handleClick = (e: MouseEvent) => {
+      if (mobileMenuRef.current && mobileMenuRef.current.contains(e.target as Node)) {
+        return;
+      }
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
@@ -145,6 +149,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
           MOBILE CATALOG (Full-screen mobile experience for phones & small tablets)
       ────────────────────────────────────────────────────────────────────────── */}
       <div
+        ref={mobileMenuRef}
         className="md:hidden fixed inset-0 z-[60] bg-white flex flex-col animate-fadeIn"
         role="dialog"
         aria-modal="true"
@@ -233,10 +238,10 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                         {searchResults.matchedCats.map((cat) => {
                           const label = lang === "ru" ? cat.labelRu : cat.labelUz;
                           return (
-                            <button
+                            <Link
                               key={cat.key}
-                              type="button"
-                              onClick={() => handleNavigate(`/catalog/${cat.slug}`)}
+                              to={`/catalog/${cat.slug}`}
+                              onClick={onClose}
                               className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-red-50 text-left border border-gray-100 transition-colors"
                             >
                               <div className="flex items-center gap-2.5">
@@ -249,7 +254,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                                 </div>
                               </div>
                               <span className="text-gray-400 text-xs">›</span>
-                            </button>
+                            </Link>
                           );
                         })}
                       </div>
@@ -263,10 +268,10 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                       </h3>
                       <div className="space-y-1.5">
                         {searchResults.matchedSubs.map((sub) => (
-                          <button
+                          <Link
                             key={`${sub.categoryKey}-${sub.subKey}`}
-                            type="button"
-                            onClick={() => handleNavigate(`/catalog/${sub.categorySlug}?sub=${sub.subSlug}`)}
+                            to={`/catalog/${sub.categorySlug}?sub=${sub.subSlug}`}
+                            onClick={onClose}
                             className="w-full flex items-center justify-between p-3 rounded-xl bg-white hover:bg-red-50 text-left border border-gray-200/80 transition-colors shadow-2xs"
                           >
                             <div>
@@ -276,7 +281,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                               </div>
                             </div>
                             <span className="text-red-500 text-xs font-bold">›</span>
-                          </button>
+                          </Link>
                         ))}
                       </div>
                     </div>
@@ -299,13 +304,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                     <button
                       key={cat.key}
                       type="button"
-                      onClick={() => {
-                        if (isActive) {
-                          handleNavigate(`/catalog/${cat.slug}`);
-                        } else {
-                          setActiveCategory(cat.key);
-                        }
-                      }}
+                      onClick={() => setActiveCategory(cat.key)}
                       className={`relative w-full flex flex-col items-center justify-center py-2.5 px-1 text-center transition-all cursor-pointer ${
                         isActive
                           ? "bg-white text-red-600 font-bold shadow-xs"
@@ -349,16 +348,16 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                       </div>
 
                       {/* View all products of this category button */}
-                      <button
-                        type="button"
-                        onClick={() => handleNavigate(`/catalog/${activeCat.slug}`)}
+                      <Link
+                        to={`/catalog/${activeCat.slug}`}
+                        onClick={onClose}
                         className="mt-3 w-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold py-2.5 px-3.5 rounded-xl flex items-center justify-between shadow-xs shadow-red-200 transition-all active:scale-[0.98]"
                       >
                         <span>
                           {lang === "uz" ? "Bo'limdagi barcha tovarlar" : "Все товары категории"}
                         </span>
                         <span className="text-sm font-extrabold">→</span>
-                      </button>
+                      </Link>
                     </div>
 
                     {/* Subcategories list */}
@@ -377,10 +376,10 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                           {subcategories.map((sub) => {
                             const subLabel = lang === "ru" ? sub.labelRu : sub.labelUz;
                             return (
-                              <button
+                              <Link
                                 key={sub.key}
-                                type="button"
-                                onClick={() => handleNavigate(`/catalog/${activeCat.slug}?sub=${sub.slug}`)}
+                                to={`/catalog/${activeCat.slug}?sub=${sub.slug}`}
+                                onClick={onClose}
                                 className="w-full flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-red-50/60 active:bg-red-100/70 border border-gray-100 hover:border-red-200 text-left transition-all group active:scale-[0.99]"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0 pr-2">
@@ -392,7 +391,7 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                                 <span className="text-gray-400 group-hover:text-red-500 font-bold text-sm shrink-0">
                                   ›
                                 </span>
-                              </button>
+                              </Link>
                             );
                           })}
                         </div>
@@ -404,13 +403,13 @@ export default function CatalogModal({ id = "catalog-modal", lang, open, onClose
                     </div>
 
                     {/* Quick jump to all products */}
-                    <button
-                      type="button"
-                      onClick={() => handleNavigate("/catalog")}
-                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-gray-300 text-gray-600 hover:text-red-600 hover:border-red-300 text-xs font-bold text-center transition-colors"
+                    <Link
+                      to="/catalog"
+                      onClick={onClose}
+                      className="w-full py-2.5 px-3 rounded-xl border border-dashed border-gray-300 text-gray-600 hover:text-red-600 hover:border-red-300 text-xs font-bold text-center transition-colors block"
                     >
                       {lang === "uz" ? "Barcha katalogga o'tish →" : "Перейти ко всему каталогу →"}
-                    </button>
+                    </Link>
                   </div>
                 )}
               </div>

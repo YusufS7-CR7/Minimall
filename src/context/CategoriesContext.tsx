@@ -117,7 +117,7 @@ export async function smartUpsertCategoryToDB(cat: CategoryDef): Promise<{ succe
 
 export function CategoriesProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<CategoryDef[]>(loadLocalCategories);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchRemoteCategories = useCallback(async () => {
     try {

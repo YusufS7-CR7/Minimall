@@ -140,13 +140,15 @@ export default function CategoryPage() {
     }
 
     if (activeSubcategory) {
+      const targetKey = activeSubcategory.key.toLowerCase().trim();
+      const targetSlug = (activeSubcategory.slug || "").toLowerCase().trim();
       prods = prods.filter((p) => {
         // Direct match with subcategory key or slug
         if (p.subcategory) {
-          return (
-            p.subcategory === activeSubcategory.key ||
-            p.subcategory === activeSubcategory.slug
-          );
+          const sub = p.subcategory.toLowerCase().trim();
+          if (sub === targetKey || sub === targetSlug) {
+            return true;
+          }
         }
         // Fallback for older products added before subcategory field:
         // match name by root keyword (e.g. "лобзик" in name for lobziki)
