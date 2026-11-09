@@ -240,8 +240,8 @@ const ProductsContext = createContext<ProductsContextValue | null>(null);
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-const CACHE_KEY = "minimall_products_cache_v5";
-const CACHE_TS_KEY = "minimall_products_cache_ts_v5";
+const CACHE_KEY = "minimall_products_cache_v6";
+const CACHE_TS_KEY = "minimall_products_cache_ts_v6";
 // Cache TTL: 3 minutes — after this, always fetch fresh from Supabase
 const CACHE_TTL_MS = 3 * 60 * 1000;
 
@@ -343,7 +343,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // ── Fetch all products from Supabase ───────────────────────────────────────
+  // ── Fetch all products from Supabase (paginated to remove 1000-row limit) ──
   const fetchProducts = useCallback(async () => {
     // Only display loading screen if we have no cached data at all
     setProducts((current) => {
@@ -351,20 +351,93 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       return current;
     });
 
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const PAGE_SIZE = 1000;
+      let allRows: DbProduct[] = [];
 
-    if (!error && data) {
-      const mapped = (data as DbProduct[]).map(dbToProduct);
+      // 1. Fetch first batch with exact count
+      const { data: firstBatch, error: firstError, count } = await supabase
+        .from("products")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
+
+      if (firstError) {
+        console.error("Failed to fetch products:", firstError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (firstBatch && firstBatch.length > 0) {
+        allRows = [...(firstBatch as DbProduct[])];
+
+        // 2. If total count is known and exceeds 1000, fetch remaining pages in parallel
+        if (count && count > PAGE_SIZE) {
+          const totalPages = Math.ceil(count / PAGE_SIZE);
+          const pagePromises = [];
+          for (let page = 1; page < totalPages; page++) {
+            const from = page * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+            pagePromises.push(
+              supabase
+                .from("products")
+                .select("*")
+                .order("created_at", { ascending: false })
+                .range(from, to)
+            );
+          }
+
+          const results = await Promise.all(pagePromises);
+          for (const res of results) {
+            if (res.error) {
+              console.error("Failed to fetch products page:", res.error.message);
+            } else if (res.data) {
+              allRows.push(...(res.data as DbProduct[]));
+            }
+          }
+        } else if (!count && firstBatch.length === PAGE_SIZE) {
+          // If count header is missing, paginate sequentially until fewer than PAGE_SIZE items
+          let from = PAGE_SIZE;
+          let hasMore = true;
+          while (hasMore) {
+            const { data: nextBatch, error: nextError } = await supabase
+              .from("products")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .range(from, from + PAGE_SIZE - 1);
+
+            if (nextError || !nextBatch || nextBatch.length === 0) {
+              hasMore = false;
+            } else {
+              allRows.push(...(nextBatch as DbProduct[]));
+              if (nextBatch.length < PAGE_SIZE) {
+                hasMore = false;
+              } else {
+                from += PAGE_SIZE;
+              }
+            }
+          }
+        }
+      }
+
+      // Deduplicate by id just in case concurrent inserts shifted offsets during pagination
+      const seenIds = new Set<number>();
+      const uniqueRows: DbProduct[] = [];
+      for (const row of allRows) {
+        if (!seenIds.has(row.id)) {
+          seenIds.add(row.id);
+          uniqueRows.push(row);
+        }
+      }
+
+      const mapped = uniqueRows.map(dbToProduct);
       setProducts(mapped);
       saveCachedProducts(mapped);
-    } else if (error) {
-      console.error("Failed to fetch products:", error.message);
-      // Notice: we DO NOT clear `products`, we keep existing cached products!
+    } catch (err: any) {
+      console.error("Unexpected error in fetchProducts:", err?.message || err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -805,6 +878,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
       const bestCachedMap = new Map<number, { descRu?: string; descUz?: string; specs?: Record<string, string> }>();
       if (typeof window !== "undefined" && window.localStorage) {
         const candidateKeys = [
+          "minimall_products_cache_v6",
           "minimall_products_cache_v5",
           "minimall_products_cache_v4",
           "minimall_products_cache_v3",
