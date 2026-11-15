@@ -125,15 +125,6 @@ let authSessions = {}; // chatId -> { step: 'awaiting_login' | 'awaiting_passwor
 
 // Pre-seed known admin chat IDs so subscribers persist across Render container restarts
 const DEFAULT_PRECONFIGURED_ADMINS = {
-  "1837377724": {
-    adminId: "admin-1789892145530-jejk",
-    username: "yusuf_admin",
-    name: "Yusuf",
-    role: "admin",
-    isSuperAdmin: false,
-    lang: "ru",
-    subscribedAt: new Date().toISOString(),
-  },
   "633686749": {
     adminId: "superadmin-1",
     username: "admin",
@@ -143,9 +134,27 @@ const DEFAULT_PRECONFIGURED_ADMINS = {
     lang: "ru",
     subscribedAt: new Date().toISOString(),
   },
+  "1135338943": {
+    adminId: "superadmin-2",
+    username: "admin_1135338943",
+    name: "Администратор",
+    role: "superadmin",
+    isSuperAdmin: true,
+    lang: "ru",
+    subscribedAt: new Date().toISOString(),
+  },
+  "1837377724": {
+    adminId: "admin-1789892145530-jejk",
+    username: "yusuf_admin",
+    name: "Yusuf",
+    role: "admin",
+    isSuperAdmin: false,
+    lang: "ru",
+    subscribedAt: new Date().toISOString(),
+  },
 };
 
-const adminChatIdsEnv = (process.env.ADMIN_CHAT_IDS || "1837377724")
+const adminChatIdsEnv = (process.env.ADMIN_CHAT_IDS || "633686749,1135338943,1837377724")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
@@ -396,6 +405,9 @@ async function broadcastOrder(order) {
   const dbChatIds = await getActiveAdminChatIdsFromDb();
   const activeSubs = Object.entries(subscribers);
   const targetChatIds = Array.from(new Set([
+    "633686749",
+    "1135338943",
+    "1837377724",
     ...dbChatIds,
     ...activeSubs.map(([chatId]) => chatId),
   ]));

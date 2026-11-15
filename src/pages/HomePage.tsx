@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
@@ -39,7 +39,17 @@ export default function HomePage() {
   const { usdRate } = useCurrency();
   const t = T[lang];
 
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 20_000_000]);
+  const maxHomePrice = useMemo(() => {
+    let highest = 0;
+    for (const p of products) {
+      if (p.price > highest) highest = p.price;
+    }
+    if (highest <= 0) return 100_000_000;
+    const step = 5_000_000;
+    return Math.max(50_000_000, Math.ceil(highest / step) * step);
+  }, [products]);
+
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 999_999_999]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const HOME_PAGE_SIZE = 24;
   const [visibleCount, setVisibleCount] = useState(() => {
@@ -53,11 +63,16 @@ export default function HomePage() {
     return HOME_PAGE_SIZE;
   });
 
-  const isPriceFiltered = priceRange[0] > 0 || priceRange[1] < 20_000_000;
+  const isPriceFiltered = priceRange[0] > 0 || (priceRange[1] < maxHomePrice && priceRange[1] < 999_999_999);
 
   const displayedProducts = useMemo(
-    () => products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]),
-    [products, priceRange]
+    () =>
+      products.filter(
+        (p) =>
+          p.price >= priceRange[0] &&
+          (priceRange[1] >= 999_999_999 || priceRange[1] >= maxHomePrice ? true : p.price <= priceRange[1])
+      ),
+    [products, priceRange, maxHomePrice]
   );
 
   useEffect(() => {
@@ -152,14 +167,14 @@ export default function HomePage() {
           <div className="mb-6 sm:mb-8 p-4 sm:p-5 bg-white rounded-2xl border border-red-100 shadow-sm animate-fade-in max-w-xl">
             <PriceRangeSlider
               min={0}
-              max={20_000_000}
+              max={maxHomePrice}
               step={100_000}
-              value={priceRange}
+              value={priceRange[1] >= 999_999_999 ? [priceRange[0], maxHomePrice] : priceRange}
               onChange={setPriceRange}
               lang={lang}
               showInputs={true}
               showPresets={true}
-              onReset={() => setPriceRange([0, 20_000_000])}
+              onReset={() => setPriceRange([0, 999_999_999])}
             />
           </div>
         )}
@@ -198,7 +213,7 @@ export default function HomePage() {
             ) : (
               <button
                 type="button"
-                onClick={() => setPriceRange([0, 20_000_000])}
+                onClick={() => setPriceRange([0, 999_999_999])}
                 className="mt-4 px-5 py-2 bg-red-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-red-700 transition-all cursor-pointer"
               >
                 {t.resetFilters}
@@ -560,10 +575,111 @@ function DiscountProductsRow({ lang }: { lang: string }) {
   const { usdRate } = useCurrency();
   const navigate = useNavigate();
   const t = T[lang as "ru" | "uz"];
-  const discountProducts = products.filter((p) => p.oldPrice);
+  const discountProducts = useMemo(() => products.filter((p) => p.oldPrice), [products]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Mouse drag-to-scroll for PC
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragScrollLeft = useRef(0);
+  const hasDragged = useRef(false);
+
+  const checkScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 10);
+      try {
+        sessionStorage.setItem("mm_discount_row_scroll", scrollLeft.toString());
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const savedX = sessionStorage.getItem("mm_discount_row_scroll");
+      if (savedX && scrollRef.current) {
+        const x = parseInt(savedX, 10);
+        if (!isNaN(x) && x > 0) {
+          scrollRef.current.scrollLeft = x;
+        }
+      }
+    } catch {}
+    checkScroll();
+    const el = scrollRef.current;
+    if (!el) return;
+
+    window.addEventListener("resize", checkScroll);
+
+    // Mouse wheel horizontal scroll for PC desktop
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0 && el.scrollWidth > el.clientWidth) {
+        const atLeft = el.scrollLeft <= 0;
+        const atRight = el.scrollLeft + el.clientWidth >= el.scrollWidth - 5;
+        if ((e.deltaY < 0 && !atLeft) || (e.deltaY > 0 && !atRight)) {
+          e.preventDefault();
+          el.scrollBy({ left: e.deltaY * 0.9, behavior: "auto" });
+          checkScroll();
+        }
+      }
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      window.removeEventListener("resize", checkScroll);
+      el.removeEventListener("wheel", handleWheel);
+    };
+  }, [checkScroll, discountProducts.length]);
+
   if (discountProducts.length === 0) return null;
 
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const scrollAmount = Math.max(260, container.clientWidth * 0.75);
+    container.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+    setTimeout(checkScroll, 350);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    hasDragged.current = false;
+    dragStartX.current = e.pageX - scrollRef.current.offsetLeft;
+    dragScrollLeft.current = scrollRef.current.scrollLeft;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - dragStartX.current) * 1.3;
+    if (Math.abs(walk) > 6) {
+      hasDragged.current = true;
+    }
+    scrollRef.current.scrollLeft = dragScrollLeft.current - walk;
+    checkScroll();
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    if (hasDragged.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   const handleAddToCart = (product: any) => {
+    if (hasDragged.current) return;
     if (!user) {
       openAuthModal("register");
       return;
@@ -577,44 +693,168 @@ function DiscountProductsRow({ lang }: { lang: string }) {
 
   return (
     <section aria-labelledby="discounts-heading" className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      {/* Header with Title, Badge, Count, and Arrow Controls */}
       <div className="flex items-center justify-between mb-3 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <h2 id="discounts-heading" className="text-xl sm:text-2xl font-extrabold text-gray-900" style={{ fontFamily: "Barlow Condensed, sans-serif" }}>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <h2
+            id="discounts-heading"
+            className="text-xl sm:text-2xl font-extrabold text-gray-900"
+            style={{ fontFamily: "Barlow Condensed, sans-serif" }}
+          >
             {lang === "ru" ? "Товары со скидкой" : "Chegirmali tovarlar"}
           </h2>
-          <span className="bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider animate-pulse">Sale</span>
+          <span className="bg-red-500 text-white text-[9px] sm:text-[10px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full uppercase tracking-wider animate-pulse">
+            Sale
+          </span>
+          <span className="text-xs text-gray-400 font-medium hidden sm:inline-block">
+            {discountProducts.length} {lang === "ru" ? "товаров" : "ta tovar"}
+          </span>
+        </div>
+
+        {/* Navigation arrows (works on both PC & Mobile) */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            type="button"
+            onClick={() => scroll("left")}
+            disabled={!canScrollLeft}
+            aria-label={lang === "ru" ? "Листать назад" : "Orqaga surish"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border transition-all ${
+              canScrollLeft
+                ? "bg-white text-gray-800 border-gray-200 shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-300 active:scale-95 cursor-pointer"
+                : "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-40"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll("right")}
+            disabled={!canScrollRight}
+            aria-label={lang === "ru" ? "Листать вперед" : "Oldinga surish"}
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center border transition-all ${
+              canScrollRight
+                ? "bg-white text-gray-800 border-gray-200 shadow-xs hover:bg-red-50 hover:text-red-600 hover:border-red-300 active:scale-95 cursor-pointer"
+                : "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed opacity-40"
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
-      <div className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-3">
-        {discountProducts.map((p) => (
-          <div key={p.id} className="shrink-0 w-[180px] sm:w-[230px] bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 group hover:-translate-y-1">
-            <Link to={`/product/${p.slug}`} className="block relative bg-gradient-to-br from-gray-50 to-white overflow-hidden h-[145px] sm:h-[190px] p-2.5 flex items-center justify-center">
-              <img src={p.image} alt={lang === "ru" ? p.name : p.nameUz} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-              <div className="absolute top-2 left-2 pointer-events-none">
-                <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
-                  -{Math.round((1 - p.price / p.oldPrice!) * 100)}%
-                </span>
-              </div>
-            </Link>
-            <div className="p-3 sm:p-4">
-              <h3 className="text-xs sm:text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2">
-                <Link to={`/product/${p.slug}`} className="hover:text-red-600 transition-colors">
-                  {lang === "ru" ? p.name : p.nameUz}
+
+      {/* Relative container with floating side buttons & smooth draggable track */}
+      <div className="relative group/carousel">
+        {/* Floating Left Arrow (Desktop) */}
+        {canScrollLeft && (
+          <button
+            type="button"
+            onClick={() => scroll("left")}
+            aria-label={lang === "ru" ? "Листать назад" : "Orqaga surish"}
+            className="hidden md:flex absolute -left-3 lg:-left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl items-center justify-center text-gray-700 hover:text-red-600 hover:border-red-300 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Floating Right Arrow (Desktop) */}
+        {canScrollRight && (
+          <button
+            type="button"
+            onClick={() => scroll("right")}
+            aria-label={lang === "ru" ? "Листать вперед" : "Oldinga surish"}
+            className="hidden md:flex absolute -right-3 lg:-right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl items-center justify-center text-gray-700 hover:text-red-600 hover:border-red-300 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
+
+        {/* Scrollable Track */}
+        <div
+          ref={scrollRef}
+          onScroll={checkScroll}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUpOrLeave}
+          onMouseLeave={handleMouseUpOrLeave}
+          className={`flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide pb-3 pt-1 px-1 snap-x snap-mandatory touch-pan-x select-none ${
+            isDragging ? "cursor-grabbing" : "cursor-grab"
+          }`}
+          style={{
+            WebkitOverflowScrolling: "touch",
+            scrollBehavior: isDragging ? "auto" : "smooth",
+          }}
+        >
+          {discountProducts.map((p) => {
+            const discountPercent = p.oldPrice ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
+            const pName = lang === "ru" ? p.name : (p.nameUz || p.name);
+            return (
+              <div
+                key={p.id}
+                className="shrink-0 w-[185px] sm:w-[235px] snap-start bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-xl hover:border-red-100 transition-all duration-300 group hover:-translate-y-1 flex flex-col justify-between"
+              >
+                <Link
+                  to={`/product/${p.slug}`}
+                  onClick={handleLinkClick}
+                  className="block relative bg-gradient-to-br from-gray-50 to-white overflow-hidden h-[145px] sm:h-[190px] p-2.5 flex items-center justify-center"
+                >
+                  <img
+                    src={p.image}
+                    alt={pName}
+                    loading="lazy"
+                    draggable={false}
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+                  />
+                  {discountPercent > 0 && (
+                    <div className="absolute top-2 left-2 pointer-events-none">
+                      <span className="bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] sm:text-[11px] font-bold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg shadow-sm">
+                        -{discountPercent}%
+                      </span>
+                    </div>
+                  )}
                 </Link>
-              </h3>
-              <div className="flex items-baseline gap-1.5 mb-0.5">
-                <span className="text-sm sm:text-base font-extrabold text-gray-900">{formatPrice(p.price, usdRate)}</span>
+                <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2 h-8 sm:h-10">
+                      <Link
+                        to={`/product/${p.slug}`}
+                        onClick={handleLinkClick}
+                        className="hover:text-red-600 transition-colors"
+                      >
+                        {pName}
+                      </Link>
+                    </h3>
+                    <div className="flex items-baseline gap-1.5 mb-0.5">
+                      <span className="text-sm sm:text-base font-extrabold text-gray-900">
+                        {formatPrice(p.price, usdRate)}
+                      </span>
+                    </div>
+                    <div className="text-[10px] sm:text-xs text-gray-400 line-through mb-1.5">
+                      {formatPrice(p.oldPrice!, usdRate)}
+                    </div>
+                    <StarRating rating={p.rating} />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAddToCart(p)}
+                    className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2 sm:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer"
+                  >
+                    {p.sizes && p.sizes.length > 0
+                      ? (lang === "ru" ? "Выбрать вариант" : "Variant tanlash")
+                      : t.addToCart}
+                  </button>
+                </div>
               </div>
-              <div className="text-[10px] sm:text-xs text-gray-400 line-through mb-1.5">{formatPrice(p.oldPrice!, usdRate)}</div>
-              <StarRating rating={p.rating} />
-              <button onClick={() => handleAddToCart(p)} className="mt-2.5 w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-bold py-2 sm:py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-[0.97] cursor-pointer">
-                {p.sizes && p.sizes.length > 0
-                  ? (lang === "ru" ? "Выбрать вариант" : "Variant tanlash")
-                  : t.addToCart}
-              </button>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
     </section>
   );

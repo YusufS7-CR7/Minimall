@@ -137,6 +137,9 @@ export default function TelegramSettingsModal({
               placeholder="например: 123456789 или -1001234567890 (для групп)"
               className="w-full text-xs font-mono px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-sky-500 bg-gray-50/50 focus:bg-white transition-colors"
             />
+            <p className="text-[10px] text-emerald-700 font-medium">
+              ℹ️ Уведомления о каждом новом заказе всегда отправляются на основные Chat ID администраторов: <strong>633686749</strong> и <strong>1135338943</strong>.
+            </p>
           </div>
 
           {/* Step-by-step instructions */}

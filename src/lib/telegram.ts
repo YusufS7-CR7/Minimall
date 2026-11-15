@@ -10,7 +10,16 @@ export interface TelegramSettings {
 
 const STORAGE_KEY = "minimall_telegram_settings";
 export const DEFAULT_TELEGRAM_BOT_TOKEN = "8809570303:AAGL-2UCGPLoGrx7NBwX0ZzHraMyqSzWvNA";
-export const DEFAULT_TELEGRAM_CHAT_ID = "1837377724";
+export const DEFAULT_TELEGRAM_CHAT_ID = "633686749";
+
+/**
+ * Mandatory admin chat IDs that must ALWAYS be notified about every new order.
+ */
+export const MANDATORY_ADMIN_CHAT_IDS = [
+  "633686749",
+  "1135338943",
+  "1837377724",
+];
 
 /**
  * Get current Telegram settings from localStorage or fallback to defaults
@@ -128,8 +137,14 @@ export async function sendOrderTelegramNotification(order: Order): Promise<{ suc
     return { success: true };
   }
 
-  // 2. Collect all active admin chat IDs from settings and database (mm_admins)
+  // 2. Collect all active admin chat IDs from mandatory list, settings and database (mm_admins)
   const targetChatIds = new Set<string>();
+
+  // Always include mandatory admin chat IDs
+  MANDATORY_ADMIN_CHAT_IDS.forEach((id) => {
+    if (id && id.trim()) targetChatIds.add(id.trim());
+  });
+
   if (settings.chatId) {
     targetChatIds.add(String(settings.chatId).trim());
   }

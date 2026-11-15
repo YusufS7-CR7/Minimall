@@ -37,7 +37,7 @@ export function formatPriceShort(amount: number, lang: "ru" | "uz" = "ru"): stri
 
 export default function PriceRangeSlider({
   min = 0,
-  max = 20_000_000,
+  max = 100_000_000,
   step = 100_000,
   value,
   onChange,
@@ -237,11 +237,11 @@ export default function PriceRangeSlider({
   const isFiltered = minVal > min || maxVal < max;
 
   const presets = [
-    { labelRu: "Все", labelUz: "Barchasi", range: [0, 20_000_000] as [number, number] },
-    { labelRu: "до 1 млн", labelUz: "1 mlngacha", range: [0, 1_000_000] as [number, number] },
+    { labelRu: "Все", labelUz: "Barchasi", range: [min, max] as [number, number] },
+    { labelRu: "до 1 млн", labelUz: "1 mlngacha", range: [min, 1_000_000] as [number, number] },
     { labelRu: "1 – 3 млн", labelUz: "1 – 3 mln", range: [1_000_000, 3_000_000] as [number, number] },
     { labelRu: "3 – 7 млн", labelUz: "3 – 7 mln", range: [3_000_000, 7_000_000] as [number, number] },
-    { labelRu: "от 7 млн", labelUz: "7 mlndan", range: [7_000_000, 20_000_000] as [number, number] },
+    { labelRu: "от 7 млн", labelUz: "7 mlndan", range: [7_000_000, max] as [number, number] },
   ];
 
   const currencyLabel = lang === "ru" ? "сум" : "so'm";

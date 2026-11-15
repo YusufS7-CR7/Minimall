@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useParams, Link, Navigate } from "react-router-dom";
+import { useParams, Link, Navigate, useNavigate } from "react-router-dom";
 import { useApp } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useProducts, dbToProduct, type DbProduct } from "@/context/ProductsContext";
@@ -19,6 +19,7 @@ export default function ProductPage() {
   const { user, openAuthModal } = useAuth();
   const { getProductBySlug, products, loading: productsLoading, upsertProduct } = useProducts();
   const { usdRate } = useCurrency();
+  const navigate = useNavigate();
   const t = T[lang];
 
   // Local state initialized with cached product for instant rendering
@@ -26,6 +27,20 @@ export default function ProductPage() {
   const [product, setProduct] = useState<Product | undefined>(cachedProduct);
   const [isFetchingDirect, setIsFetchingDirect] = useState<boolean>(!cachedProduct);
   const [notFound, setNotFound] = useState(false);
+
+  // Return to exact previous page and scroll position
+  const handleGoBack = useCallback(() => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      const lastCatalog = sessionStorage.getItem("mm_last_catalog_url");
+      if (lastCatalog) {
+        navigate(lastCatalog);
+      } else {
+        navigate("/");
+      }
+    }
+  }, [navigate]);
 
   // Direct fetch by slug from Supabase ensures fresh descriptions, characteristics, and handles new products
   useEffect(() => {
@@ -313,44 +328,62 @@ export default function ProductPage() {
 
   return (
     <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-      {/* Breadcrumbs */}
-      <nav aria-label="Breadcrumb" className="mb-4 sm:mb-6">
-        <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
-          <li>
-            <Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link>
-          </li>
-          <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-          {productCategories.length > 0 ? (
-            productCategories.map((cat, idx) => {
-              const catLbl = lang === "uz" ? (cat.labelUz || cat.labelRu) : cat.labelRu;
-              return (
-                <span key={cat.key} className="flex items-center gap-1.5">
-                  <li>
-                    <Link to={`/catalog/${cat.slug}`} className="hover:text-red-500 transition-colors">
-                      {catLbl}
-                    </Link>
-                  </li>
-                  {idx < productCategories.length - 1 ? (
-                    <span className="text-gray-300">,</span>
-                  ) : (
-                    <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-                  )}
-                </span>
-              );
-            })
-          ) : category ? (
-            <>
-              <li>
-                <Link to={`/catalog/${category.slug}`} className="hover:text-red-500 transition-colors">
-                  {categoryLabel}
-                </Link>
-              </li>
-              <li aria-hidden="true"><span className="text-gray-300">›</span></li>
-            </>
-          ) : null}
-          <li className="text-gray-800 font-medium" aria-current="page">{name}</li>
-        </ol>
-      </nav>
+      {/* Back Button & Breadcrumbs Bar */}
+      <div className="flex items-center gap-2.5 sm:gap-3.5 mb-4 sm:mb-6 flex-wrap">
+        <button
+          type="button"
+          onClick={handleGoBack}
+          aria-label={lang === "uz" ? "Avvalgi joyga qaytish" : "Назад к списку товаров"}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-600 font-bold text-xs sm:text-sm border border-gray-200 hover:border-red-200 shadow-2xs transition-all active:scale-95 cursor-pointer shrink-0 group"
+          title={lang === "uz" ? "Avvalgi sahifaga qaytish (aynan o'sha joyga)" : "Вернуться назад (ровно в то место, откуда зашли)"}
+        >
+          <svg className="w-4 h-4 text-gray-500 group-hover:text-red-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>{lang === "uz" ? "Orqaga" : "Назад"}</span>
+        </button>
+
+        <span className="text-gray-300 hidden sm:inline" aria-hidden="true">|</span>
+
+        {/* Breadcrumbs */}
+        <nav aria-label="Breadcrumb" className="flex-1 min-w-0">
+          <ol className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
+            <li>
+              <Link to="/" className="hover:text-red-500 transition-colors">{t.breadcrumbHome}</Link>
+            </li>
+            <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+            {productCategories.length > 0 ? (
+              productCategories.map((cat, idx) => {
+                const catLbl = lang === "uz" ? (cat.labelUz || cat.labelRu) : cat.labelRu;
+                return (
+                  <span key={cat.key} className="flex items-center gap-1.5">
+                    <li>
+                      <Link to={`/catalog/${cat.slug}`} className="hover:text-red-500 transition-colors">
+                        {catLbl}
+                      </Link>
+                    </li>
+                    {idx < productCategories.length - 1 ? (
+                      <span className="text-gray-300">,</span>
+                    ) : (
+                      <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+                    )}
+                  </span>
+                );
+              })
+            ) : category ? (
+              <>
+                <li>
+                  <Link to={`/catalog/${category.slug}`} className="hover:text-red-500 transition-colors">
+                    {categoryLabel}
+                  </Link>
+                </li>
+                <li aria-hidden="true"><span className="text-gray-300">›</span></li>
+              </>
+            ) : null}
+            <li className="text-gray-800 font-medium" aria-current="page">{name}</li>
+          </ol>
+        </nav>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-4 sm:gap-10 mb-8 sm:mb-12">
         {/* Images Gallery */}
@@ -968,6 +1001,22 @@ export default function ProductPage() {
           </div>
         </div>
       )}
+
+      {/* Floating Back Button — accessible from anywhere when viewing long product specs */}
+      <button
+        type="button"
+        onClick={handleGoBack}
+        aria-label={lang === "uz" ? "Orqaga" : "Назад"}
+        className="fixed bottom-20 left-3 sm:bottom-6 sm:left-6 z-40 bg-white/95 hover:bg-white text-gray-800 hover:text-red-600 border border-gray-200/90 hover:border-red-300 shadow-lg hover:shadow-xl rounded-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer group"
+        title={lang === "uz" ? "Avvalgi sahifaga qaytish (aynan o'sha joyga)" : "Вернуться назад (ровно в то место, откуда зашли)"}
+      >
+        <span className="w-5 h-5 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center text-gray-600 group-hover:text-red-600 transition-colors">
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+        </span>
+        <span className="hidden sm:inline font-bold">{lang === "uz" ? "Orqaga" : "Назад"}</span>
+      </button>
     </main>
   );
 }

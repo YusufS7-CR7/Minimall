@@ -16,7 +16,7 @@ export interface FilterState {
 }
 
 export const DEFAULT_FILTER_STATE: FilterState = {
-  priceRange: [0, 20_000_000],
+  priceRange: [0, 999_999_999],
   selectedBrands: [],
   selectedCategories: [],
   inStockOnly: false,
@@ -56,8 +56,23 @@ export default function ProductFilters({
   const t = T[lang];
 
   const selectedCats = filters.selectedCategories || [];
+
+  // Calculate dynamic maximum price from available products so there's never an artificial limit
+  const maxCatalogPrice = useMemo(() => {
+    let highest = 0;
+    if (availableProducts && availableProducts.length > 0) {
+      for (const p of availableProducts) {
+        if (p.price > highest) highest = p.price;
+      }
+    }
+    if (highest <= 0) return 100_000_000;
+    const step = 5_000_000;
+    return Math.max(50_000_000, Math.ceil(highest / step) * step);
+  }, [availableProducts]);
+
   const isPriceFiltered =
-    filters.priceRange[0] > 0 || filters.priceRange[1] < 20_000_000;
+    filters.priceRange[0] > 0 ||
+    (filters.priceRange[1] < maxCatalogPrice && filters.priceRange[1] < 999_999_999);
   const isBrandFiltered = filters.selectedBrands.length > 0;
   const isCategoryFiltered = selectedCats.length > 0;
   const isStockFiltered = filters.inStockOnly;
@@ -159,7 +174,7 @@ export default function ProductFilters({
   const handleReset = () => {
     onChange({
       ...filters,
-      priceRange: [0, 20_000_000],
+      priceRange: [0, maxCatalogPrice],
       selectedBrands: [],
       selectedCategories: [],
       inStockOnly: false,
@@ -175,14 +190,14 @@ export default function ProductFilters({
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs">
         <PriceRangeSlider
           min={0}
-          max={20_000_000}
+          max={maxCatalogPrice}
           step={100_000}
-          value={filters.priceRange}
+          value={filters.priceRange[1] >= 999_999_999 ? [filters.priceRange[0], maxCatalogPrice] : filters.priceRange}
           onChange={handlePriceChange}
           lang={lang}
           showInputs={true}
           showPresets={true}
-          onReset={() => onChange({ ...filters, priceRange: [0, 20_000_000] })}
+          onReset={() => onChange({ ...filters, priceRange: [0, maxCatalogPrice] })}
         />
       </div>
 
@@ -633,7 +648,7 @@ export function ActiveFilterBar({
   const { categories } = useCategories();
   const selectedCats = filters.selectedCategories || [];
   const isPriceFiltered =
-    filters.priceRange[0] > 0 || filters.priceRange[1] < 20_000_000;
+    filters.priceRange[0] > 0 || filters.priceRange[1] < 999_999_999;
   const hasActive =
     isPriceFiltered || filters.selectedBrands.length > 0 || selectedCats.length > 0 || filters.inStockOnly;
 
@@ -657,7 +672,7 @@ export function ActiveFilterBar({
           </span>
           <button
             type="button"
-            onClick={() => onChange({ ...filters, priceRange: [0, 20_000_000] })}
+            onClick={() => onChange({ ...filters, priceRange: [0, 999_999_999] })}
             className="hover:text-red-900 ml-0.5 text-xs font-bold cursor-pointer"
           >
             ✕
@@ -734,7 +749,7 @@ export function ActiveFilterBar({
         onClick={() =>
           onChange({
             ...filters,
-            priceRange: [0, 20_000_000],
+            priceRange: [0, 999_999_999],
             selectedBrands: [],
             selectedCategories: [],
             inStockOnly: false,

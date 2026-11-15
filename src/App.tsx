@@ -76,6 +76,13 @@ function ScrollRestorationHandler() {
   useEffect(() => {
     const key = `scroll_pos_${location.pathname}${location.search}`;
 
+    // Remember the last non-product catalog page URL
+    if (!location.pathname.startsWith("/product/")) {
+      try {
+        sessionStorage.setItem("mm_last_catalog_url", `${location.pathname}${location.search}`);
+      } catch {}
+    }
+
     let rafId: number;
     const handleScroll = () => {
       cancelAnimationFrame(rafId);
@@ -111,21 +118,20 @@ function ScrollRestorationHandler() {
             // Immediate attempt
             window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
 
-            // Follow-up attempts as product grid and images render
-            const t1 = setTimeout(() => {
+            // Robust polling: as React re-mounts product cards, images, and filters,
+            // continuously re-align to the exact targetY until document height accommodates it
+            let attempts = 0;
+            const maxAttempts = 30; // 30 * 40ms = 1200ms
+            const interval = setInterval(() => {
+              attempts++;
               window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
-            }, 50);
-            const t2 = setTimeout(() => {
-              window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
-            }, 150);
-            const t3 = setTimeout(() => {
-              window.scrollTo({ top: targetY, left: 0, behavior: "instant" });
-            }, 350);
+              if (Math.abs(window.scrollY - targetY) < 5 || attempts >= maxAttempts) {
+                clearInterval(interval);
+              }
+            }, 40);
 
             return () => {
-              clearTimeout(t1);
-              clearTimeout(t2);
-              clearTimeout(t3);
+              clearInterval(interval);
             };
           }
         }

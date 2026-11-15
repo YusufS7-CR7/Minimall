@@ -31,8 +31,8 @@ export default function SearchPage() {
   const filteredResults = useMemo(() => {
     return rawResults
       .filter((p) => {
-        // Price Range filter
-        if (p.price < filters.priceRange[0] || p.price > filters.priceRange[1]) {
+        // Price Range filter (unlimited when upper bound is at default)
+        if (p.price < filters.priceRange[0] || (filters.priceRange[1] < 999_999_999 && p.price > filters.priceRange[1])) {
           return false;
         }
         // Brand filter
